@@ -1,0 +1,109 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 2024/10/15 11:16:07
+// Design Name: 
+// Module Name: ten_eth_rx
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module ten_eth_rx(
+    input           i_clk               ,
+    input           i_rst               ,
+    input           i_stat_rx_status    ,
+
+    input           s_axis_rx_tvalid    ,
+    input [63 :0]   s_axis_rx_tdata     ,
+    input           s_axis_rx_tlast     ,
+    input [7  :0]   s_axis_rx_tkeep     ,
+    input           s_axis_rx_tuser   
+);
+/******************************function*****************************/
+
+/******************************parameter****************************/
+
+/******************************machine******************************/
+
+/******************************reg**********************************/
+reg             rs_axis_rx_tvalid   ;
+reg  [63 :0]    rs_axis_rx_tdata    ;
+reg             rs_axis_rx_tlast    ;
+reg  [7  :0]    rs_axis_rx_tkeep    ;
+reg             rs_axis_rx_tuser    ;
+reg  [47 :0]	r_recv_dst_mac		;
+reg  [47 :0]	r_recv_src_mac		;
+reg  [5 :0]		r_recv_cnt			;
+/******************************wire*********************************/
+
+/******************************assign*******************************/
+
+/******************************component****************************/
+
+/******************************always*******************************/
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        rs_axis_rx_tvalid <= 'd0;
+        rs_axis_rx_tdata  <= 'd0;
+        rs_axis_rx_tlast  <= 'd0;
+        rs_axis_rx_tkeep  <= 'd0;
+        rs_axis_rx_tuser  <= 'd0;
+    end
+    else begin
+        rs_axis_rx_tvalid <= s_axis_rx_tvalid   ;
+        rs_axis_rx_tdata  <= s_axis_rx_tdata    ;
+        rs_axis_rx_tlast  <= s_axis_rx_tlast    ;
+        rs_axis_rx_tkeep  <= s_axis_rx_tkeep    ;
+        rs_axis_rx_tuser  <= s_axis_rx_tuser    ;
+    end
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+		r_recv_dst_mac <= 'd0;
+    else if()
+
+    else
+
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+		r_recv_cnt <= 'd0;
+    else if(rs_axis_rx_tvalid)
+		r_recv_cnt <= r_recv_cnt + 1'b1;
+    else
+        r_recv_cnt <= 'd0;
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+
+    else if()
+
+    else
+        
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+
+    else if()
+
+    else
+        
+end
+
+endmodule
