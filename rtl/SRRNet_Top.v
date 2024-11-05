@@ -87,7 +87,8 @@ crossbar#(
     .m0_axis_tx_tdata        (m0_axis_tx_tdata  ),
     .m0_axis_tx_tlast        (m0_axis_tx_tlast  ),
     .m0_axis_tx_tkeep        (m0_axis_tx_tkeep  ),
-    .m0_axis_tx_tuser        (m0_axis_tx_tuser  ),               
+    .m0_axis_tx_tuser        (m0_axis_tx_tuser  ),     
+    .m0_axis_tx_tready       (m0_axis_tx_tready ),          
     .s1_axis_rx_tvalid       (s1_axis_rx_tvalid ),
     .s1_axis_rx_tdata        (s1_axis_rx_tdata  ),
     .s1_axis_rx_tlast        (s1_axis_rx_tlast  ),
@@ -99,6 +100,7 @@ crossbar#(
     .m1_axis_tx_tlast        (m1_axis_tx_tlast  ),
     .m1_axis_tx_tkeep        (m1_axis_tx_tkeep  ),
     .m1_axis_tx_tuser        (m1_axis_tx_tuser  ),
+    .m1_axis_tx_tready       (m1_axis_tx_tready ),    
     .s2_axis_rx_tvalid       (s2_axis_rx_tvalid ),
     .s2_axis_rx_tdata        (s2_axis_rx_tdata  ),
     .s2_axis_rx_tlast        (s2_axis_rx_tlast  ),
@@ -110,6 +112,7 @@ crossbar#(
     .m2_axis_tx_tlast        (m2_axis_tx_tlast  ),
     .m2_axis_tx_tkeep        (m2_axis_tx_tkeep  ),
     .m2_axis_tx_tuser        (m2_axis_tx_tuser  ),
+    .m2_axis_tx_tready       (m2_axis_tx_tready ),    
     .s3_axis_rx_tvalid       (s3_axis_rx_tvalid ),
     .s3_axis_rx_tdata        (s3_axis_rx_tdata  ),
     .s3_axis_rx_tlast        (s3_axis_rx_tlast  ),
@@ -120,7 +123,8 @@ crossbar#(
     .m3_axis_tx_tdata        (m3_axis_tx_tdata  ),
     .m3_axis_tx_tlast        (m3_axis_tx_tlast  ),
     .m3_axis_tx_tkeep        (m3_axis_tx_tkeep  ),
-    .m3_axis_tx_tuser        (m3_axis_tx_tuser  ) 
+    .m3_axis_tx_tuser        (m3_axis_tx_tuser  ),
+    .m3_axis_tx_tready       (m3_axis_tx_tready )
 ); 
 
 

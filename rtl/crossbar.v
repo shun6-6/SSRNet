@@ -86,6 +86,9 @@ reg                         r_req2_lock         ;
 reg                         r_req3_lock         ;
 
 wire                        w_next_arbit0       ;
+wire                        w_next_arbit1       ;
+wire                        w_next_arbit2       ;
+wire                        w_next_arbit3       ;
 
 wire [P_CROSSBAR_N - 1 : 0] w_trans_0_req       ;
 wire [P_CROSSBAR_N - 1 : 0] w_trans_0_grant     ;
@@ -225,105 +228,105 @@ assign w_next_arbit1 = m0_axis_tx1_tlast || m1_axis_tx1_tlast || m2_axis_tx1_tla
 assign w_next_arbit2 = m0_axis_tx2_tlast || m1_axis_tx2_tlast || m2_axis_tx2_tlast || m3_axis_tx2_tlast;
 assign w_next_arbit3 = m0_axis_tx3_tlast || m1_axis_tx3_tlast || m2_axis_tx3_tlast || m3_axis_tx3_tlast;
 
-assign m0_axis_tx_tvalid =    w_trans0_grant[0] && w_grant0_valid ? m0_axis_tx0_tvalid
-                            : w_trans0_grant[1] && w_grant0_valid ? m1_axis_tx0_tvalid
-                            : w_trans0_grant[2] && w_grant0_valid ? m2_axis_tx0_tvalid
-                            : w_trans0_grant[3] && w_grant0_valid ? m3_axis_tx0_tvalid : 'd0;
+assign m0_axis_tx_tvalid =    w_trans0_grant[0] ? m0_axis_tx0_tvalid
+                            : w_trans0_grant[1] ? m1_axis_tx0_tvalid
+                            : w_trans0_grant[2] ? m2_axis_tx0_tvalid
+                            : w_trans0_grant[3] ? m3_axis_tx0_tvalid : 'd0;
 
-assign m0_axis_tx_tdata  =    w_trans0_grant[0] && w_grant0_valid ? m0_axis_tx0_tdata
-                            : w_trans0_grant[1] && w_grant0_valid ? m1_axis_tx0_tdata
-                            : w_trans0_grant[2] && w_grant0_valid ? m2_axis_tx0_tdata
-                            : w_trans0_grant[3] && w_grant0_valid ? m3_axis_tx0_tdata : 'd0 ;
+assign m0_axis_tx_tdata  =    w_trans0_grant[0] ? m0_axis_tx0_tdata
+                            : w_trans0_grant[1] ? m1_axis_tx0_tdata
+                            : w_trans0_grant[2] ? m2_axis_tx0_tdata
+                            : w_trans0_grant[3] ? m3_axis_tx0_tdata : 'd0 ;
 
-assign m0_axis_tx_tlast  =    w_trans0_grant[0] && w_grant0_valid ? m0_axis_tx0_tlast
-                            : w_trans0_grant[1] && w_grant0_valid ? m1_axis_tx0_tlast
-                            : w_trans0_grant[2] && w_grant0_valid ? m2_axis_tx0_tlast
-                            : w_trans0_grant[3] && w_grant0_valid ? m3_axis_tx0_tlast : 'd0 ;
+assign m0_axis_tx_tlast  =    w_trans0_grant[0] ? m0_axis_tx0_tlast
+                            : w_trans0_grant[1] ? m1_axis_tx0_tlast
+                            : w_trans0_grant[2] ? m2_axis_tx0_tlast
+                            : w_trans0_grant[3] ? m3_axis_tx0_tlast : 'd0 ;
 
-assign m0_axis_tx_tkeep  =    w_trans0_grant[0] && w_grant0_valid ? m0_axis_tx0_tkeep
-                            : w_trans0_grant[1] && w_grant0_valid ? m1_axis_tx0_tkeep
-                            : w_trans0_grant[2] && w_grant0_valid ? m2_axis_tx0_tkeep
-                            : w_trans0_grant[3] && w_grant0_valid ? m3_axis_tx0_tkeep : 'd0 ;
+assign m0_axis_tx_tkeep  =    w_trans0_grant[0] ? m0_axis_tx0_tkeep
+                            : w_trans0_grant[1] ? m1_axis_tx0_tkeep
+                            : w_trans0_grant[2] ? m2_axis_tx0_tkeep
+                            : w_trans0_grant[3] ? m3_axis_tx0_tkeep : 'd0 ;
 
-assign m0_axis_tx_tuser  =    w_trans0_grant[0] && w_grant0_valid ? m0_axis_tx0_tuser
-                            : w_trans0_grant[1] && w_grant0_valid ? m1_axis_tx0_tuser
-                            : w_trans0_grant[2] && w_grant0_valid ? m2_axis_tx0_tuser
-                            : w_trans0_grant[3] && w_grant0_valid ? m3_axis_tx0_tuser : 'd0 ;
+assign m0_axis_tx_tuser  =    w_trans0_grant[0] ? m0_axis_tx0_tuser
+                            : w_trans0_grant[1] ? m1_axis_tx0_tuser
+                            : w_trans0_grant[2] ? m2_axis_tx0_tuser
+                            : w_trans0_grant[3] ? m3_axis_tx0_tuser : 'd0 ;
 
-assign m1_axis_tx_tvalid =    w_trans1_grant[0] && w_grant1_valid ? m0_axis_tx1_tvalid
-                            : w_trans1_grant[1] && w_grant1_valid ? m1_axis_tx1_tvalid
-                            : w_trans1_grant[2] && w_grant1_valid ? m2_axis_tx1_tvalid
-                            : w_trans1_grant[3] && w_grant1_valid ? m3_axis_tx1_tvalid : 'd0;
+assign m1_axis_tx_tvalid =    w_trans1_grant[0] ? m0_axis_tx1_tvalid
+                            : w_trans1_grant[1] ? m1_axis_tx1_tvalid
+                            : w_trans1_grant[2] ? m2_axis_tx1_tvalid
+                            : w_trans1_grant[3] ? m3_axis_tx1_tvalid : 'd0;
 
-assign m1_axis_tx_tdata  =    w_trans1_grant[0] && w_grant1_valid ? m0_axis_tx1_tdata
-                            : w_trans1_grant[1] && w_grant1_valid ? m1_axis_tx1_tdata
-                            : w_trans1_grant[2] && w_grant1_valid ? m2_axis_tx1_tdata
-                            : w_trans1_grant[3] && w_grant1_valid ? m3_axis_tx1_tdata : 'd0 ;
+assign m1_axis_tx_tdata  =    w_trans1_grant[0] ? m0_axis_tx1_tdata
+                            : w_trans1_grant[1] ? m1_axis_tx1_tdata
+                            : w_trans1_grant[2] ? m2_axis_tx1_tdata
+                            : w_trans1_grant[3] ? m3_axis_tx1_tdata : 'd0 ;
 
-assign m1_axis_tx_tlast  =    w_trans1_grant[0] && w_grant1_valid ? m0_axis_tx1_tlast
-                            : w_trans1_grant[1] && w_grant1_valid ? m1_axis_tx1_tlast
-                            : w_trans1_grant[2] && w_grant1_valid ? m2_axis_tx1_tlast
-                            : w_trans1_grant[3] && w_grant1_valid ? m3_axis_tx1_tlast : 'd0 ;
+assign m1_axis_tx_tlast  =    w_trans1_grant[0] ? m0_axis_tx1_tlast
+                            : w_trans1_grant[1] ? m1_axis_tx1_tlast
+                            : w_trans1_grant[2] ? m2_axis_tx1_tlast
+                            : w_trans1_grant[3] ? m3_axis_tx1_tlast : 'd0 ;
 
-assign m1_axis_tx_tkeep  =    w_trans1_grant[0] && w_grant1_valid ? m0_axis_tx1_tkeep
-                            : w_trans1_grant[1] && w_grant1_valid ? m1_axis_tx1_tkeep
-                            : w_trans1_grant[2] && w_grant1_valid ? m2_axis_tx1_tkeep
-                            : w_trans1_grant[3] && w_grant1_valid ? m3_axis_tx1_tkeep : 'd0 ;
+assign m1_axis_tx_tkeep  =    w_trans1_grant[0] ? m0_axis_tx1_tkeep
+                            : w_trans1_grant[1] ? m1_axis_tx1_tkeep
+                            : w_trans1_grant[2] ? m2_axis_tx1_tkeep
+                            : w_trans1_grant[3] ? m3_axis_tx1_tkeep : 'd0 ;
 
-assign m1_axis_tx_tuser  =    w_trans1_grant[0] && w_grant1_valid ? m0_axis_tx1_tuser
-                            : w_trans1_grant[1] && w_grant1_valid ? m1_axis_tx1_tuser
-                            : w_trans1_grant[2] && w_grant1_valid ? m2_axis_tx1_tuser
-                            : w_trans1_grant[3] && w_grant1_valid ? m3_axis_tx1_tuser : 'd0 ;
+assign m1_axis_tx_tuser  =    w_trans1_grant[0] ? m0_axis_tx1_tuser
+                            : w_trans1_grant[1] ? m1_axis_tx1_tuser
+                            : w_trans1_grant[2] ? m2_axis_tx1_tuser
+                            : w_trans1_grant[3] ? m3_axis_tx1_tuser : 'd0 ;
 
-assign m2_axis_tx_tvalid =    w_trans2_grant[0] && w_grant2_valid ? m0_axis_tx2_tvalid
-                            : w_trans2_grant[1] && w_grant2_valid ? m2_axis_tx2_tvalid
-                            : w_trans2_grant[2] && w_grant2_valid ? m2_axis_tx2_tvalid
-                            : w_trans2_grant[3] && w_grant2_valid ? m3_axis_tx2_tvalid : 'd0;
+assign m2_axis_tx_tvalid =    w_trans2_grant[0] ? m0_axis_tx2_tvalid
+                            : w_trans2_grant[1] ? m1_axis_tx2_tvalid
+                            : w_trans2_grant[2] ? m2_axis_tx2_tvalid
+                            : w_trans2_grant[3] ? m3_axis_tx2_tvalid : 'd0;
 
-assign m2_axis_tx_tdata  =    w_trans2_grant[0] && w_grant2_valid ? m0_axis_tx2_tdata
-                            : w_trans2_grant[1] && w_grant2_valid ? m2_axis_tx2_tdata
-                            : w_trans2_grant[2] && w_grant2_valid ? m2_axis_tx2_tdata
-                            : w_trans2_grant[3] && w_grant2_valid ? m3_axis_tx2_tdata : 'd0 ;
+assign m2_axis_tx_tdata  =    w_trans2_grant[0] ? m0_axis_tx2_tdata
+                            : w_trans2_grant[1] ? m1_axis_tx2_tdata
+                            : w_trans2_grant[2] ? m2_axis_tx2_tdata
+                            : w_trans2_grant[3] ? m3_axis_tx2_tdata : 'd0 ;
 
-assign m2_axis_tx_tlast  =    w_trans2_grant[0] && w_grant2_valid ? m0_axis_tx2_tlast
-                            : w_trans2_grant[1] && w_grant2_valid ? m2_axis_tx2_tlast
-                            : w_trans2_grant[2] && w_grant2_valid ? m2_axis_tx2_tlast
-                            : w_trans2_grant[3] && w_grant2_valid ? m3_axis_tx2_tlast : 'd0 ;
+assign m2_axis_tx_tlast  =    w_trans2_grant[0] ? m0_axis_tx2_tlast
+                            : w_trans2_grant[1] ? m1_axis_tx2_tlast
+                            : w_trans2_grant[2] ? m2_axis_tx2_tlast
+                            : w_trans2_grant[3] ? m3_axis_tx2_tlast : 'd0 ;
 
-assign m2_axis_tx_tkeep  =    w_trans2_grant[0] && w_grant2_valid ? m0_axis_tx2_tkeep
-                            : w_trans2_grant[1] && w_grant2_valid ? m2_axis_tx2_tkeep
-                            : w_trans2_grant[2] && w_grant2_valid ? m2_axis_tx2_tkeep
-                            : w_trans2_grant[3] && w_grant2_valid ? m3_axis_tx2_tkeep : 'd0 ;
+assign m2_axis_tx_tkeep  =    w_trans2_grant[0] ? m0_axis_tx2_tkeep
+                            : w_trans2_grant[1] ? m1_axis_tx2_tkeep
+                            : w_trans2_grant[2] ? m2_axis_tx2_tkeep
+                            : w_trans2_grant[3] ? m3_axis_tx2_tkeep : 'd0 ;
 
-assign m2_axis_tx_tuser  =    w_trans2_grant[0] && w_grant2_valid ? m0_axis_tx2_tuser
-                            : w_trans2_grant[1] && w_grant2_valid ? m2_axis_tx2_tuser
-                            : w_trans2_grant[2] && w_grant2_valid ? m2_axis_tx2_tuser
-                            : w_trans2_grant[3] && w_grant2_valid ? m3_axis_tx2_tuser : 'd0 ;
+assign m2_axis_tx_tuser  =    w_trans2_grant[0] ? m0_axis_tx2_tuser
+                            : w_trans2_grant[1] ? m1_axis_tx2_tuser
+                            : w_trans2_grant[2] ? m2_axis_tx2_tuser
+                            : w_trans2_grant[3] ? m3_axis_tx2_tuser : 'd0 ;
 
-assign m3_axis_tx_tvalid =    w_trans3_grant[0] && w_grant3_valid ? m0_axis_tx3_tvalid
-                            : w_trans3_grant[1] && w_grant3_valid ? m1_axis_tx3_tvalid
-                            : w_trans3_grant[2] && w_grant3_valid ? m2_axis_tx3_tvalid
-                            : w_trans3_grant[3] && w_grant3_valid ? m3_axis_tx3_tvalid : 'd0;
+assign m3_axis_tx_tvalid =    w_trans3_grant[0] ? m0_axis_tx3_tvalid
+                            : w_trans3_grant[1] ? m1_axis_tx3_tvalid
+                            : w_trans3_grant[2] ? m2_axis_tx3_tvalid
+                            : w_trans3_grant[3] ? m3_axis_tx3_tvalid : 'd0;
 
-assign m3_axis_tx_tdata  =    w_trans3_grant[0] && w_grant3_valid ? m0_axis_tx3_tdata
-                            : w_trans3_grant[1] && w_grant3_valid ? m1_axis_tx3_tdata
-                            : w_trans3_grant[2] && w_grant3_valid ? m2_axis_tx3_tdata
-                            : w_trans3_grant[3] && w_grant3_valid ? m3_axis_tx3_tdata : 'd0 ;
+assign m3_axis_tx_tdata  =    w_trans3_grant[0] ? m0_axis_tx3_tdata
+                            : w_trans3_grant[1] ? m1_axis_tx3_tdata
+                            : w_trans3_grant[2] ? m2_axis_tx3_tdata
+                            : w_trans3_grant[3] ? m3_axis_tx3_tdata : 'd0 ;
 
-assign m3_axis_tx_tlast  =    w_trans3_grant[0] && w_grant3_valid ? m0_axis_tx3_tlast
-                            : w_trans3_grant[1] && w_grant3_valid ? m1_axis_tx3_tlast
-                            : w_trans3_grant[2] && w_grant3_valid ? m2_axis_tx3_tlast
-                            : w_trans3_grant[3] && w_grant3_valid ? m3_axis_tx3_tlast : 'd0 ;
+assign m3_axis_tx_tlast  =    w_trans3_grant[0] ? m0_axis_tx3_tlast
+                            : w_trans3_grant[1] ? m1_axis_tx3_tlast
+                            : w_trans3_grant[2] ? m2_axis_tx3_tlast
+                            : w_trans3_grant[3] ? m3_axis_tx3_tlast : 'd0 ;
 
-assign m3_axis_tx_tkeep  =    w_trans3_grant[0] && w_grant3_valid ? m0_axis_tx3_tkeep
-                            : w_trans3_grant[1] && w_grant3_valid ? m1_axis_tx3_tkeep
-                            : w_trans3_grant[2] && w_grant3_valid ? m2_axis_tx3_tkeep
-                            : w_trans3_grant[3] && w_grant3_valid ? m3_axis_tx3_tkeep : 'd0 ;
+assign m3_axis_tx_tkeep  =    w_trans3_grant[0] ? m0_axis_tx3_tkeep
+                            : w_trans3_grant[1] ? m1_axis_tx3_tkeep
+                            : w_trans3_grant[2] ? m2_axis_tx3_tkeep
+                            : w_trans3_grant[3] ? m3_axis_tx3_tkeep : 'd0 ;
 
-assign m3_axis_tx_tuser  =    w_trans3_grant[0] && w_grant3_valid ? m0_axis_tx3_tuser
-                            : w_trans3_grant[1] && w_grant3_valid ? m1_axis_tx3_tuser
-                            : w_trans3_grant[2] && w_grant3_valid ? m2_axis_tx3_tuser
-                            : w_trans3_grant[3] && w_grant3_valid ? m3_axis_tx3_tuser : 'd0 ;
+assign m3_axis_tx_tuser  =    w_trans3_grant[0] ? m0_axis_tx3_tuser
+                            : w_trans3_grant[1] ? m1_axis_tx3_tuser
+                            : w_trans3_grant[2] ? m2_axis_tx3_tuser
+                            : w_trans3_grant[3] ? m3_axis_tx3_tuser : 'd0 ;
 
 Arbiter#(
     .P_CHANNEL_NUM      (4)
@@ -394,28 +397,28 @@ crossbar_line#(
     .m0_axis_tx_tlast   (m0_axis_tx0_tlast  ),
     .m0_axis_tx_tkeep   (m0_axis_tx0_tkeep  ),
     .m0_axis_tx_tuser   (m0_axis_tx0_tuser  ),
-    .m0_axis_tx_tready  (m0_axis_tx0_tready ), 
+    .m0_axis_tx_tready  (m0_axis_tx_tready  ), 
 
-    .m1_axis_tx_tvalid  (m1_axis_tx0_tvalid ),
-    .m1_axis_tx_tdata   (m1_axis_tx0_tdata  ),
-    .m1_axis_tx_tlast   (m1_axis_tx0_tlast  ),
-    .m1_axis_tx_tkeep   (m1_axis_tx0_tkeep  ),
-    .m1_axis_tx_tuser   (m1_axis_tx0_tuser  ),
-    .m1_axis_tx_tready  (m1_axis_tx0_tready ), 
+    .m1_axis_tx_tvalid  (m0_axis_tx1_tvalid ),
+    .m1_axis_tx_tdata   (m0_axis_tx1_tdata  ),
+    .m1_axis_tx_tlast   (m0_axis_tx1_tlast  ),
+    .m1_axis_tx_tkeep   (m0_axis_tx1_tkeep  ),
+    .m1_axis_tx_tuser   (m0_axis_tx1_tuser  ),
+    .m1_axis_tx_tready  (m1_axis_tx_tready  ), 
 
-    .m2_axis_tx_tvalid  (m2_axis_tx0_tvalid ),
-    .m2_axis_tx_tdata   (m2_axis_tx0_tdata  ),
-    .m2_axis_tx_tlast   (m2_axis_tx0_tlast  ),
-    .m2_axis_tx_tkeep   (m2_axis_tx0_tkeep  ),
-    .m2_axis_tx_tuser   (m2_axis_tx0_tuser  ),
-    .m2_axis_tx_tready  (m2_axis_tx0_tready ),
+    .m2_axis_tx_tvalid  (m0_axis_tx2_tvalid ),
+    .m2_axis_tx_tdata   (m0_axis_tx2_tdata  ),
+    .m2_axis_tx_tlast   (m0_axis_tx2_tlast  ),
+    .m2_axis_tx_tkeep   (m0_axis_tx2_tkeep  ),
+    .m2_axis_tx_tuser   (m0_axis_tx2_tuser  ),
+    .m2_axis_tx_tready  (m2_axis_tx_tready  ),
 
-    .m3_axis_tx_tvalid  (m3_axis_tx0_tvalid ),
-    .m3_axis_tx_tdata   (m3_axis_tx0_tdata  ),
-    .m3_axis_tx_tlast   (m3_axis_tx0_tlast  ),
-    .m3_axis_tx_tkeep   (m3_axis_tx0_tkeep  ),
-    .m3_axis_tx_tuser   (m3_axis_tx0_tuser  ),
-    .m3_axis_tx_tready  (m3_axis_tx0_tready )
+    .m3_axis_tx_tvalid  (m0_axis_tx3_tvalid ),
+    .m3_axis_tx_tdata   (m0_axis_tx3_tdata  ),
+    .m3_axis_tx_tlast   (m0_axis_tx3_tlast  ),
+    .m3_axis_tx_tkeep   (m0_axis_tx3_tkeep  ),
+    .m3_axis_tx_tuser   (m0_axis_tx3_tuser  ),
+    .m3_axis_tx_tready  (m3_axis_tx_tready  )
 );
 
 crossbar_line#(
@@ -434,32 +437,32 @@ crossbar_line#(
     .s_axis_rx_tuser    (s1_axis_rx_tuser   ),
     .s_axis_rx_tdest    (s1_axis_rx_tdest   ),
 
-    .m0_axis_tx_tvalid  (m0_axis_tx1_tvalid ),
-    .m0_axis_tx_tdata   (m0_axis_tx1_tdata  ),
-    .m0_axis_tx_tlast   (m0_axis_tx1_tlast  ),
-    .m0_axis_tx_tkeep   (m0_axis_tx1_tkeep  ),
-    .m0_axis_tx_tuser   (m0_axis_tx1_tuser  ),
-    .m0_axis_tx_tready  (m0_axis_tx_tready  ), 
+    .m0_axis_tx_tvalid  (m1_axis_tx0_tvalid ),
+    .m0_axis_tx_tdata   (m1_axis_tx0_tdata  ),
+    .m0_axis_tx_tlast   (m1_axis_tx0_tlast  ),
+    .m0_axis_tx_tkeep   (m1_axis_tx0_tkeep  ),
+    .m0_axis_tx_tuser   (m1_axis_tx0_tuser  ),
+    .m0_axis_tx_tready  (m0_axis_tx_tready   ), 
 
     .m1_axis_tx_tvalid  (m1_axis_tx1_tvalid ),
     .m1_axis_tx_tdata   (m1_axis_tx1_tdata  ),
     .m1_axis_tx_tlast   (m1_axis_tx1_tlast  ),
     .m1_axis_tx_tkeep   (m1_axis_tx1_tkeep  ),
     .m1_axis_tx_tuser   (m1_axis_tx1_tuser  ),
-    .m1_axis_tx_tready  (m1_axis_tx_tready ), 
+    .m1_axis_tx_tready  (m1_axis_tx_tready  ), 
 
-    .m2_axis_tx_tvalid  (m2_axis_tx1_tvalid ),
-    .m2_axis_tx_tdata   (m2_axis_tx1_tdata  ),
-    .m2_axis_tx_tlast   (m2_axis_tx1_tlast  ),
-    .m2_axis_tx_tkeep   (m2_axis_tx1_tkeep  ),
-    .m2_axis_tx_tuser   (m2_axis_tx1_tuser  ),
+    .m2_axis_tx_tvalid  (m1_axis_tx2_tvalid ),
+    .m2_axis_tx_tdata   (m1_axis_tx2_tdata  ),
+    .m2_axis_tx_tlast   (m1_axis_tx2_tlast  ),
+    .m2_axis_tx_tkeep   (m1_axis_tx2_tkeep  ),
+    .m2_axis_tx_tuser   (m1_axis_tx2_tuser  ),
     .m2_axis_tx_tready  (m2_axis_tx_tready ),
 
-    .m3_axis_tx_tvalid  (m3_axis_tx1_tvalid ),
-    .m3_axis_tx_tdata   (m3_axis_tx1_tdata  ),
-    .m3_axis_tx_tlast   (m3_axis_tx1_tlast  ),
-    .m3_axis_tx_tkeep   (m3_axis_tx1_tkeep  ),
-    .m3_axis_tx_tuser   (m3_axis_tx1_tuser  ),
+    .m3_axis_tx_tvalid  (m1_axis_tx3_tvalid ),
+    .m3_axis_tx_tdata   (m1_axis_tx3_tdata  ),
+    .m3_axis_tx_tlast   (m1_axis_tx3_tlast  ),
+    .m3_axis_tx_tkeep   (m1_axis_tx3_tkeep  ),
+    .m3_axis_tx_tuser   (m1_axis_tx3_tuser  ),
     .m3_axis_tx_tready  (m3_axis_tx_tready )
 );
 
@@ -479,18 +482,18 @@ crossbar_line#(
     .s_axis_rx_tuser    (s2_axis_rx_tuser   ),
     .s_axis_rx_tdest    (s2_axis_rx_tdest   ),
 
-    .m0_axis_tx_tvalid  (m0_axis_tx2_tvalid ),
-    .m0_axis_tx_tdata   (m0_axis_tx2_tdata  ),
-    .m0_axis_tx_tlast   (m0_axis_tx2_tlast  ),
-    .m0_axis_tx_tkeep   (m0_axis_tx2_tkeep  ),
-    .m0_axis_tx_tuser   (m0_axis_tx2_tuser  ),
-    .m0_axis_tx_tready  (m0_axis_tx_tready ), 
+    .m0_axis_tx_tvalid  (m2_axis_tx0_tvalid ),
+    .m0_axis_tx_tdata   (m2_axis_tx0_tdata  ),
+    .m0_axis_tx_tlast   (m2_axis_tx0_tlast  ),
+    .m0_axis_tx_tkeep   (m2_axis_tx0_tkeep  ),
+    .m0_axis_tx_tuser   (m2_axis_tx0_tuser  ),
+    .m0_axis_tx_tready  (m0_axis_tx_tready  ), 
 
-    .m1_axis_tx_tvalid  (m1_axis_tx2_tvalid ),
-    .m1_axis_tx_tdata   (m1_axis_tx2_tdata  ),
-    .m1_axis_tx_tlast   (m1_axis_tx2_tlast  ),
-    .m1_axis_tx_tkeep   (m1_axis_tx2_tkeep  ),
-    .m1_axis_tx_tuser   (m1_axis_tx2_tuser  ),
+    .m1_axis_tx_tvalid  (m2_axis_tx1_tvalid ),
+    .m1_axis_tx_tdata   (m2_axis_tx1_tdata  ),
+    .m1_axis_tx_tlast   (m2_axis_tx1_tlast  ),
+    .m1_axis_tx_tkeep   (m2_axis_tx1_tkeep  ),
+    .m1_axis_tx_tuser   (m2_axis_tx1_tuser  ),
     .m1_axis_tx_tready  (m1_axis_tx_tready ), 
 
     .m2_axis_tx_tvalid  (m2_axis_tx2_tvalid ),
@@ -500,11 +503,11 @@ crossbar_line#(
     .m2_axis_tx_tuser   (m2_axis_tx2_tuser  ),
     .m2_axis_tx_tready  (m2_axis_tx_tready ),
 
-    .m3_axis_tx_tvalid  (m3_axis_tx2_tvalid ),
-    .m3_axis_tx_tdata   (m3_axis_tx2_tdata  ),
-    .m3_axis_tx_tlast   (m3_axis_tx2_tlast  ),
-    .m3_axis_tx_tkeep   (m3_axis_tx2_tkeep  ),
-    .m3_axis_tx_tuser   (m3_axis_tx2_tuser  ),
+    .m3_axis_tx_tvalid  (m2_axis_tx3_tvalid ),
+    .m3_axis_tx_tdata   (m2_axis_tx3_tdata  ),
+    .m3_axis_tx_tlast   (m2_axis_tx3_tlast  ),
+    .m3_axis_tx_tkeep   (m2_axis_tx3_tkeep  ),
+    .m3_axis_tx_tuser   (m2_axis_tx3_tuser  ),
     .m3_axis_tx_tready  (m3_axis_tx_tready )
 );
 
@@ -524,25 +527,25 @@ crossbar_line#(
     .s_axis_rx_tuser    (s3_axis_rx_tuser   ),
     .s_axis_rx_tdest    (s3_axis_rx_tdest   ),
 
-    .m0_axis_tx_tvalid  (m0_axis_tx3_tvalid ),
-    .m0_axis_tx_tdata   (m0_axis_tx3_tdata  ),
-    .m0_axis_tx_tlast   (m0_axis_tx3_tlast  ),
-    .m0_axis_tx_tkeep   (m0_axis_tx3_tkeep  ),
-    .m0_axis_tx_tuser   (m0_axis_tx3_tuser  ),
+    .m0_axis_tx_tvalid  (m3_axis_tx0_tvalid ),
+    .m0_axis_tx_tdata   (m3_axis_tx0_tdata  ),
+    .m0_axis_tx_tlast   (m3_axis_tx0_tlast  ),
+    .m0_axis_tx_tkeep   (m3_axis_tx0_tkeep  ),
+    .m0_axis_tx_tuser   (m3_axis_tx0_tuser  ),
     .m0_axis_tx_tready  (m0_axis_tx_tready ), 
 
-    .m1_axis_tx_tvalid  (m1_axis_tx3_tvalid ),
-    .m1_axis_tx_tdata   (m1_axis_tx3_tdata  ),
-    .m1_axis_tx_tlast   (m1_axis_tx3_tlast  ),
-    .m1_axis_tx_tkeep   (m1_axis_tx3_tkeep  ),
-    .m1_axis_tx_tuser   (m1_axis_tx3_tuser  ),
+    .m1_axis_tx_tvalid  (m3_axis_tx1_tvalid ),
+    .m1_axis_tx_tdata   (m3_axis_tx1_tdata  ),
+    .m1_axis_tx_tlast   (m3_axis_tx1_tlast  ),
+    .m1_axis_tx_tkeep   (m3_axis_tx1_tkeep  ),
+    .m1_axis_tx_tuser   (m3_axis_tx1_tuser  ),
     .m1_axis_tx_tready  (m1_axis_tx_tready ), 
 
-    .m2_axis_tx_tvalid  (m2_axis_tx3_tvalid ),
-    .m2_axis_tx_tdata   (m2_axis_tx3_tdata  ),
-    .m2_axis_tx_tlast   (m2_axis_tx3_tlast  ),
-    .m2_axis_tx_tkeep   (m2_axis_tx3_tkeep  ),
-    .m2_axis_tx_tuser   (m2_axis_tx3_tuser  ),
+    .m2_axis_tx_tvalid  (m3_axis_tx2_tvalid ),
+    .m2_axis_tx_tdata   (m3_axis_tx2_tdata  ),
+    .m2_axis_tx_tlast   (m3_axis_tx2_tlast  ),
+    .m2_axis_tx_tkeep   (m3_axis_tx2_tkeep  ),
+    .m2_axis_tx_tuser   (m3_axis_tx2_tuser  ),
     .m2_axis_tx_tready  (m2_axis_tx_tready ),
 
     .m3_axis_tx_tvalid  (m3_axis_tx3_tvalid ),
@@ -555,6 +558,8 @@ crossbar_line#(
 //arbiter0
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
+        r_req0_valid <= 'd0;
+    else if(r_req0_valid)
         r_req0_valid <= 'd0;
     else if(!r_req0_lock && (|w_trans0_req))
         r_req0_valid <= 'd1;
@@ -576,6 +581,8 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_req1_valid <= 'd0;
+    else if(r_req1_valid)
+        r_req1_valid <= 'd0;        
     else if(!r_req1_lock && (|w_trans1_req))
         r_req1_valid <= 'd1;
     else
@@ -596,6 +603,8 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_req2_valid <= 'd0;
+    else if(r_req2_valid)
+        r_req2_valid <= 'd0;
     else if(!r_req2_lock && (|w_trans2_req))
         r_req2_valid <= 'd1;
     else
@@ -615,6 +624,8 @@ end
 //arbiter3
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
+        r_req3_valid <= 'd0;
+    else if(r_req3_valid)
         r_req3_valid <= 'd0;
     else if(!r_req3_lock && (|w_trans3_req))
         r_req3_valid <= 'd1;
