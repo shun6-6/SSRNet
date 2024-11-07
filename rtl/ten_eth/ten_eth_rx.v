@@ -94,14 +94,10 @@ reg  [15:0]     r_fifo_rd_cnt           ;
 reg  [7 :0]     r_data_keep             ;
 /******************************wire*********************************/
 wire [63:0]     w_fifo_data_dout        ;
-wire            w_fifo_data_full        ;
-wire            w_fifo_data_empty       ;
 wire [15:0]     w_fifo_len_dout         ;
 wire            w_fifo_len_full         ;
 wire            w_fifo_len_empty        ;
 wire [7 :0]     w_fifo_keep_dout        ;
-wire            w_fifo_keep_full        ;
-wire            w_fifo_keep_empty       ;
 wire            w_check_active          ;
 /******************************assign*******************************/
 assign o_check_mac   = ro_check_mac     ;
@@ -116,20 +112,20 @@ assign o_axis_tkeep    = ro_axis_tkeep      ;
 assign o_axis_tuser    = ro_axis_tuser      ;
 assign o_axis_tdest    = ro_axis_tdest      ;
 /******************************component****************************/
-ETH_RX_FIFO_64X128 ETH_RX_FIFO_64X128_data (
+FIFO_64X256 FIFO_64X256_data (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (rs_axis_rx_tdata   ), // input wire [63 : 0] din
     .wr_en          (rs_axis_rx_tvalid  ), // input wire wr_en
     .rd_en          (r_fifo_data_rden   ), // input wire rd_en
     .dout           (w_fifo_data_dout   ), // output wire [63 : 0] dout
-    .full           (w_fifo_data_full   ), // output wire full
-    .empty          (w_fifo_data_empty  ), // output wire empty
+    .full           (                   ), // output wire full
+    .empty          (                   ), // output wire empty
     .wr_rst_busy    (                   ), // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
-FIFO_16x64 FIFO_16x64_len (
+FIFO_16x32 FIFO_16x32_len (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (r_rx_data_len + 16'd1), // input wire [15 : 0] din
@@ -142,15 +138,15 @@ FIFO_16x64 FIFO_16x64_len (
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
-FIFO_8X64 FIFO_8X64_keep (
+FIFO_8x32 FIFO_8x32_keep (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (rs_axis_rx_tkeep   ), // input wire [7 : 0] din
     .wr_en          (rs_axis_rx_tlast   ), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_keep_dout   ), // output wire [7 : 0] dout
-    .full           (w_fifo_keep_full   ), // output wire full
-    .empty          (w_fifo_keep_empty  ), // output wire empty
+    .full           (                   ), // output wire full
+    .empty          (                   ), // output wire empty
     .wr_rst_busy    (                   ), // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );

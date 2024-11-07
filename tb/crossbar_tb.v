@@ -85,6 +85,9 @@ wire                        m3_axis_tx_tlast    ;
 wire [7  :0]                m3_axis_tx_tkeep    ;
 wire                        m3_axis_tx_tuser    ;
 
+reg m0_axis_tx_tready;
+reg [10:0] r_cnt;
+
 initial begin
     s0_axis_rx_tvalid = 'd0;
     s0_axis_rx_tdata  = 'd0;
@@ -170,7 +173,7 @@ crossbar#(
     .m0_axis_tx_tlast        (m0_axis_tx_tlast  ),
     .m0_axis_tx_tkeep        (m0_axis_tx_tkeep  ),
     .m0_axis_tx_tuser        (m0_axis_tx_tuser  ),     
-    .m0_axis_tx_tready       (1 ),          
+    .m0_axis_tx_tready       (m0_axis_tx_tready),          
     .s1_axis_rx_tvalid       (s1_axis_rx_tvalid ),
     .s1_axis_rx_tdata        (s1_axis_rx_tdata  ),
     .s1_axis_rx_tlast        (s1_axis_rx_tlast  ),
@@ -365,5 +368,29 @@ begin : m3_send_pkt
     @(posedge clk);
 end
 endtask
+
+
+
+always @(posedge clk or posedge rst)begin
+    if(rst)
+        r_cnt <= 'd0;
+    else if(m0_axis_tx_tlast)
+        r_cnt <= 'd0;
+    else if(m0_axis_tx_tvalid)
+        r_cnt <= r_cnt + 1;
+    else
+        r_cnt <= r_cnt;
+end
+
+
+always @(posedge clk or posedge rst)begin
+    if(rst)
+        m0_axis_tx_tready <= 'd1;
+    else if(m0_axis_tx_tvalid && r_cnt == 14)
+        m0_axis_tx_tready <= 'd0;
+    else
+        m0_axis_tx_tready <= 'd1;
+end
+
 
 endmodule

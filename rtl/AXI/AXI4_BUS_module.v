@@ -107,27 +107,6 @@ module AXI4_BUS_module#
     output                                      m_axis_tuser        ,
     input                                       m_axis_tready                
 );
-/******************************function*****************************/
-function integer clogb2 (input integer bit_depth);
-begin 
-    for(clogb2 = 0; bit_depth > 0; clogb2 = clogb2 + 1)begin
-        bit_depth = bit_depth >> 1;
-    end
-end
-endfunction
-/******************************parameter****************************/
-localparam      P_AXI_SIZE      = clogb2((C_M_AXI_DATA_WIDTH/8) - 1);
-localparam      P_AXI_DATA_BYTE = C_M_AXI_DATA_WIDTH/8          ;
-/******************************machine******************************/
 
-/******************************reg**********************************/
-
-/******************************wire*********************************/
-
-/******************************assign*******************************/
-
-/******************************component****************************/
-
-/******************************always*******************************/
 
 endmodule

@@ -68,6 +68,7 @@ reg  [15:0]     r_rx_data_len           ;
 reg             r_fifo_len_rden         ;
 reg             r_fifo_data_rden        ;
 reg             r_fifo_len_rden_1d      ;
+reg             r_fifo_len_rden_2d      ;
 reg             r_fifo_data_rden_1d     ;
 reg  [15:0]     r_data_len              ;
 reg  [15:0]     r_fifo_rd_cnt           ;
@@ -77,39 +78,38 @@ reg             r_fifo_lock             ;
 reg             r_trans_req             ;
 /******************************wire*********************************/
 wire [63:0]     w_fifo_data_dout        ;
-wire            w_fifo_data_full        ;
-wire            w_fifo_data_empty       ;
 wire [15:0]     w_fifo_len_dout         ;
 wire            w_fifo_len_full         ;
 wire            w_fifo_len_empty        ;
 wire [7 :0]     w_fifo_keep_dout        ;
-wire            w_fifo_keep_full        ;
-wire            w_fifo_keep_empty       ;
 
 wire            w_wr_en                 ;
+wire            w_fifo_data_rden        ;
 /******************************assign*******************************/
 assign m_axis_tx_tvalid = rm_axis_tx_tvalid ;
-assign m_axis_tx_tdata  = rm_axis_tx_tdata  ;
-assign m_axis_tx_tlast  = rm_axis_tx_tlast_1d  ;
+assign m_axis_tx_tdata  = w_fifo_data_dout  ;
+assign m_axis_tx_tlast  = rm_axis_tx_tlast  ;
 assign m_axis_tx_tkeep  = rm_axis_tx_tkeep  ;
 assign m_axis_tx_tuser  = 'd0  ;
 assign o_trans_req      = r_trans_req       ;
 assign w_wr_en          = rs_axis_rx_tdest == P_DEST && rs_axis_rx_tvalid;
+assign w_wr_active      = m_axis_tx_tvalid & m_axis_tx_tready;
+assign w_fifo_data_rden = (r_fifo_data_rden && w_wr_active) || r_fifo_len_rden_2d;
 /******************************component****************************/
-ETH_RX_FIFO_64X128 ETH_RX_FIFO_64X128_data (
+FIFO_64X256 FIFO_64X256_data (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (rs_axis_rx_tdata   ), // input wire [63 : 0] din
     .wr_en          (w_wr_en            ), // input wire wr_en
-    .rd_en          (r_fifo_data_rden   ), // input wire rd_en
+    .rd_en          (w_fifo_data_rden   ), // input wire rd_en
     .dout           (w_fifo_data_dout   ), // output wire [63 : 0] dout
-    .full           (w_fifo_data_full   ), // output wire full
-    .empty          (w_fifo_data_empty  ), // output wire empty
+    .full           (                   ), // output wire full
+    .empty          (                   ), // output wire empty
     .wr_rst_busy    (                   ), // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
-FIFO_16x64 FIFO_16x64_len (
+FIFO_16x32 FIFO_16x32_len (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (r_rx_data_len + 16'd1), // input wire [15 : 0] din
@@ -122,15 +122,15 @@ FIFO_16x64 FIFO_16x64_len (
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
-FIFO_8X64 FIFO_8X64_keep (
+FIFO_8x32 FIFO_8x32_keep (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (rs_axis_rx_tkeep   ), // input wire [7 : 0] din
     .wr_en          (rs_axis_rx_tlast && w_wr_en), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_keep_dout   ), // output wire [7 : 0] dout
-    .full           (w_fifo_keep_full   ), // output wire full
-    .empty          (w_fifo_keep_empty  ), // output wire empty
+    .full           (                   ), // output wire full
+    .empty          (                   ), // output wire empty
     .wr_rst_busy    (                   ), // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
@@ -206,6 +206,7 @@ always @(posedge i_clk or posedge i_rst) begin
         r_fifo_len_rden_1d <= 'd0;
     else
         r_fifo_len_rden_1d <= r_fifo_len_rden;
+        r_fifo_len_rden_2d = r_fifo_len_rden_1d;
 end
 
 always @(posedge i_clk or posedge i_rst) begin
@@ -229,9 +230,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len && r_fifo_rd_cnt != 0)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_data_rden && m_axis_tx_tready || (r_fifo_len_rden_1d))
+    else if(w_wr_active)
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt;
@@ -240,14 +241,12 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len && r_fifo_rd_cnt != 0)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
-    else if(m_axis_tx_tready && (r_fifo_rd_cnt != 0) && r_fifo_rd_cnt < r_data_len)
-        r_fifo_data_rden <= 'd1;
     else
-        r_fifo_data_rden <= 'd0;
+        r_fifo_data_rden <= r_fifo_data_rden;
 end
 
 always @(posedge i_clk or posedge i_rst) begin
@@ -260,9 +259,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         rm_axis_tx_tvalid <= 'd0;
-    else if(rm_axis_tx_tlast_1d)
+    else if(rm_axis_tx_tlast && w_wr_active)
         rm_axis_tx_tvalid <= 'd0;
-    else if(r_fifo_data_rden_1d && m_axis_tx_tready)
+    else if(r_fifo_data_rden)
         rm_axis_tx_tvalid <= 'd1;
     else
         rm_axis_tx_tvalid <= rm_axis_tx_tvalid;
@@ -270,20 +269,13 @@ end
 
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
-        rm_axis_tx_tdata <= 'd0;
-    else if(r_fifo_data_rden_1d && m_axis_tx_tready)
-        rm_axis_tx_tdata <= w_fifo_data_dout;
-    else
-        rm_axis_tx_tdata <= rm_axis_tx_tdata;
-end
-
-always @(posedge i_clk or posedge i_rst) begin
-    if(i_rst)
         rm_axis_tx_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len && r_fifo_rd_cnt != 'd0)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+        rm_axis_tx_tlast <= 'd0;
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
         rm_axis_tx_tlast <= 'd1;
     else
-        rm_axis_tx_tlast <= 'd0;
+        rm_axis_tx_tlast <= rm_axis_tx_tlast;
 end
 always @(posedge i_clk) begin
     rm_axis_tx_tlast_1d <= rm_axis_tx_tlast;
@@ -292,29 +284,13 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         rm_axis_tx_tkeep <= 8'hff;
-    else if(rm_axis_tx_tlast)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+        rm_axis_tx_tkeep <= 8'hff;
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
         rm_axis_tx_tkeep <= r_data_keep;
     else
-        rm_axis_tx_tkeep <= 8'hff;
+        rm_axis_tx_tkeep <= rm_axis_tx_tkeep;
 end
-
-// always @(posedge i_clk or posedge i_rst) begin
-//     if(i_rst)
-        
-//     else if()
-        
-//     else
-        
-// end
-
-// always @(posedge i_clk or posedge i_rst) begin
-//     if(i_rst)
-        
-//     else if()
-        
-//     else
-        
-// end
 
 
 endmodule
