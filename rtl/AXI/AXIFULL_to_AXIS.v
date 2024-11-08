@@ -79,8 +79,10 @@ module AXIFULL_to_AXIS#
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_addr       ,
     input                                       i_rd_ddr_req        ,
     input  [15 :0]                              i_rd_ddr_len        ,
+    input  [7 : 0]                              i_rd_ddr_strb       ,
+    input                                       i_rd_ddr_valid      ,
     output                                      o_rd_ddr_cpl        ,
-    input                                       i_rd_ddr_valid      
+    output                                      o_rd_ddr_ready      
 );
 /******************************function*****************************/
 function integer clogb2 (input integer bit_depth);
@@ -96,28 +98,53 @@ localparam      P_AXI_DATA_BYTE = C_M_AXI_DATA_WIDTH/8              ;
 /******************************machine******************************/
 
 /******************************reg**********************************/
-reg  [C_M_AXI_ID_WIDTH-1 : 0]       rM_AXI_ARID     ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     rM_AXI_ARADDR   ;
-reg  [7 : 0]                        rM_AXI_ARLEN    ;
-reg  [2 : 0]                        rM_AXI_ARSIZE   ;
-reg  [1 : 0]                        rM_AXI_ARBURST  ;
-reg                                 rM_AXI_ARLOCK   ;
-reg  [3 : 0]                        rM_AXI_ARCACHE  ;
-reg  [2 : 0]                        rM_AXI_ARPROT   ;
-reg  [3 : 0]                        rM_AXI_ARQOS    ;
-reg  [C_M_AXI_ARUSER_WIDTH-1 : 0]   rM_AXI_ARUSER   ;
-reg                                 rM_AXI_ARVALID  ;
-reg                                 rM_AXI_RREADY   ;
-reg                                 rm_axis_tvalid  ;
-reg  [63 :0]                        rm_axis_tdata   ;
-reg                                 rm_axis_tlast   ;
-reg  [7  :0]                        rm_axis_tkeep   ;
-reg                                 rm_axis_tuser   ;
+reg  [C_M_AXI_ID_WIDTH-1 : 0]       rM_AXI_ARID         ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     rM_AXI_ARADDR       ;
+reg  [7 : 0]                        rM_AXI_ARLEN        ;
+reg  [2 : 0]                        rM_AXI_ARSIZE       ;
+reg  [1 : 0]                        rM_AXI_ARBURST      ;
+reg                                 rM_AXI_ARLOCK       ;
+reg  [3 : 0]                        rM_AXI_ARCACHE      ;
+reg  [2 : 0]                        rM_AXI_ARPROT       ;
+reg  [3 : 0]                        rM_AXI_ARQOS        ;
+reg  [C_M_AXI_ARUSER_WIDTH-1 : 0]   rM_AXI_ARUSER       ;
+reg                                 rM_AXI_ARVALID      ;
+reg                                 rM_AXI_RREADY       ;
+reg                                 rm_axis_tvalid      ;
+reg  [63 :0]                        rm_axis_tdata       ;
+reg                                 rm_axis_tlast       ;
+reg  [7  :0]                        rm_axis_tkeep       ;
+reg                                 rm_axis_tuser       ;
+reg                                 ro_rd_ddr_ready     ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_ddr_addr      ;
+reg                                 ri_rd_ddr_req       ;
+reg  [15 :0]                        ri_rd_ddr_len       ;
+reg  [7 : 0]                        ri_rd_ddr_strb      ;
+reg                                 ri_rd_ddr_valid     ;
+reg                                 ro_rd_ddr_cpl       ;
+reg                                 r_fifo_data_rden    ;
+reg                                 r_fifo_len_rden     ;
+reg                                 r_fifo_len_rden_1d = 0 ;
+reg                                 r_fifo_len_rden_2d = 0 ;
+reg  [15:0]                         r_fifo_rd_cnt       ;
+reg                                 r_fifo_lock         ;
+reg  [15:0]                         r_data_len          ;
+reg  [7 :0]                         r_data_strb         ;
 /******************************wire*********************************/
-wire                                w_axi_ar_active ;
-wire                                w_axis_tx_active;
+wire                                w_axi_ar_active     ;
+wire                                w_axi_rd_active     ;
+wire                                w_axis_tx_active    ;
+wire                                w_axi_rst           ;
+wire [63:0]                         w_fifo_data_dout    ;
+wire [15:0]                         w_fifo_len_dout     ;
+wire [7 :0]                         w_fifo_strb_dout    ;
+wire                                w_fifo_len_full     ;
+wire                                w_fifo_len_empty    ;
+wire                                w_fifo_data_rden    ;
 /******************************assign*******************************/
+assign w_axi_rst = !M_AXI_ARESETN  ;
 assign w_axi_ar_active = M_AXI_ARVALID & M_AXI_ARREADY;
+assign w_axi_rd_active = M_AXI_RVALID & M_AXI_RREADY;
 assign w_axis_tx_active = m_axis_tready & m_axis_tvalid;
 assign M_AXI_ARID    = rM_AXI_ARID      ;
 assign M_AXI_ARADDR  = rM_AXI_ARADDR    ;
@@ -132,17 +159,20 @@ assign M_AXI_ARUSER  = rM_AXI_ARUSER    ;
 assign M_AXI_ARVALID = rM_AXI_ARVALID   ;
 assign M_AXI_RREADY  = rM_AXI_RREADY    ;
 assign m_axis_tvalid = rm_axis_tvalid   ;
-assign m_axis_tdata  = rm_axis_tdata    ;
+assign m_axis_tdata  = w_fifo_data_dout    ;
 assign m_axis_tlast  = rm_axis_tlast    ;
 assign m_axis_tkeep  = rm_axis_tkeep    ;
-assign m_axis_tuser  = rm_axis_tuser    ;
+assign m_axis_tuser  = 'd0    ;
+assign o_rd_ddr_cpl  = ro_rd_ddr_cpl    ;
+assign o_rd_ddr_ready = ro_rd_ddr_ready ;
+assign w_fifo_data_rden = (r_fifo_data_rden && m_axis_tready) || r_fifo_len_rden_2d;
 /******************************component****************************/
-FIFO_IND_64X256 FIFO_IND_64X256_data (
-    .rst            (i_axis_rst         ), // input wire rst
-    .wr_clk         (i_axis_clk         ), // input wire wr_clk
-    .rd_clk         (M_AXI_ACLK         ), // input wire rd_clk
-    .din            (rs_axis_tdata      ), // input wire [63 : 0] din
-    .wr_en          (rs_axis_tvalid     ), // input wire wr_en
+FIFO_IND_64X4096 FIFO_IND_64X4096_data (
+    .rst            (w_axi_rst          ), // input wire rst
+    .wr_clk         (M_AXI_ACLK         ), // input wire wr_clk
+    .rd_clk         (i_axis_clk         ), // input wire rd_clk
+    .din            (rM_AXI_RDATA       ), // input wire [63 : 0] din
+    .wr_en          (w_axi_rd_active    ), // input wire wr_en
     .rd_en          (w_fifo_data_rden   ), // input wire rd_en
     .dout           (w_fifo_data_dout   ), // output wire [63 : 0] dout
     .full           (                   ), // output wire full
@@ -151,35 +181,229 @@ FIFO_IND_64X256 FIFO_IND_64X256_data (
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
-FIFO_IND_16X32 FIFO_IND_16X32_len (
-    .rst            (i_axis_rst         ),  // input wire rst
-    .wr_clk         (i_axis_clk         ),  // input wire wr_clk
-    .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
-    .din            (r_axis_data_len + 1'b1),  // input wire [15 : 0] din
-    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+FIFO_IND_16X16 FIFO_IND_16X16_len (
+    .rst            (w_axi_rst          ),  // input wire rst
+    .wr_clk         (M_AXI_ACLK         ),  // input wire wr_clk
+    .rd_clk         (i_axis_clk         ),  // input wire rd_clk
+    .din            (ri_rd_ddr_len      ),  // input wire [15 : 0] din
+    .wr_en          (w_axi_rd_active && M_AXI_RLAST),  // input wire wr_en
     .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
     .dout           (w_fifo_len_dout    ),  // output wire [15 : 0] dout
     .full           (w_fifo_len_full    ),  // output wire full
     .empty          (w_fifo_len_empty   ),  // output wire empty
-    .wr_rst_busy    (                   ),  // output wire wr_rst_busy
+    .wr_rst_busy    (),  // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 
 FIFO_IND_8X32 FIFO_IND_8X32_keep (
-    .rst            (i_axis_rst         ),  // input wire rst
-    .wr_clk         (i_axis_clk         ),  // input wire wr_clk
-    .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
-    .din            (rs_axis_tkeep      ),  // input wire [7 : 0] din
-    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+    .rst            (w_axi_rst          ),  // input wire rst
+    .wr_clk         (M_AXI_ACLK         ),  // input wire wr_clk
+    .rd_clk         (i_axis_clk         ),  // input wire rd_clk
+    .din            (ri_rd_ddr_strb     ),  // input wire [7 : 0] din
+    .wr_en          (w_axi_rd_active && M_AXI_RLAST),  // input wire wr_en
     .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
-    .dout           (w_fifo_keep_dout   ),  // output wire [7 : 0] dout
+    .dout           (w_fifo_strb_dout   ),  // output wire [7 : 0] dout
     .full           (                   ),  // output wire full
     .empty          (                   ),  // output wire empty
     .wr_rst_busy    (                   ),  // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
 /******************************always*******************************/
+//================ AXI CLOCK REGION ==================//
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_rd_ddr_ready <= 'd0;
+    else if(w_fifo_len_full)
+        ro_rd_ddr_ready <= 'd0;
+    else
+        ro_rd_ddr_ready <= 'd1;
+end
 
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)begin
+        ri_rd_ddr_addr  <= 'd0;
+        ri_rd_ddr_req   <= 'd0;
+        ri_rd_ddr_len   <= 'd0;
+        ri_rd_ddr_strb  <= 'd0;
+        ri_rd_ddr_valid <= 'd0;
+    end
+    else if(i_rd_ddr_valid)begin
+        ri_rd_ddr_addr  <= i_rd_ddr_addr ;
+        ri_rd_ddr_req   <= i_rd_ddr_req  ;
+        ri_rd_ddr_len   <= i_rd_ddr_len  ;
+        ri_rd_ddr_strb  <= i_rd_ddr_strb ;
+        ri_rd_ddr_valid <= i_rd_ddr_valid;
+    end
+    else begin
+        ri_rd_ddr_addr  <= ri_rd_ddr_addr ;
+        ri_rd_ddr_req   <= ri_rd_ddr_req  ;
+        ri_rd_ddr_len   <= ri_rd_ddr_len  ;
+        ri_rd_ddr_strb  <= ri_rd_ddr_strb ;
+        ri_rd_ddr_valid <= 'd0;
+    end
+end
 
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)begin
+        rM_AXI_ARID    <= 'd0;
+        rM_AXI_ARADDR  <= 'd0;
+        rM_AXI_ARLEN   <= 'd0;
+        rM_AXI_ARSIZE  <= 'd0;
+        rM_AXI_ARBURST <= 'd0;
+        rM_AXI_ARLOCK  <= 'd0;
+        rM_AXI_ARCACHE <= 'd0;
+        rM_AXI_ARPROT  <= 'd0;
+        rM_AXI_ARQOS   <= 'd0;
+        rM_AXI_ARUSER  <= 'd0;
+        rM_AXI_ARVALID <= 'd0;
+    end
+    else if(w_axi_ar_active)begin
+        rM_AXI_ARID    <= 'd0;
+        rM_AXI_ARADDR  <= 'd0;
+        rM_AXI_ARLEN   <= 'd0;
+        rM_AXI_ARSIZE  <= 'd0;
+        rM_AXI_ARBURST <= 'd0;
+        rM_AXI_ARLOCK  <= 'd0;
+        rM_AXI_ARCACHE <= 'd0;
+        rM_AXI_ARPROT  <= 'd0;
+        rM_AXI_ARQOS   <= 'd0;
+        rM_AXI_ARUSER  <= 'd0;
+        rM_AXI_ARVALID <= 'd0;
+    end
+    else if(ri_rd_ddr_valid)begin
+        rM_AXI_ARID    <= 'd0;
+        rM_AXI_ARADDR  <= ri_rd_ddr_addr;
+        rM_AXI_ARLEN   <= ri_rd_ddr_len - 1;
+        rM_AXI_ARSIZE  <= P_AXI_SIZE;
+        rM_AXI_ARBURST <= 2'b01;
+        rM_AXI_ARLOCK  <= 'd0;
+        rM_AXI_ARCACHE <= 4'b0010;
+        rM_AXI_ARPROT  <= 'd0;
+        rM_AXI_ARQOS   <= 'd0;
+        rM_AXI_ARUSER  <= 'd0;
+        rM_AXI_ARVALID <= 'd1;
+    end
+    else begin
+        rM_AXI_ARID    <= rM_AXI_ARID   ;
+        rM_AXI_ARADDR  <= rM_AXI_ARADDR ;
+        rM_AXI_ARLEN   <= rM_AXI_ARLEN  ;
+        rM_AXI_ARSIZE  <= rM_AXI_ARSIZE ;
+        rM_AXI_ARBURST <= rM_AXI_ARBURST;
+        rM_AXI_ARLOCK  <= rM_AXI_ARLOCK ;
+        rM_AXI_ARCACHE <= rM_AXI_ARCACHE;
+        rM_AXI_ARPROT  <= rM_AXI_ARPROT ;
+        rM_AXI_ARQOS   <= rM_AXI_ARQOS  ;
+        rM_AXI_ARUSER  <= rM_AXI_ARUSER ;
+        rM_AXI_ARVALID <= rM_AXI_ARVALID;
+    end
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        rM_AXI_RREADY <= 'd0;
+    else if(M_AXI_RLAST && w_axi_rd_active)
+        rM_AXI_RREADY <= 'd0;
+    else if(ri_rd_ddr_valid)
+        rM_AXI_RREADY <= 'd1;
+    else
+        rM_AXI_RREADY <= rM_AXI_RREADY;
+end
+//================ AXIS CLOCK REGION ==================//
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        r_fifo_len_rden <= 'd0;
+    else if(r_fifo_len_rden)
+        r_fifo_len_rden <= 'd0;
+    else if(!r_fifo_lock && !w_fifo_len_empty)
+        r_fifo_len_rden <= 'd1;
+    else
+        r_fifo_len_rden <= r_fifo_len_rden;
+end
+
+always @(posedge i_axis_clk)begin
+    r_fifo_len_rden_1d <= r_fifo_len_rden;
+    r_fifo_len_rden_2d <= r_fifo_len_rden_1d;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        r_fifo_lock <= 'd0;
+    else if(m_axis_tlast && w_axis_tx_active)
+        r_fifo_lock <= 'd0;
+    else if(!r_fifo_lock && !w_fifo_len_empty)
+        r_fifo_lock <= 'd1;
+    else
+        r_fifo_lock <= r_fifo_lock;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)begin
+        r_data_len  <= 'd0;
+        r_data_strb <= 'd0;
+    end
+    else if(r_fifo_len_rden_1d)begin
+        r_data_len  <= w_fifo_len_dout;
+        r_data_strb <= w_fifo_strb_dout;
+    end
+    else begin
+        r_data_len  <= r_data_len ;
+        r_data_strb <= r_data_strb;
+    end
+end
+//read data fifo
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        r_fifo_data_rden <= 'd0;
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+        r_fifo_data_rden <= 'd0;
+    else if(r_fifo_len_rden_1d)
+        r_fifo_data_rden <= 'd1;
+    else
+        r_fifo_data_rden <= r_fifo_data_rden;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        r_fifo_rd_cnt <= 'd0;
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+        r_fifo_rd_cnt <= 'd0;
+    else if(w_axis_tx_active)
+        r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
+    else
+        r_fifo_rd_cnt <= r_fifo_rd_cnt;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        rm_axis_tvalid <= 'd0;
+    else if(rm_axis_tlast && w_axis_tx_active)
+        rm_axis_tvalid <= 'd0;
+    else if(r_fifo_data_rden)
+        rm_axis_tvalid <= 'd1;
+    else
+        rm_axis_tvalid <= rm_axis_tvalid;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        rm_axis_tlast <= 'd0;
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+        rm_axis_tlast <= 'd0;
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
+        rm_axis_tlast <= 'd1;
+    else
+        rm_axis_tlast <= rm_axis_tlast;
+end
+ 
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        rm_axis_tkeep <= 8'hff;
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+        rm_axis_tkeep <= 8'hff;
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
+        rm_axis_tkeep <= r_data_strb;
+    else
+        rm_axis_tkeep <= rm_axis_tkeep;
+end
 
 endmodule
