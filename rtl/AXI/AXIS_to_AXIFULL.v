@@ -84,6 +84,7 @@ module AXIS_to_AXIFULL#
     output                                      o_wr_ddr_req        ,
     output [15 :0]                              o_wr_ddr_len        ,
     output                                      o_wr_ddr_cpl        ,
+    output [2 : 0]                              o_wr_ddr_area       ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_wr_ddr_addr       ,
     input                                       i_wr_ddr_valid      
 );
@@ -131,6 +132,7 @@ reg  [15 :0]                        ro_wr_ddr_len       ;
 reg                                 ro_wr_ddr_cpl       ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_wr_ddr_addr      ;
 reg                                 ri_wr_ddr_valid     ;
+reg  [2 : 0]                        ro_wr_ddr_area      ;
 //FIFO 
 reg                                 r_fifo_data_rden    ;
 reg                                 r_fifo_len_rden     ;
@@ -141,9 +143,10 @@ reg  [7 :0]                         r_last_strb         ;
 reg  [15:0]                         r_rd_cnt            ;
 /******************************wire*********************************/
 wire                                w_axi_rst           ;
-wire [64:0]                         w_fifo_data_dout    ;
+wire [63:0]                         w_fifo_data_dout    ;
 wire [15:0]                         w_fifo_len_dout     ;
 wire [7 :0]                         w_fifo_keep_dout    ;
+wire [7 :0]                         w_fifo_dest_dout    ;
 wire                                w_fifo_len_full     ;
 wire                                w_fifo_len_empty    ;
 wire                                w_axi_wr_en         ;
@@ -154,6 +157,7 @@ assign  w_axi_rst = !M_AXI_ARESETN  ;
 assign  o_wr_ddr_req = ro_wr_ddr_req    ;
 assign  o_wr_ddr_len = ro_wr_ddr_len    ;
 assign  o_wr_ddr_cpl = ro_wr_ddr_cpl    ;
+assign  o_wr_ddr_area = ro_wr_ddr_area  ;
 assign  M_AXI_AWID    = rM_AXI_AWID     ;
 assign  M_AXI_AWADDR  = rM_AXI_AWADDR   ;
 assign  M_AXI_AWLEN   = rM_AXI_AWLEN    ;
@@ -216,6 +220,20 @@ FIFO_IND_8X32 FIFO_IND_8X32_keep (
     .wr_rst_busy    (                   ),  // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
+
+FIFO_IND_8X32 FIFO_IND_8X32_dest (
+    .rst            (i_axis_rst         ),  // input wire rst
+    .wr_clk         (i_axis_clk         ),  // input wire wr_clk
+    .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
+    .din            ({5'd0,rs_axis_tdest}),  // input wire [7 : 0] din
+    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+    .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
+    .dout           (w_fifo_dest_dout   ),  // output wire [7 : 0] dout
+    .full           (                   ),  // output wire full
+    .empty          (                   ),  // output wire empty
+    .wr_rst_busy    (                   ),  // output wire wr_rst_busy
+    .rd_rst_busy    (                   )  // output wire rd_rst_busy
+);
 /******************************always*******************************/
 //========== i_axis_clk region ===========//
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
@@ -269,6 +287,16 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     else
         ro_wr_ddr_len <= ro_wr_ddr_len;
 end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_area <= 'd0;
+    else if(r_fifo_len_rden_1d)
+        ro_wr_ddr_area <= w_fifo_dest_dout[2:0];
+    else
+        ro_wr_ddr_area <= ro_wr_ddr_area;
+end
+
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
@@ -385,7 +413,7 @@ end
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
         r_fifo_data_rden <= 'd0;
-    else if(rM_AXI_WLAST)
+    else if(r_rd_cnt == ro_wr_ddr_len - 2 && w_axi_wr_en)
         r_fifo_data_rden <= 'd0;
     else if(w_axi_aw_en)
         r_fifo_data_rden <= 'd1;
@@ -401,9 +429,9 @@ end
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
         r_rd_cnt <= 'd0;
-    else if(r_rd_cnt == ro_wr_ddr_len - 1 && r_rd_cnt != 0 && w_axi_wr_en)
+    else if(r_rd_cnt == ro_wr_ddr_len - 1 && w_axi_wr_en)
         r_rd_cnt <= 'd0;
-    else if(w_axi_aw_en)
+    else if(w_axi_wr_en)
         r_rd_cnt <= r_rd_cnt + 1'b1;
     else
         r_rd_cnt <= r_rd_cnt;
@@ -411,13 +439,13 @@ end
  
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
-        rM_AXI_AWVALID <= 'd0;
+        rM_AXI_WVALID <= 'd0;
     else if(rM_AXI_WLAST && w_axi_wr_en)
-        rM_AXI_AWVALID <= 'd0;
+        rM_AXI_WVALID <= 'd0;
     else if(w_axi_aw_en)
-        rM_AXI_AWVALID <= 'd1;
+        rM_AXI_WVALID <= 'd1;
     else
-        rM_AXI_AWVALID <= rM_AXI_AWVALID;
+        rM_AXI_WVALID <= rM_AXI_WVALID;
 end
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin

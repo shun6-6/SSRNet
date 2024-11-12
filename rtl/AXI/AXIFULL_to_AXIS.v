@@ -157,7 +157,7 @@ assign M_AXI_ARPROT  = rM_AXI_ARPROT    ;
 assign M_AXI_ARQOS   = rM_AXI_ARQOS     ;
 assign M_AXI_ARUSER  = rM_AXI_ARUSER    ;
 assign M_AXI_ARVALID = rM_AXI_ARVALID   ;
-assign M_AXI_RREADY  = rM_AXI_RREADY    ;
+assign M_AXI_RREADY  = 1'b1    ;
 assign m_axis_tvalid = rm_axis_tvalid   ;
 assign m_axis_tdata  = w_fifo_data_dout    ;
 assign m_axis_tlast  = rm_axis_tlast    ;
@@ -171,7 +171,7 @@ FIFO_IND_64X4096 FIFO_IND_64X4096_data (
     .rst            (w_axi_rst          ), // input wire rst
     .wr_clk         (M_AXI_ACLK         ), // input wire wr_clk
     .rd_clk         (i_axis_clk         ), // input wire rd_clk
-    .din            (rM_AXI_RDATA       ), // input wire [63 : 0] din
+    .din            (M_AXI_RDATA        ), // input wire [63 : 0] din
     .wr_en          (w_axi_rd_active    ), // input wire wr_en
     .rd_en          (w_fifo_data_rden   ), // input wire rd_en
     .dout           (w_fifo_data_dout   ), // output wire [63 : 0] dout
@@ -354,7 +354,7 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
@@ -404,6 +404,15 @@ always @(posedge i_axis_clk or posedge i_axis_rst)begin
         rm_axis_tkeep <= r_data_strb;
     else
         rm_axis_tkeep <= rm_axis_tkeep;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        ro_rd_ddr_cpl <= 'd0;
+    else if(rm_axis_tlast && w_axis_tx_active)
+        ro_rd_ddr_cpl <= 'd1;
+    else
+        ro_rd_ddr_cpl <= 'd0;
 end
 
 endmodule
