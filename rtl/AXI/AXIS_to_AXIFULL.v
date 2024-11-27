@@ -40,7 +40,10 @@ module AXIS_to_AXIFULL#
     // Width of User Read Data Bus
     parameter integer C_M_AXI_RUSER_WIDTH	= 0,
     // Width of User Response Bus
-    parameter integer C_M_AXI_BUSER_WIDTH	= 0
+    parameter integer C_M_AXI_BUSER_WIDTH	= 0,
+    parameter integer P_DDR_LOCAL_QUEUE     = 4,
+    parameter integer P_WRITE_DDR_PORT_NUM  = 1,
+    parameter integer P_P_WRITE_DDR_PORT    = 0
 )(
 	input  wire                                 M_AXI_ACLK          ,
 	input  wire                                 M_AXI_ARESETN       ,
@@ -81,12 +84,17 @@ module AXIS_to_AXIFULL#
     input                                       s_axis_tuser        ,
     input  [2 : 0]                              s_axis_tdest        ,
 
-    output                                      o_wr_ddr_req        ,
+    output                                      o_wr_ddr_valid      ,
     output [15 :0]                              o_wr_ddr_len        ,
-    output                                      o_wr_ddr_cpl        ,
-    output [2 : 0]                              o_wr_ddr_area       ,
+    output [P_DDR_LOCAL_QUEUE - 1 : 0]          o_wr_ddr_queue      ,
+    output                                      o_wr_ddr_cpl_valid  ,
+    input                                       i_wr_ddr_cpl_ready  ,
+    output [P_DDR_LOCAL_QUEUE - 1 : 0]          o_wr_ddr_cpl_queue  ,
+    output [15 :0]                              o_wr_ddr_cpl_len    ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]           o_wr_ddr_cpl_addr   ,
+    output [7 : 0]                              o_wr_ddr_cpl_strb   ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_wr_ddr_addr       ,
-    input                                       i_wr_ddr_valid      
+    input                                       i_wr_ddr_ready      
 );
 /******************************function*****************************/
 function integer clogb2 (input integer bit_depth);
@@ -113,10 +121,10 @@ reg  [2 : 0]                        rM_AXI_AWPROT       ;
 reg  [3 : 0]                        rM_AXI_AWQOS        ;
 reg  [C_M_AXI_AWUSER_WIDTH-1 : 0]   rM_AXI_AWUSER       ;
 reg                                 rM_AXI_AWVALID      ;
-reg  [C_M_AXI_DATA_WIDTH-1 : 0]     rM_AXI_WDATA        ;
+
 reg  [C_M_AXI_DATA_WIDTH/8-1 : 0]   rM_AXI_WSTRB        ;
 reg                                 rM_AXI_WLAST        ;
-reg  [C_M_AXI_WUSER_WIDTH-1 : 0]    rM_AXI_WUSER        ;
+
 reg                                 rM_AXI_WVALID       ;
 
 reg                                 rs_axis_tvalid      ;
@@ -127,12 +135,14 @@ reg                                 rs_axis_tuser       ;
 reg  [2 : 0]                        rs_axis_tdest       ;
 reg  [15 :0]                        r_axis_data_len     ;
  
-reg                                 ro_wr_ddr_req       ;
+reg                                 ro_wr_ddr_valid     ;
 reg  [15 :0]                        ro_wr_ddr_len       ;
-reg                                 ro_wr_ddr_cpl       ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_wr_ddr_addr      ;
-reg                                 ri_wr_ddr_valid     ;
-reg  [2 : 0]                        ro_wr_ddr_area      ;
+reg                                 ro_wr_ddr_cpl_valid ;
+reg  [P_DDR_LOCAL_QUEUE - 1 : 0]    ro_wr_ddr_queue     ;
+reg  [P_DDR_LOCAL_QUEUE - 1 : 0]    ro_wr_ddr_cpl_queue ;
+reg  [15 :0]                        ro_wr_ddr_cpl_len   ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ro_wr_ddr_cpl_addr  ;
+reg  [7 : 0]                        ro_wr_ddr_cpl_strb  ;
 //FIFO 
 reg                                 r_fifo_data_rden    ;
 reg                                 r_fifo_len_rden     ;
@@ -152,12 +162,19 @@ wire                                w_fifo_len_empty    ;
 wire                                w_axi_wr_en         ;
 wire                                w_axi_aw_en         ;
 wire                                w_fifo_data_rden    ;
+wire                                w_wr_ddr_en         ;
+wire                                w_wr_cpl_en         ;
 /******************************assign*******************************/
 assign  w_axi_rst = !M_AXI_ARESETN  ;
-assign  o_wr_ddr_req = ro_wr_ddr_req    ;
+assign  o_wr_ddr_valid = ro_wr_ddr_valid    ;
 assign  o_wr_ddr_len = ro_wr_ddr_len    ;
-assign  o_wr_ddr_cpl = ro_wr_ddr_cpl    ;
-assign  o_wr_ddr_area = ro_wr_ddr_area  ;
+assign  o_wr_ddr_cpl_valid = ro_wr_ddr_cpl_valid    ;
+assign  w_wr_cpl_en = ro_wr_ddr_cpl_valid & i_wr_ddr_cpl_ready;
+assign  o_wr_ddr_queue = ro_wr_ddr_queue  ;
+assign  o_wr_ddr_cpl_queue = ro_wr_ddr_cpl_queue;
+assign  o_wr_ddr_cpl_len  = ro_wr_ddr_cpl_len ;
+assign  o_wr_ddr_cpl_addr = ro_wr_ddr_cpl_addr;
+assign  o_wr_ddr_cpl_strb = ro_wr_ddr_cpl_strb;
 assign  M_AXI_AWID    = rM_AXI_AWID     ;
 assign  M_AXI_AWADDR  = rM_AXI_AWADDR   ;
 assign  M_AXI_AWLEN   = rM_AXI_AWLEN    ;
@@ -178,6 +195,7 @@ assign  M_AXI_BREADY  = 1'b1;
 assign  w_axi_aw_en = M_AXI_AWVALID & M_AXI_AWREADY;
 assign  w_axi_wr_en = M_AXI_WVALID & M_AXI_WREADY;
 assign  w_fifo_data_rden = (r_fifo_data_rden && w_axi_wr_en) || w_axi_aw_en;
+assign  w_wr_ddr_en = i_wr_ddr_ready & ro_wr_ddr_valid;
 /******************************component****************************/
 FIFO_IND_64X256 FIFO_IND_64X256_data (
     .rst            (i_axis_rst         ), // input wire rst
@@ -270,13 +288,13 @@ end
 //发起写DDR请求
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
-        ro_wr_ddr_req <= 'd0;
-    else if(ri_wr_ddr_valid)
-        ro_wr_ddr_req <= 'd0;
+        ro_wr_ddr_valid <= 'd0;
+    else if(w_wr_ddr_en)
+        ro_wr_ddr_valid <= 'd0;
     else if(r_fifo_len_rden_1d)
-        ro_wr_ddr_req <= 'd1;
+        ro_wr_ddr_valid <= 'd1;
     else
-        ro_wr_ddr_req <= ro_wr_ddr_req;
+        ro_wr_ddr_valid <= ro_wr_ddr_valid;
 end
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
@@ -290,21 +308,11 @@ end
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
-        ro_wr_ddr_area <= 'd0;
+        ro_wr_ddr_queue <= 'd0;
     else if(r_fifo_len_rden_1d)
-        ro_wr_ddr_area <= w_fifo_dest_dout[2:0];
+        ro_wr_ddr_queue <= w_fifo_dest_dout[2:0];
     else
-        ro_wr_ddr_area <= ro_wr_ddr_area;
-end
-
-
-always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
-    if(w_axi_rst)
-        ro_wr_ddr_cpl <= 'd0;
-    else if(rM_AXI_WLAST && rM_AXI_WVALID)
-        ro_wr_ddr_cpl <= 'd1;
-    else
-        ro_wr_ddr_cpl <= 'd0;
+        ro_wr_ddr_queue <= ro_wr_ddr_queue;
 end
 
 //FIFO不空则读出一个长度信息，随后发起写DDR请求
@@ -337,24 +345,13 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
         r_fifo_lock <= 'd0;
     else if(rM_AXI_WLAST && rM_AXI_WVALID)
         r_fifo_lock <= 'd0;
-    else if(!w_fifo_len_empty && !r_fifo_lock)
+    else if(!w_fifo_len_empty && !r_fifo_lock && !ro_wr_ddr_cpl_valid)
         r_fifo_lock <= 'd1;
     else
         r_fifo_lock <= r_fifo_lock;
 end
 
 //得到DDR写响应以及首地址后开始产生AXI写地址
-always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
-    if(w_axi_rst)begin
-        ri_wr_ddr_addr  <= 'd0;
-        ri_wr_ddr_valid <= 'd0;
-    end 
-    else begin
-        ri_wr_ddr_addr  <= i_wr_ddr_addr ;
-        ri_wr_ddr_valid <= i_wr_ddr_valid;
-    end
-end
-
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)begin
         rM_AXI_AWID    <= 'd0;
@@ -371,7 +368,7 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     end
     else if(w_axi_aw_en)begin
         rM_AXI_AWID    <= 'd0;
-        rM_AXI_AWADDR  <= 'd0;
+        rM_AXI_AWADDR  <= rM_AXI_AWADDR;
         rM_AXI_AWLEN   <= 'd0;
         rM_AXI_AWSIZE  <= 'd0;
         rM_AXI_AWBURST <= 'd0;
@@ -382,9 +379,9 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
         rM_AXI_AWUSER  <= 'd0;
         rM_AXI_AWVALID <= 'd0;
     end
-    else if(ri_wr_ddr_valid)begin
+    else if(w_wr_ddr_en)begin
         rM_AXI_AWID    <= 'd0;
-        rM_AXI_AWADDR  <= ri_wr_ddr_addr;
+        rM_AXI_AWADDR  <= i_wr_ddr_addr;
         rM_AXI_AWLEN   <= ro_wr_ddr_len - 1;
         rM_AXI_AWSIZE  <= P_AXI_SIZE;
         rM_AXI_AWBURST <= 2'b01;
@@ -425,7 +422,6 @@ always @(posedge M_AXI_ACLK)begin
     r_fifo_data_rden_1d <= r_fifo_data_rden;
 end
 
-  
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)
         r_rd_cnt <= 'd0;
@@ -469,6 +465,56 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     else
         rM_AXI_WLAST <= rM_AXI_WLAST;
 end
+
+//return write complete single
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_cpl_valid <= 'd0;
+    else if(w_wr_cpl_en)
+        ro_wr_ddr_cpl_valid <= 'd0;
+    else if(rM_AXI_WLAST && rM_AXI_WVALID)
+        ro_wr_ddr_cpl_valid <= 'd1;
+    else
+        ro_wr_ddr_cpl_valid <= ro_wr_ddr_cpl_valid;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_cpl_len <= 'd0;
+    else if(rM_AXI_WLAST && rM_AXI_WVALID)
+        ro_wr_ddr_cpl_len <= ro_wr_ddr_len;
+    else
+        ro_wr_ddr_cpl_len <= ro_wr_ddr_cpl_len;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_cpl_addr <= 'd0;
+    else if(rM_AXI_WLAST && rM_AXI_WVALID)
+        ro_wr_ddr_cpl_addr <= rM_AXI_AWADDR;
+    else
+        ro_wr_ddr_cpl_addr <= ro_wr_ddr_cpl_addr;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_cpl_strb <= 'd0;
+    else if(rM_AXI_WLAST && rM_AXI_WVALID)
+        ro_wr_ddr_cpl_strb <= r_last_strb;
+    else
+        ro_wr_ddr_cpl_strb <= ro_wr_ddr_cpl_strb;
+end
+ 
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        ro_wr_ddr_cpl_queue <= 'd0;
+    else if(rM_AXI_WLAST && rM_AXI_WVALID)
+        ro_wr_ddr_cpl_queue <= ro_wr_ddr_queue;
+    else
+        ro_wr_ddr_cpl_queue <= ro_wr_ddr_cpl_queue;
+end
+
+
 
 
 

@@ -249,31 +249,63 @@ reg             s_axis_tlast    ;
 reg  [7  :0]    s_axis_tkeep    ;
 reg             s_axis_tuser    ;
 reg  [2 : 0]    s_axis_tdest    ;
-reg  [31 : 0]   i_rd_ddr_addr   ;
-reg             i_rd_ddr_req    ;
-reg  [15 :0]    i_rd_ddr_len    ;
-reg  [7 : 0]    i_rd_ddr_strb   ;
-reg             i_rd_ddr_valid  ;
-reg [31 : 0]    i_wr_ddr_addr   ;
-reg             i_wr_ddr_valid  ;
+
 reg             r_axis_rst = 0  ;
 reg             r_axis_rst_1d = 0   ;
-reg             r_wr_ddr_req    ;
 
-wire            o_wr_ddr_req    ;
-wire [15:0]     o_wr_ddr_len    ;
+reg             r_rd_unlocal_port0_byte_valid;
+reg  [31:0]     r_rd_unlocal_port0_byte;
+
 wire            c0_init_calib_complete_0;
 wire            ddr4_ui_clk     ;
 wire            ddr4_ui_rst     ;
 wire            axis_rst        ;
-wire            o_wr_ddr_cpl    ;
+//DDR ctrl
+wire            o_rd_ddr_cpl_0       ;
+wire            o_rd_ddr_cpl_1       ;
+wire            o_rd_ddr_ready_0     ;
+wire            o_rd_ddr_ready_1     ;
+wire  [31:0]    o_wr_ddr_cpl_addr_0  ;
+wire  [31:0]    o_wr_ddr_cpl_addr_1  ;
+wire  [15:0]    o_wr_ddr_cpl_len_0   ;
+wire  [15:0]    o_wr_ddr_cpl_len_1   ;
+wire  [3: 0]    o_wr_ddr_cpl_queue_0    ;
+wire  [3: 0]    o_wr_ddr_cpl_queue_1    ;
+wire  [7 :0]    o_wr_ddr_cpl_strb_0  ;
+wire  [7 :0]    o_wr_ddr_cpl_strb_1  ;
+wire            o_wr_ddr_cpl_valid_0 ;
+wire            o_wr_ddr_cpl_valid_1 ;
+wire  [15:0]    o_wr_ddr_len_0       ;
+wire  [15:0]    o_wr_ddr_len_1       ;
+wire  [3 :0]    o_wr_ddr_queue_0     ;
+wire  [3 :0]    o_wr_ddr_queue_1     ;
+wire            o_wr_ddr_valid_0     ;
+wire            o_wr_ddr_valid_1     ;
+wire [32-1 : 0] w_rd_unlocal_port0_addr   ;
+wire [15 :0]    w_rd_unlocal_port0_len    ;
+wire [7 : 0]    w_rd_unlocal_port0_strb   ;
+wire            w_rd_unlocal_port0_valid  ;
+
+//memory ctrl
+wire  [31:0]    i_wr_ddr_addr_0         ;
+wire            i_wr_ddr_ready_0        ;
+wire            i_wr_ddr_cpl_ready_0    ;
+wire  [31:0]    i_wr_ddr_addr_1         ;
+wire            i_wr_ddr_ready_1        ;
+wire            i_wr_ddr_cpl_ready_1    ;
+
+wire [255:0]  w_local_queue_size  ;
+wire [255:0]  w_unlocal_queue_size;
+
+wire [31:0]w_queue0_size;
+
+assign w_queue0_size = w_local_queue_size[31:0];
 
 assign axis_rst = r_axis_rst_1d;
 
 always @(posedge ddr4_ui_clk)begin
     r_axis_rst <= ddr4_ui_rst;
     r_axis_rst_1d <= r_axis_rst;
-    r_wr_ddr_req <= o_wr_ddr_req;
 end
 
 
@@ -315,32 +347,153 @@ design_1_wrapper design_1_wrapper_u0(
     .c0_init_calib_complete_0       (c0_init_calib_complete_0),
     .i_axis_clk_0                   (axis_clk),
     .i_axis_rst_0                   (axis_rst),
-    .i_rd_ddr_addr_0                (i_rd_ddr_addr  ),
-    .i_rd_ddr_len_0                 (i_rd_ddr_len   ),
-    .i_rd_ddr_req_0                 (i_rd_ddr_req   ),
-    .i_rd_ddr_strb_0                (i_rd_ddr_strb  ),
-    .i_rd_ddr_valid_0               (i_rd_ddr_valid ),
-    .i_wr_ddr_addr_0                (i_wr_ddr_addr ),
-    .i_wr_ddr_valid_0               (i_wr_ddr_valid),
+    .i_axis_clk_1                   (axis_clk),
+    .i_axis_rst_1                   (axis_rst),
+     
+    .i_rd_ddr_addr_0                (w_rd_unlocal_port0_addr),
+    .i_rd_ddr_addr_1                ('d0),
+    .i_rd_ddr_len_0                 (w_rd_unlocal_port0_len),
+    .i_rd_ddr_len_1                 ('d0),
+    .i_rd_ddr_strb_0                (w_rd_unlocal_port0_strb),
+    .i_rd_ddr_strb_1                ('d0),
+    .i_rd_ddr_valid_0               (w_rd_unlocal_port0_valid),
+    .i_rd_ddr_valid_1               ('d0),
+    .i_wr_ddr_addr_0                (i_wr_ddr_addr_0        ),
+    .i_wr_ddr_addr_1                (i_wr_ddr_addr_1        ),
+    .i_wr_ddr_cpl_ready_0           (i_wr_ddr_cpl_ready_0   ),
+    .i_wr_ddr_cpl_ready_1           (i_wr_ddr_cpl_ready_1   ),
+    .i_wr_ddr_ready_0               (i_wr_ddr_ready_0       ),
+    .i_wr_ddr_ready_1               (i_wr_ddr_ready_1       ),
     .m_axis_0_tdata                 (),
     .m_axis_0_tkeep                 (),
     .m_axis_0_tlast                 (),
     .m_axis_0_tready                (1'b1),
     .m_axis_0_tuser                 (),
     .m_axis_0_tvalid                (),
-    .o_rd_ddr_cpl_0                 (),
-    .o_rd_ddr_ready_0               (),
-    .o_wr_ddr_cpl_0                 (o_wr_ddr_cpl),
-    .o_wr_ddr_len_0                 (o_wr_ddr_len),
-    .o_wr_ddr_req_0                 (o_wr_ddr_req),
-    .o_wr_ddr_area_0                (),
-    .s_axis_0_tdata                 (s_axis_tdata ),
-    .s_axis_0_tdest                 (s_axis_tdest ),
-    .s_axis_0_tkeep                 (s_axis_tkeep ),
-    .s_axis_0_tlast                 (s_axis_tlast ),
-    .s_axis_0_tuser                 (s_axis_tuser ),
-    .s_axis_0_tvalid                (s_axis_tvalid),
-    .sys_rst_0                      (sys_rst)
+    .m_axis_1_tdata                 (),
+    .m_axis_1_tkeep                 (),
+    .m_axis_1_tlast                 (),
+    .m_axis_1_tready                (1'b1),
+    .m_axis_1_tuser                 (),
+    .m_axis_1_tvalid                (),
+    .o_rd_ddr_cpl_0                 (o_rd_ddr_cpl_0       ),
+    .o_rd_ddr_cpl_1                 (o_rd_ddr_cpl_1       ),
+    .o_rd_ddr_ready_0               (o_rd_ddr_ready_0     ),
+    .o_rd_ddr_ready_1               (o_rd_ddr_ready_1     ),
+    .o_wr_ddr_cpl_addr_0            (o_wr_ddr_cpl_addr_0  ),
+    .o_wr_ddr_cpl_addr_1            (o_wr_ddr_cpl_addr_1  ),
+    .o_wr_ddr_cpl_len_0             (o_wr_ddr_cpl_len_0   ),
+    .o_wr_ddr_cpl_len_1             (o_wr_ddr_cpl_len_1   ),
+    .o_wr_ddr_cpl_queue_0           (o_wr_ddr_cpl_queue_0   ),
+    .o_wr_ddr_cpl_queue_1           (o_wr_ddr_cpl_queue_1   ),
+    .o_wr_ddr_cpl_strb_0            (o_wr_ddr_cpl_strb_0  ),
+    .o_wr_ddr_cpl_strb_1            (o_wr_ddr_cpl_strb_1  ),
+    .o_wr_ddr_cpl_valid_0           (o_wr_ddr_cpl_valid_0 ),
+    .o_wr_ddr_cpl_valid_1           (o_wr_ddr_cpl_valid_1 ),
+    .o_wr_ddr_len_0                 (o_wr_ddr_len_0       ),
+    .o_wr_ddr_len_1                 (o_wr_ddr_len_1       ),
+    .o_wr_ddr_queue_0               (o_wr_ddr_queue_0     ),
+    .o_wr_ddr_queue_1               (o_wr_ddr_queue_1     ),
+    .o_wr_ddr_valid_0               (o_wr_ddr_valid_0     ),
+    .o_wr_ddr_valid_1               (o_wr_ddr_valid_1     ),
+    .s_axis_0_tdata                 (s_axis_tdata   ),
+    .s_axis_0_tdest                 (s_axis_tdest   ),
+    .s_axis_0_tkeep                 (s_axis_tkeep   ),
+    .s_axis_0_tlast                 (s_axis_tlast   ),
+    .s_axis_0_tuser                 (s_axis_tuser   ),
+    .s_axis_0_tvalid                (s_axis_tvalid  ),
+    .s_axis_1_tdata                 (s_axis_tdata   ),
+    .s_axis_1_tdest                 (s_axis_tdest   ),
+    .s_axis_1_tkeep                 (s_axis_tkeep   ),
+    .s_axis_1_tlast                 (s_axis_tlast   ),
+    .s_axis_1_tuser                 (s_axis_tuser   ),
+    .s_axis_1_tvalid                (s_axis_tvalid  ),
+    .sys_rst_0                      (sys_rst    )
+);
+
+mem_manager#(
+    .C_M_AXI_ADDR_WIDTH	     (32            ),
+    .P_WRITE_DDR_PORT_NUM    (1             ),
+    .P_DDR_LOCAL_QUEUE       (4             ),
+    .P_P_WRITE_DDR_PORT      (0             ),
+    .P_MAX_ADDR              (32'h003F_FFFF ),
+    .P_LOCAL_PORT_NUM        (2             ),
+    .P_QUEUE_NUM             (8             )
+)mem_manager_u0(
+    .i_clk                           (ddr4_ui_clk           ),
+    .i_rst                           (ddr4_ui_rst           ),
+
+    .i_wr_local_port0_valid          (o_wr_ddr_valid_0      ),
+    .i_wr_local_port0_len            (o_wr_ddr_len_0        ),
+    .i_wr_local_port0_queue          (o_wr_ddr_queue_0      ),
+    .o_wr_local_port0_addr           (i_wr_ddr_addr_0       ),     
+    .o_wr_local_port0_ready          (i_wr_ddr_ready_0      ),
+    .i_wr_local_port0_cpl_valid      (o_wr_ddr_cpl_valid_0  ),
+    .o_wr_local_port0_cpl_ready      (i_wr_ddr_cpl_ready_0  ),
+    .i_wr_local_port0_cpl_queue      (o_wr_ddr_cpl_queue_0  ),
+    .i_wr_local_port0_cpl_len        (o_wr_ddr_cpl_len_0    ),
+    .i_wr_local_port0_cpl_addr       (o_wr_ddr_cpl_addr_0   ),
+    .i_wr_local_port0_cpl_strb       (o_wr_ddr_cpl_strb_0   ),
+
+    .i_wr_local_port1_valid          (o_wr_ddr_valid_1      ),
+    .i_wr_local_port1_len            (o_wr_ddr_len_1        ),
+    .i_wr_local_port1_queue          (o_wr_ddr_queue_1      ),
+    .o_wr_local_port1_addr           (i_wr_ddr_addr_1       ),  
+    .o_wr_local_port1_ready          (i_wr_ddr_ready_1      ),
+    .i_wr_local_port1_cpl_valid      (o_wr_ddr_cpl_valid_1  ),
+    .o_wr_local_port1_cpl_ready      (i_wr_ddr_cpl_ready_1  ),
+    .i_wr_local_port1_cpl_queue      (o_wr_ddr_cpl_queue_1  ),
+    .i_wr_local_port1_cpl_len        (o_wr_ddr_cpl_len_1    ),
+    .i_wr_local_port1_cpl_addr       (o_wr_ddr_cpl_addr_1   ),
+    .i_wr_local_port1_cpl_strb       (o_wr_ddr_cpl_strb_1   ),
+
+
+    .i_wr_unlocal_port0_valid        ('d0),
+    .i_wr_unlocal_port0_len          ('d0),
+    .i_wr_unlocal_port0_queue        ('d0),
+    .o_wr_unlocal_port0_addr         (),
+    .o_wr_unlocal_port0_ready        (),
+    .i_wr_unlocal_port0_cpl_valid    ('d0),
+    .o_wr_unlocal_port0_cpl_ready    (),
+    .i_wr_unlocal_port0_cpl_queue    ('d0),
+    .i_wr_unlocal_port0_cpl_len      ('d0),
+    .i_wr_unlocal_port0_cpl_addr     ('d0),
+    .i_wr_unlocal_port0_cpl_strb     ('d0),
+
+    .i_rd_unlocal_port0_queue        ('d0),
+    .i_rd_unlocal_port0_byte         (r_rd_unlocal_port0_byte),
+    .i_rd_unlocal_port0_byte_valid   (r_rd_unlocal_port0_byte_valid),
+    .o_rd_unlocal_port0_addr         (w_rd_unlocal_port0_addr ),
+    .o_rd_unlocal_port0_len          (w_rd_unlocal_port0_len  ),
+    .o_rd_unlocal_port0_strb         (w_rd_unlocal_port0_strb ),
+    .o_rd_unlocal_port0_valid        (w_rd_unlocal_port0_valid),
+    .i_rd_unlocal_port0_cpl          (o_rd_ddr_cpl_0),
+    .i_rd_unlocal_port0_ready        (o_rd_ddr_ready_0),
+
+    .i_wr_unlocal_port1_valid        ('d0),
+    .i_wr_unlocal_port1_len          ('d0),
+    .i_wr_unlocal_port1_queue        ('d0),
+    .o_wr_unlocal_port1_addr         (),
+    .o_wr_unlocal_port1_ready        (),
+    .i_wr_unlocal_port1_cpl_valid    ('d0),
+    .o_wr_unlocal_port1_cpl_ready    (),
+    .i_wr_unlocal_port1_cpl_queue    ('d0),
+    .i_wr_unlocal_port1_cpl_len      ('d0),
+    .i_wr_unlocal_port1_cpl_addr     ('d0),
+    .i_wr_unlocal_port1_cpl_strb     ('d0),
+
+    .i_rd_unlocal_port1_queue        ('d0),
+    .i_rd_unlocal_port1_byte         ('d0),
+    .i_rd_unlocal_port1_byte_valid   ('d0),
+    .o_rd_unlocal_port1_addr         (),
+    .o_rd_unlocal_port1_len          (),
+    .o_rd_unlocal_port1_strb         (),
+    .o_rd_unlocal_port1_valid        (),
+    .i_rd_unlocal_port1_cpl          ('d0),
+    .i_rd_unlocal_port1_ready        ('d0),
+
+    .o_local_queue_size              (w_local_queue_size  ),
+    .o_unlocal_queue_size            (w_unlocal_queue_size)
 );
 
 initial begin
@@ -353,29 +506,14 @@ initial begin
     wait(c0_init_calib_complete_0);
     repeat(10) @(posedge axis_clk);
     repeat(100)axis_to_axi(16,8'hff,3'd0);
-
 end
 
 initial begin
-    i_wr_ddr_addr  = 'd0;
-    i_wr_ddr_valid = 'd0;
-    wait(!ddr4_ui_rst);
-    forever begin
-        mem_manage(o_wr_ddr_len);
-    end
+    r_rd_unlocal_port0_byte_valid = 'd0;
+    r_rd_unlocal_port0_byte = 'd0;
+    rd_ddr_local_queue_0();
 end
 
-initial begin
-    i_rd_ddr_addr  = 'd0;
-    i_rd_ddr_req   = 'd0;
-    i_rd_ddr_len   = 'd0;
-    i_rd_ddr_strb  = 'd0;
-    i_rd_ddr_valid = 'd0;
-    wait(!ddr4_ui_rst);
-    forever begin
-        ddr_rd('d16);
-    end
-end
 
 //============= 产生写AXIS数据 =============//
 task axis_to_axi(
@@ -416,41 +554,19 @@ begin:axis_to_axi
 end
 endtask
 //============= 产生写ddr地址 =============//
-task mem_manage(input [15:0] req_len);
-begin
-    i_wr_ddr_addr  <= i_wr_ddr_addr;
-    i_wr_ddr_valid <= 'd0;
-    wait(o_wr_ddr_req & !r_wr_ddr_req);
-    @(posedge ddr4_ui_clk);
-    i_wr_ddr_addr  <= i_wr_ddr_addr + (req_len << 3);
-    i_wr_ddr_valid <= 'd1;
-    @(posedge ddr4_ui_clk);
-    i_wr_ddr_addr  <= i_wr_ddr_addr;
-    i_wr_ddr_valid <= 'd0;
-end
-endtask
+
 //============= 产生读ddr描述符 =============//
-task ddr_rd(input [15:0] req_len);
-begin
-    i_rd_ddr_addr  <= i_rd_ddr_addr;
-    i_rd_ddr_req   <= 'd0;
-    i_rd_ddr_len   <= 'd0;
-    i_rd_ddr_strb  <= 'd0;
-    i_rd_ddr_valid <= 'd0;
-    wait(o_wr_ddr_cpl);
+
+task rd_ddr_local_queue_0();
+begin : rd_ddr_local_queue_0
+    r_rd_unlocal_port0_byte_valid <= 'd0;
+    r_rd_unlocal_port0_byte <= 'd0;
+    wait(w_queue0_size == 'd2048);
+    r_rd_unlocal_port0_byte_valid <= 'd1;
+    r_rd_unlocal_port0_byte <= w_queue0_size;
     @(posedge ddr4_ui_clk);
-    i_rd_ddr_addr  <= i_rd_ddr_addr;
-    i_rd_ddr_req   <= 'd1;
-    i_rd_ddr_len   <= req_len;
-    i_rd_ddr_strb  <= 8'hff;
-    i_rd_ddr_valid <= 'd1;
-    @(posedge ddr4_ui_clk);
-    i_rd_ddr_addr  <= i_rd_ddr_addr + (16 << 3);
-    i_rd_ddr_req   <= 'd0;
-    i_rd_ddr_len   <= 'd0;
-    i_rd_ddr_strb  <= 'd0;
-    i_rd_ddr_valid <= 'd0;
-    @(posedge ddr4_ui_clk);
+    r_rd_unlocal_port0_byte_valid <= 'd0;
+    r_rd_unlocal_port0_byte <= 'd0;
 end
 endtask
 

@@ -40,7 +40,10 @@ module AXI4_BUS_module#
     // Width of User Read Data Bus
     parameter integer C_M_AXI_RUSER_WIDTH	= 0,
     // Width of User Response Bus
-    parameter integer C_M_AXI_BUSER_WIDTH	= 0
+    parameter integer C_M_AXI_BUSER_WIDTH	= 0,
+    parameter integer P_DDR_LOCAL_QUEUE     = 4,
+    parameter integer P_WRITE_DDR_PORT_NUM  = 1,
+    parameter integer P_P_WRITE_DDR_PORT    = 0
 )(
 	input  wire                                 M_AXI_ACLK          ,
 	input  wire                                 M_AXI_ARESETN       ,
@@ -101,12 +104,17 @@ module AXI4_BUS_module#
     input  [7  :0]                              s_axis_tkeep        ,
     input                                       s_axis_tuser        ,
     input  [2 : 0]                              s_axis_tdest        ,
-    output                                      o_wr_ddr_req        ,
+    output                                      o_wr_ddr_valid      ,
     output [15 :0]                              o_wr_ddr_len        ,
-    output                                      o_wr_ddr_cpl        ,
-    output [2 : 0]                              o_wr_ddr_area       ,
+    output [P_DDR_LOCAL_QUEUE - 1 : 0]          o_wr_ddr_queue      ,
+    output                                      o_wr_ddr_cpl_valid  ,
+    input                                       i_wr_ddr_cpl_ready  ,
+    output [P_DDR_LOCAL_QUEUE - 1 : 0]          o_wr_ddr_cpl_queue  ,
+    output [15 :0]                              o_wr_ddr_cpl_len    ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]           o_wr_ddr_cpl_addr   ,
+    output [7 : 0]                              o_wr_ddr_cpl_strb   ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_wr_ddr_addr       ,
-    input                                       i_wr_ddr_valid      ,
+    input                                       i_wr_ddr_ready      ,
 
     output                                      m_axis_tvalid       ,
     output [63 :0]                              m_axis_tdata        ,
@@ -115,7 +123,6 @@ module AXI4_BUS_module#
     output                                      m_axis_tuser        ,
     input                                       m_axis_tready       ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_addr       ,
-    input                                       i_rd_ddr_req        ,
     input  [15 :0]                              i_rd_ddr_len        ,
     input  [7 : 0]                              i_rd_ddr_strb       ,
     input                                       i_rd_ddr_valid      ,
@@ -127,16 +134,19 @@ module AXI4_BUS_module#
 
 AXIS_to_AXIFULL#
 (
-    .C_M_TARGET_SLAVE_BASE_ADDR	(C_M_TARGET_SLAVE_BASE_ADDR),
-    .C_M_AXI_BURST_LEN	        (C_M_AXI_BURST_LEN	       ),
-    .C_M_AXI_ID_WIDTH	        (C_M_AXI_ID_WIDTH	       ),
-    .C_M_AXI_ADDR_WIDTH	        (C_M_AXI_ADDR_WIDTH	       ),
-    .C_M_AXI_DATA_WIDTH	        (C_M_AXI_DATA_WIDTH	       ),
-    .C_M_AXI_AWUSER_WIDTH	    (C_M_AXI_AWUSER_WIDTH	   ),
-    .C_M_AXI_ARUSER_WIDTH	    (C_M_AXI_ARUSER_WIDTH	   ),
-    .C_M_AXI_WUSER_WIDTH	    (C_M_AXI_WUSER_WIDTH	   ),
-    .C_M_AXI_RUSER_WIDTH	    (C_M_AXI_RUSER_WIDTH	   ),
-    .C_M_AXI_BUSER_WIDTH	    (C_M_AXI_BUSER_WIDTH	   )
+    .C_M_TARGET_SLAVE_BASE_ADDR	(C_M_TARGET_SLAVE_BASE_ADDR ),
+    .C_M_AXI_BURST_LEN	        (C_M_AXI_BURST_LEN	        ),
+    .C_M_AXI_ID_WIDTH	        (C_M_AXI_ID_WIDTH	        ),
+    .C_M_AXI_ADDR_WIDTH	        (C_M_AXI_ADDR_WIDTH	        ),
+    .C_M_AXI_DATA_WIDTH	        (C_M_AXI_DATA_WIDTH	        ),
+    .C_M_AXI_AWUSER_WIDTH	    (C_M_AXI_AWUSER_WIDTH	    ),
+    .C_M_AXI_ARUSER_WIDTH	    (C_M_AXI_ARUSER_WIDTH	    ),
+    .C_M_AXI_WUSER_WIDTH	    (C_M_AXI_WUSER_WIDTH	    ),
+    .C_M_AXI_RUSER_WIDTH	    (C_M_AXI_RUSER_WIDTH	    ),
+    .C_M_AXI_BUSER_WIDTH	    (C_M_AXI_BUSER_WIDTH	    ),
+    .P_DDR_LOCAL_QUEUE          (P_DDR_LOCAL_QUEUE          ),
+    .P_WRITE_DDR_PORT_NUM       (P_WRITE_DDR_PORT_NUM       ),
+    .P_P_WRITE_DDR_PORT         (P_P_WRITE_DDR_PORT         )
 )AXIS_to_AXIFULL_u0(
 	.M_AXI_ACLK                 (M_AXI_ACLK     ),
 	.M_AXI_ARESETN              (M_AXI_ARESETN  ),
@@ -173,26 +183,35 @@ AXIS_to_AXIFULL#
     .s_axis_tkeep               (s_axis_tkeep   ),
     .s_axis_tuser               (s_axis_tuser   ),
     .s_axis_tdest               (s_axis_tdest   ),
-    .o_wr_ddr_req               (o_wr_ddr_req   ),
-    .o_wr_ddr_len               (o_wr_ddr_len   ),
-    .o_wr_ddr_cpl               (o_wr_ddr_cpl   ),
-    .o_wr_ddr_area              (o_wr_ddr_area  ),
-    .i_wr_ddr_addr              (i_wr_ddr_addr  ),
-    .i_wr_ddr_valid             (i_wr_ddr_valid ) 
+
+    .o_wr_ddr_valid             (o_wr_ddr_valid     ),
+    .o_wr_ddr_len               (o_wr_ddr_len       ),
+    .o_wr_ddr_queue             (o_wr_ddr_queue     ),
+    .o_wr_ddr_cpl_valid         (o_wr_ddr_cpl_valid ),
+    .i_wr_ddr_cpl_ready         (i_wr_ddr_cpl_ready ),
+    .o_wr_ddr_cpl_queue         (o_wr_ddr_cpl_queue ),
+    .o_wr_ddr_cpl_len           (o_wr_ddr_cpl_len   ),
+    .o_wr_ddr_cpl_addr          (o_wr_ddr_cpl_addr  ),
+    .o_wr_ddr_cpl_strb          (o_wr_ddr_cpl_strb  ),
+    .i_wr_ddr_addr              (i_wr_ddr_addr      ),
+    .i_wr_ddr_ready             (i_wr_ddr_ready     )
 );
 
 AXIFULL_to_AXIS#
 (
-    .C_M_TARGET_SLAVE_BASE_ADDR	(C_M_TARGET_SLAVE_BASE_ADDR),
-    .C_M_AXI_BURST_LEN	        (C_M_AXI_BURST_LEN	       ),
-    .C_M_AXI_ID_WIDTH	        (C_M_AXI_ID_WIDTH	       ),
-    .C_M_AXI_ADDR_WIDTH	        (C_M_AXI_ADDR_WIDTH	       ),
-    .C_M_AXI_DATA_WIDTH	        (C_M_AXI_DATA_WIDTH	       ),
-    .C_M_AXI_AWUSER_WIDTH	    (C_M_AXI_AWUSER_WIDTH	   ),
-    .C_M_AXI_ARUSER_WIDTH	    (C_M_AXI_ARUSER_WIDTH	   ),
-    .C_M_AXI_WUSER_WIDTH	    (C_M_AXI_WUSER_WIDTH	   ),
-    .C_M_AXI_RUSER_WIDTH	    (C_M_AXI_RUSER_WIDTH	   ),
-    .C_M_AXI_BUSER_WIDTH	    (C_M_AXI_BUSER_WIDTH	   )
+    .C_M_TARGET_SLAVE_BASE_ADDR	(C_M_TARGET_SLAVE_BASE_ADDR ),
+    .C_M_AXI_BURST_LEN	        (C_M_AXI_BURST_LEN	        ),
+    .C_M_AXI_ID_WIDTH	        (C_M_AXI_ID_WIDTH	        ),
+    .C_M_AXI_ADDR_WIDTH	        (C_M_AXI_ADDR_WIDTH	        ),
+    .C_M_AXI_DATA_WIDTH	        (C_M_AXI_DATA_WIDTH	        ),
+    .C_M_AXI_AWUSER_WIDTH	    (C_M_AXI_AWUSER_WIDTH	    ),
+    .C_M_AXI_ARUSER_WIDTH	    (C_M_AXI_ARUSER_WIDTH	    ),
+    .C_M_AXI_WUSER_WIDTH	    (C_M_AXI_WUSER_WIDTH	    ),
+    .C_M_AXI_RUSER_WIDTH	    (C_M_AXI_RUSER_WIDTH	    ),
+    .C_M_AXI_BUSER_WIDTH	    (C_M_AXI_BUSER_WIDTH	    ),
+    .P_DDR_LOCAL_QUEUE          (P_DDR_LOCAL_QUEUE          ),
+    .P_WRITE_DDR_PORT_NUM       (P_WRITE_DDR_PORT_NUM       ),
+    .P_P_WRITE_DDR_PORT         (P_P_WRITE_DDR_PORT         )
 )AXIFULL_to_AXIS_u0(
 	.M_AXI_ACLK                 (M_AXI_ACLK     ),
 	.M_AXI_ARESETN              (M_AXI_ARESETN  ),
@@ -224,8 +243,8 @@ AXIFULL_to_AXIS#
     .m_axis_tkeep               (m_axis_tkeep   ),
     .m_axis_tuser               (m_axis_tuser   ),
     .m_axis_tready              (m_axis_tready  ),
+
     .i_rd_ddr_addr              (i_rd_ddr_addr  ),
-    .i_rd_ddr_req               (i_rd_ddr_req   ),
     .i_rd_ddr_len               (i_rd_ddr_len   ),
     .i_rd_ddr_strb              (i_rd_ddr_strb  ),
     .i_rd_ddr_valid             (i_rd_ddr_valid ),

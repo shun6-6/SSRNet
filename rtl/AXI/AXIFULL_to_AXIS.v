@@ -40,7 +40,10 @@ module AXIFULL_to_AXIS#
     // Width of User Read Data Bus
     parameter integer C_M_AXI_RUSER_WIDTH	= 0,
     // Width of User Response Bus
-    parameter integer C_M_AXI_BUSER_WIDTH	= 0
+    parameter integer C_M_AXI_BUSER_WIDTH	= 0,
+    parameter integer P_DDR_LOCAL_QUEUE     = 4,
+    parameter integer P_WRITE_DDR_PORT_NUM  = 1,
+    parameter integer P_P_WRITE_DDR_PORT    = 0
 )(
 	input  wire                                 M_AXI_ACLK          ,
 	input  wire                                 M_AXI_ARESETN       ,
@@ -77,7 +80,6 @@ module AXIFULL_to_AXIS#
     input                                       m_axis_tready       ,
     
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_addr       ,
-    input                                       i_rd_ddr_req        ,
     input  [15 :0]                              i_rd_ddr_len        ,
     input  [7 : 0]                              i_rd_ddr_strb       ,
     input                                       i_rd_ddr_valid      ,
@@ -117,7 +119,6 @@ reg  [7  :0]                        rm_axis_tkeep       ;
 reg                                 rm_axis_tuser       ;
 reg                                 ro_rd_ddr_ready     ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_ddr_addr      ;
-reg                                 ri_rd_ddr_req       ;
 reg  [15 :0]                        ri_rd_ddr_len       ;
 reg  [7 : 0]                        ri_rd_ddr_strb      ;
 reg                                 ri_rd_ddr_valid     ;
@@ -220,23 +221,29 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
 end
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(i_axis_rst)
+        ro_rd_ddr_cpl <= 'd0;
+    else if(w_axi_rd_active && M_AXI_RLAST)
+        ro_rd_ddr_cpl <= 'd1;
+    else
+        ro_rd_ddr_cpl <= 'd0;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)begin
         ri_rd_ddr_addr  <= 'd0;
-        ri_rd_ddr_req   <= 'd0;
         ri_rd_ddr_len   <= 'd0;
         ri_rd_ddr_strb  <= 'd0;
         ri_rd_ddr_valid <= 'd0;
     end
     else if(i_rd_ddr_valid)begin
         ri_rd_ddr_addr  <= i_rd_ddr_addr ;
-        ri_rd_ddr_req   <= i_rd_ddr_req  ;
         ri_rd_ddr_len   <= i_rd_ddr_len  ;
         ri_rd_ddr_strb  <= i_rd_ddr_strb ;
         ri_rd_ddr_valid <= i_rd_ddr_valid;
     end
     else begin
         ri_rd_ddr_addr  <= ri_rd_ddr_addr ;
-        ri_rd_ddr_req   <= ri_rd_ddr_req  ;
         ri_rd_ddr_len   <= ri_rd_ddr_len  ;
         ri_rd_ddr_strb  <= ri_rd_ddr_strb ;
         ri_rd_ddr_valid <= 'd0;
@@ -406,13 +413,5 @@ always @(posedge i_axis_clk or posedge i_axis_rst)begin
         rm_axis_tkeep <= rm_axis_tkeep;
 end
 
-always @(posedge i_axis_clk or posedge i_axis_rst)begin
-    if(i_axis_rst)
-        ro_rd_ddr_cpl <= 'd0;
-    else if(rm_axis_tlast && w_axis_tx_active)
-        ro_rd_ddr_cpl <= 'd1;
-    else
-        ro_rd_ddr_cpl <= 'd0;
-end
 
 endmodule
