@@ -505,7 +505,7 @@ initial begin
     s_axis_tdest  = 'd0;
     wait(c0_init_calib_complete_0);
     repeat(10) @(posedge axis_clk);
-    repeat(100)axis_to_axi(16,8'hff,3'd0);
+    repeat(100)axis_to_axi(16,8'hff,3'd1);
 end
 
 initial begin

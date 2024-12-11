@@ -24,8 +24,8 @@ module mac_table_init#(
     parameter       P_OUTPORT_WIDTH = 4     ,
     parameter       P_TABLE_DEPTH   = 16    ,
     parameter       P_MYTOR_ADDR    = 0     ,
-    parameter       P_MY_MAC1       = 48'h00_00_00_00_00_01,
-    parameter       P_MY_MAC2       = 48'h00_00_00_00_00_02
+    parameter       P_MY_MAC1       = 48'h8D_BC_5C_4A_00_01,
+    parameter       P_MY_MAC2       = 48'h8D_BC_5C_4A_00_02
 )(
     input                           i_clk               ,
     input                           i_rst               ,
