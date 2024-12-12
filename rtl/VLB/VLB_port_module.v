@@ -31,8 +31,7 @@ module VLB_port_module#(
     parameter       P_SLOT_NUM          = 2                     ,
     parameter       P_TOR_NUM           = 8                     ,
     parameter       P_OCS_NUM           = 2                     ,
-    parameter       P_MY_OCS            = 0                     ,
-    parameter       P_MY_TOR_ID         = 0                     ,
+    parameter       P_MY_OCS_ID         = 0                     ,
     parameter       P_MY_TOR_MAC        = 48'h8D_BC_5C_4A_10_00 ,
     parameter       P_MAC_HEAD          = 32'h8D_BC_5C_4A       ,
     parameter       P_SLOT_MAX_PKT_NUM  = 32'h00_04_00_00       ,
@@ -43,7 +42,6 @@ module VLB_port_module#(
     //控制器接口                    
     input                                           i_slot_start                ,
     input  [P_SLOT_NUM_WIDTH - 1 : 0]               i_slot_id                   ,
-    input  [47: 0]                                  i_dest_tor_mac              ,
     //同步时间戳                    
     input  [63 :0]                                  i_syn_time_stamp            ,
     //带内控制协议                  
@@ -86,6 +84,8 @@ module VLB_port_module#(
 /******************************function*****************************/
 
 /******************************parameter****************************/
+localparam      P_MY_TOR_ID = P_MY_TOR_MAC[2:0];
+
 localparam      P_TX_IDLE           = 'd0,
                 P_COMPT_CAPACITY    = 'd1,
                 P_TX_CAPACITY       = 'd2,
@@ -103,9 +103,9 @@ reg  [5 : 0]    r_rx_cur_state          ;
 reg  [5 : 0]    r_rx_nxt_state          ;
 reg  [5 : 0]    r_tx_cur_state          ;
 reg  [5 : 0]    r_tx_nxt_state          ;
-reg  [15: 0]    r_rx_state_cnt          ;
 reg  [15: 0]    r_tx_state_cnt          ;
 /******************************reg**********************************/
+reg                                             ri_slot_start;
 reg  [2 : 0]                                    r_direct_tor            ;
 reg  [31 :0]                                    r_local_pkt_num1        ;
 reg  [31 :0]                                    r_local_pkt_num2        ;
@@ -117,7 +117,7 @@ reg                                             rm_tx_axis_tvalid       ;
 reg  [63 :0]                                    rm_tx_axis_tdata        ;
 reg                                             rm_tx_axis_tlast        ;
 reg  [7  :0]                                    rm_tx_axis_tkeep        ;
-reg                                             rm_tx_axis_tuser        ;
+
 reg  [15 :0]                                    r_tx_cnt                ;
 reg  [15 :0]                                    r_rx_cnt                ;
 reg  [15: 0]                                    r_rx_type               ;
@@ -126,9 +126,6 @@ reg                             ro_send_local2_valid    ;
 //控制器接口AXIS
 reg  [2 : 0]    r_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
 
-
-reg  [15 :0]    r_recv_ctrl_cnt         ;
-reg  [63 :0]    rs_ctrl_rx_axis_tdata = 'd0;
 
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_local_queue_size      [P_QUEUE_NUM - 1 : 0]   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_unlocal_queue_size    [P_QUEUE_NUM - 1 : 0]   ;
@@ -150,14 +147,10 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ri_twin_own_capacity = 'd0;
 
 reg     r_rx_offer_valid       ;
 reg     r_rx_relay_valid       ;
-reg     ro_compt_relay_finish   ;
-reg     ro_compt_relay_valid    ;
-reg     r_compt_relay_en = 1'b0;
 /******************************wire*********************************/
 wire            w_tx_en;
 wire            w_recv_capacity_flag    ;
 wire            w_recv_offer_flag    ;
-wire            w_compt_relay_en    ;
 
 /******************************assign*******************************/
 assign w_tx_en = rm_tx_axis_tvalid & m_tx_axis_tready;
@@ -166,9 +159,6 @@ assign m_tx_axis_tdata  = rm_tx_axis_tdata ;
 assign m_tx_axis_tlast  = rm_tx_axis_tlast ;
 assign m_tx_axis_tkeep  = rm_tx_axis_tkeep ;
 assign m_tx_axis_tuser  = 'd0 ;
-assign o_compt_relay_finish = ro_compt_relay_finish;
-assign o_compt_relay_valid  = ro_compt_relay_valid ;
-
 assign w_recv_capacity_flag = r_rx_cur_state == P_RX_CAPACITY && s_rx_axis_tvalid && r_rx_cnt == 2;
 assign w_recv_offer_flag = r_rx_cur_state == P_RX_OFFER && s_rx_axis_tvalid && r_rx_cnt == 6;
 assign o_rx_offer_valid = r_rx_offer_valid;
@@ -176,8 +166,8 @@ assign o_rx_offer_capacity = r_rx_offer_capacity;
 assign o_rx_relay_valid = r_rx_relay_valid;
 assign o_my_rx_capacity = r_my_rx_capacity;
 assign o_my_capacity = r_my_capacity;
-assign o_my_rx_capacity_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd2;
-assign o_my_capacity_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd1;
+assign o_my_rx_capacity_valid = r_tx_cur_state == P_COMPT_OFFER && r_tx_state_cnt == 'd2;
+assign o_my_capacity_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd3;
 assign o_my_local2_pkt_size = r_local_pkt_num2 ;
 assign o_send_local2_valid  = ro_send_local2_valid  ;
 assign o_cur_direct_tor     = r_direct_tor     ;
@@ -198,7 +188,7 @@ generate
                 // r_route_table[tor_i][2] <= 'd0;
                 // r_route_table[tor_i][3] <= 'd0;
             end
-            else if(P_MY_TOR_ID == 0)begin
+            else if(P_MY_OCS_ID == 0)begin
                 r_route_table[tor_i][0] <=  (tor_i + 1) > (P_TOR_NUM - 1) ? 
                                             ((tor_i + 1) - (P_TOR_NUM - 1) - 1) : 
                                             (tor_i + 1);
@@ -212,7 +202,7 @@ generate
                 //                             ((tor_i + 3 * 2 + 1) - (P_TOR_NUM - 1) - 1): 
                 //                             (tor_i + 3 * 2 + 1);
             end
-            else if(P_MY_TOR_ID == 1)begin
+            else if(P_MY_OCS_ID == 1)begin
                 r_route_table[tor_i][0] <=  (tor_i - 1) < 0 ? 
                                             ((P_TOR_NUM + tor_i - 1)) : 
                                             (tor_i - 1);
@@ -289,12 +279,22 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         r_cur_slot_id  <= 'd0;
-        r_dest_tor_mac <= 'd0;
+        ri_slot_start <= 'd0;
     end else if(i_slot_start)begin
         r_cur_slot_id  <= i_slot_id;
-        r_dest_tor_mac <= i_dest_tor_mac;
+        ri_slot_start <= i_slot_start;
     end else begin
         r_cur_slot_id  <= r_cur_slot_id;
+        ri_slot_start <= ri_slot_start;
+    end
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        r_dest_tor_mac <= 'd0;
+    end else if(ri_slot_start)begin
+        r_dest_tor_mac <= {P_MAC_HEAD,5'd0,r_direct_tor,5'd0,3'd0};
+    end else begin
         r_dest_tor_mac <= r_dest_tor_mac;
     end
 end
@@ -311,12 +311,12 @@ always @(*)begin
     case (r_tx_cur_state)
         P_TX_IDLE       : begin
             if(i_slot_start)
-                r_tx_nxt_state = P_TX_CAPACITY;
+                r_tx_nxt_state = P_COMPT_CAPACITY;
             else
                 r_tx_nxt_state = P_TX_IDLE;
         end 
         P_COMPT_CAPACITY : begin
-            if(i_twin_rx_capacity_valid)
+            if(i_twin_own_capacity_valid)
                 r_tx_nxt_state = P_TX_CAPACITY;
             else
                 r_tx_nxt_state = P_COMPT_CAPACITY;
@@ -368,7 +368,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_local_pkt_num1 <= 'd0;
-    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd0)
+    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd1)
         r_local_pkt_num1 <= r_local_queue_size[r_direct_tor];
     else
         r_local_pkt_num1 <= r_local_pkt_num1;
@@ -377,7 +377,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_local_pkt_num2 <= 'd0;
-    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd0)
+    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd1)
         r_local_pkt_num2 <= r_local_queue_size[r_route_table[r_direct_tor][r_cur_slot_id]];
     else if(w_recv_capacity_flag)
         if(ri_twin_rx_capacity <= r_local_pkt_num2)
@@ -400,7 +400,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_my_relay_pkt_num <= 'd0;
-    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd0)
+    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd1)
         r_my_relay_pkt_num <= r_unlocal_queue_size[r_direct_tor];
     else
         r_my_relay_pkt_num <= r_my_relay_pkt_num;
@@ -409,7 +409,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_my_capacity <= 'd0;
-    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd1)
+    else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd2)
         r_my_capacity <= (P_SLOT_MAX_PKT_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num) > 0
                             ? P_SLOT_MAX_PKT_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num
                             : 'd0;
@@ -450,16 +450,6 @@ always @(posedge i_clk)begin
 end
 
 //接收到对端offer包后开始请求进行relay计算，因为俩个上行端口共用一个缓存区，所以需要申请对于缓存区的分配权
-always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
-        ro_compt_relay_valid <= 'd0;
-    else if(w_compt_relay_en)
-        ro_compt_relay_valid <= 'd0;
-    else if(r_rx_offer_valid)
-        ro_compt_relay_valid <= 'd1;
-    else
-        ro_compt_relay_valid <= ro_compt_relay_valid;
-end
 
 
 always @(posedge i_clk or posedge i_rst)begin

@@ -18,10 +18,13 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
-
+//mac地址规则：P_MAC_HEAD + 8'h tor mac(0-7) + 8'h port mac(1-2)
+//o_axis_tuser=1 : dest tor is my tor 0:dest tor is not my tor
 module ten_eth_rx#(
-    parameter       P_RX_ID = 0
+    parameter       P_RX_PORT_ID    = 0                     ,
+    parameter       P_MAC_HEAD      = 32'h8D_BC_5C_4A       ,
+    parameter       P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00 ,
+    parameter       P_MY_PORT_MAC   = 48'h8D_BC_5C_4A_00_01 
 )(
     input           i_clk                   ,
     input           i_rst                   ,
@@ -42,12 +45,12 @@ module ten_eth_rx#(
     input  [3 :0]   i_check_id              ,
     input           i_seek_flag             ,
     //output AXIS
-    output          o_axis_tvalid           ,
-    output [63 :0]  o_axis_tdata            ,
-    output          o_axis_tlast            ,
-    output [7  :0]  o_axis_tkeep            ,
-    output          o_axis_tuser            ,
-    output [2 : 0]  o_axis_tdest             
+    output          m_axis_tvalid           ,
+    output [63 :0]  m_axis_tdata            ,
+    output          m_axis_tlast            ,
+    output [7  :0]  m_axis_tkeep            ,
+    output          m_axis_tuser            ,
+    output [2 : 0]  m_axis_tdest             
 );
 /******************************function*****************************/
 
@@ -105,12 +108,12 @@ assign o_check_id    = ro_check_id      ;
 assign o_check_valid = ro_check_valid   ;
 assign w_check_active = r_check_ready && ri_result_valid;
 
-assign o_axis_tvalid   = ro_axis_tvalid     ;
-assign o_axis_tdata    = ro_axis_tdata      ;
-assign o_axis_tlast    = ro_axis_tlast      ;
-assign o_axis_tkeep    = ro_axis_tkeep      ;
-assign o_axis_tuser    = ro_axis_tuser      ;
-assign o_axis_tdest    = ro_axis_tdest      ;
+assign m_axis_tvalid  = ro_axis_tvalid      ;
+assign m_axis_tdata   = ro_axis_tdata      ;
+assign m_axis_tlast   = ro_axis_tlast      ;
+assign m_axis_tkeep   = ro_axis_tkeep      ;
+assign m_axis_tuser   = ro_axis_tuser      ;
+assign m_axis_tdest   = ro_axis_tdest      ;
 /******************************component****************************/
 FIFO_64X256 FIFO_64X256_data (
     .clk            (i_clk              ), // input wire clk
@@ -273,7 +276,7 @@ always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_check_id <= 'd0;
     else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
-        ro_check_id <= P_RX_ID;
+        ro_check_id <= P_RX_PORT_ID;
     else
         ro_check_id <= ro_check_id;
 end
@@ -395,11 +398,20 @@ always @(posedge i_clk or posedge i_rst) begin
         ro_axis_tkeep <= 8'hFF;
 end
 
+// always @(posedge i_clk or posedge i_rst) begin
+//     if(i_rst)
+//         ro_axis_tdest <= 'd0;
+//     else if(r_fifo_len_rden_1d)
+//         ro_axis_tdest <= ri_outport;
+//     else
+//         ro_axis_tdest <= ro_axis_tdest;
+// end
+
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tdest <= 'd0;
-    else if(r_fifo_len_rden_1d)
-        ro_axis_tdest <= ri_outport;
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC)
+        ro_axis_tdest <= r_recv_dst_mac[2:0];
     else
         ro_axis_tdest <= ro_axis_tdest;
 end
@@ -407,10 +419,21 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tuser <= 'd0;
-    else if(!w_fifo_len_empty && w_check_active)
-        ro_axis_tuser <= ri_seek_flag;
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC)
+        ro_axis_tuser <= 'd0;
+    else if(s_axis_rx_tlast)
+        ro_axis_tuser <= 'd1;
     else
         ro_axis_tuser <= ro_axis_tuser;
 end
+
+// always @(posedge i_clk or posedge i_rst) begin
+//     if(i_rst)
+//         ro_axis_tuser <= 'd0;
+//     else if(!w_fifo_len_empty && w_check_active)
+//         ro_axis_tuser <= ri_seek_flag;
+//     else
+//         ro_axis_tuser <= ro_axis_tuser;
+// end
 
 endmodule

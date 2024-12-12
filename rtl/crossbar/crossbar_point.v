@@ -92,7 +92,7 @@ assign m_axis_tx_tlast  = rm_axis_tx_tlast  ;
 assign m_axis_tx_tkeep  = rm_axis_tx_tkeep  ;
 assign m_axis_tx_tuser  = 'd0  ;
 assign o_trans_req      = r_trans_req       ;
-assign w_wr_en          = rs_axis_rx_tdest == P_DEST && rs_axis_rx_tvalid;
+assign w_wr_en          = rs_axis_rx_tdest == P_DEST && rs_axis_rx_tvalid && (rs_axis_rx_tuser == 'd1);
 assign w_wr_active      = m_axis_tx_tvalid & m_axis_tx_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_wr_active) || r_fifo_len_rden_2d;
 /******************************component****************************/

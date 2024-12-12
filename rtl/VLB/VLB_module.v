@@ -32,7 +32,6 @@ module VLB_module#(
     parameter       P_TOR_NUM           = 8                     ,
     parameter       P_OCS_NUM           = 2                     ,
     parameter       P_MY_OCS            = 0                     ,
-    parameter       P_MY_TOR_ID         = 0                     ,
     parameter       P_MY_TOR_MAC        = 48'h8D_BC_5C_4A_10_00 ,
     parameter       P_MAC_HEAD          = 32'h8D_BC_5C_4A       ,
     parameter       P_SLOT_MAX_PKT_NUM  = 32'h00_04_00_00       ,
@@ -67,12 +66,12 @@ module VLB_module#(
     input  [7  :0]                                  s_uplink1_rx_axis_tkeep     ,
     input                                           s_uplink1_rx_axis_tuser     ,
 
-    output                                          s_uplink1_tx_axis_tvalid    ,
-    output [63 :0]                                  s_uplink1_tx_axis_tdata     ,
-    output                                          s_uplink1_tx_axis_tlast     ,
-    output [7  :0]                                  s_uplink1_tx_axis_tkeep     ,
-    output                                          s_uplink1_tx_axis_tuser     ,
-    input                                           s_uplink1_tx_axis_tready    ,
+    output                                          m_uplink1_tx_axis_tvalid    ,
+    output [63 :0]                                  m_uplink1_tx_axis_tdata     ,
+    output                                          m_uplink1_tx_axis_tlast     ,
+    output [7  :0]                                  m_uplink1_tx_axis_tkeep     ,
+    output                                          m_uplink1_tx_axis_tuser     ,
+    input                                           m_uplink1_tx_axis_tready    ,
     //queue size
     output                                          o_check_queue_req_valid     ,//握手跨时钟
     input                                           i_check_queue_resp_ready    ,
@@ -100,6 +99,7 @@ function integer clogb2 (input integer bit_depth);
 	end                                                           
 endfunction 
 /******************************parameter****************************/
+localparam      P_MY_TOR_ID = P_MY_TOR_MAC[2:0];
 localparam      P_SLOT_NUM_WIDTH    = clogb2(P_SLOT_NUM - 1);
 localparam      P_TOR_NUM_WIDTH     = clogb2(P_TOR_NUM - 1);
 /******************************machine******************************/
@@ -164,7 +164,7 @@ wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] w_local_queue_size  ;
 wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] w_unlocal_queue_size;
 /******************************assign*******************************/
 assign w_slot_start_en = ri_check_queue_resp_ready[1] && !ri_check_queue_resp_ready[2];
-
+assign o_check_queue_req_valid = ro_check_queue_req_valid;
 assign o_port0_tx_relay       = w_port1_rx_relay        ;
 assign o_port0_tx_relay_valid = w_port1_rx_relay_valid  ;
 assign o_port1_tx_relay       = w_port0_rx_relay        ;
@@ -172,29 +172,27 @@ assign o_port1_tx_relay_valid = w_port0_rx_relay_valid  ;
 
 /******************************component****************************/
 VLB_port_module#(
-    .C_M_AXI_ADDR_WIDTH     (32                    ),
-    .P_QUEUE_NUM            (8                     ),//== P_TOR_NUM
-    .P_CAPACITY_PKT_TYPE    (16'hff00              ),
-    .P_OFFER_PKT_TYPE       (16'hff01              ),
-    .P_RELAY_PKT_TYPE       (16'hff02              ),
-    .P_SLOT_ID_TYPE         (16'hff03              ),
-    .P_SLOT_NUM_WIDTH       (1                     ),
-    .P_SLOT_NUM             (2                     ),
-    .P_TOR_NUM              (8                     ),
-    .P_OCS_NUM              (2                     ),
-    .P_MY_OCS               (0                     ),
-    .P_MY_TOR_ID            (0                     ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_10_00 ),
-    .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_SLOT_MAX_PKT_NUM     (32'h00_04_00_00       ),
-    .P_ETH_MIN_LEN          (8                     )
+    .C_M_AXI_ADDR_WIDTH     (C_M_AXI_ADDR_WIDTH     ),
+    .P_QUEUE_NUM            (P_QUEUE_NUM            ),//== P_TOR_NUM
+    .P_CAPACITY_PKT_TYPE    (P_CAPACITY_PKT_TYPE    ),
+    .P_OFFER_PKT_TYPE       (P_OFFER_PKT_TYPE       ),
+    .P_RELAY_PKT_TYPE       (P_RELAY_PKT_TYPE       ),
+    .P_SLOT_ID_TYPE         (P_SLOT_ID_TYPE         ),
+    .P_SLOT_NUM_WIDTH       (P_SLOT_NUM_WIDTH       ),
+    .P_SLOT_NUM             (P_SLOT_NUM             ),
+    .P_TOR_NUM              (P_TOR_NUM              ),
+    .P_OCS_NUM              (P_OCS_NUM              ),
+    .P_MY_OCS_ID            ('d0                   ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
+    .P_MAC_HEAD             (P_MAC_HEAD             ),
+    .P_SLOT_MAX_PKT_NUM     (P_SLOT_MAX_PKT_NUM     ),
+    .P_ETH_MIN_LEN          (P_ETH_MIN_LEN          )
 )VLB_port_module_port0(
     .i_clk                          (i_clk                      ),
     .i_rst                          (i_rst                      ) ,
 
     .i_slot_start                   (w_slot_start_en            ),
     .i_slot_id                      (r_cur_slot_id              ),
-    .i_dest_tor_mac                 (r_dest_tor_mac             ),
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
 
@@ -236,29 +234,27 @@ VLB_port_module#(
 );
 
 VLB_port_module#(
-    .C_M_AXI_ADDR_WIDTH     (32                    ),
-    .P_QUEUE_NUM            (8                     ),//== P_TOR_NUM
-    .P_CAPACITY_PKT_TYPE    (16'hff00              ),
-    .P_OFFER_PKT_TYPE       (16'hff01              ),
-    .P_RELAY_PKT_TYPE       (16'hff02              ),
-    .P_SLOT_ID_TYPE         (16'hff03              ),
-    .P_SLOT_NUM_WIDTH       (1                     ),
-    .P_SLOT_NUM             (2                     ),
-    .P_TOR_NUM              (8                     ),
-    .P_OCS_NUM              (2                     ),
-    .P_MY_OCS               (0                     ),
-    .P_MY_TOR_ID            (0                     ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_10_00 ),
-    .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_SLOT_MAX_PKT_NUM     (32'h00_04_00_00       ),
-    .P_ETH_MIN_LEN          (8                     )
+    .C_M_AXI_ADDR_WIDTH     (C_M_AXI_ADDR_WIDTH     ),
+    .P_QUEUE_NUM            (P_QUEUE_NUM            ),//== P_TOR_NUM
+    .P_CAPACITY_PKT_TYPE    (P_CAPACITY_PKT_TYPE    ),
+    .P_OFFER_PKT_TYPE       (P_OFFER_PKT_TYPE       ),
+    .P_RELAY_PKT_TYPE       (P_RELAY_PKT_TYPE       ),
+    .P_SLOT_ID_TYPE         (P_SLOT_ID_TYPE         ),
+    .P_SLOT_NUM_WIDTH       (P_SLOT_NUM_WIDTH       ),
+    .P_SLOT_NUM             (P_SLOT_NUM             ),
+    .P_TOR_NUM              (P_TOR_NUM              ),
+    .P_OCS_NUM              (P_OCS_NUM              ),
+    .P_MY_OCS_ID            ('d1                   ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
+    .P_MAC_HEAD             (P_MAC_HEAD             ),
+    .P_SLOT_MAX_PKT_NUM     (P_SLOT_MAX_PKT_NUM     ),
+    .P_ETH_MIN_LEN          (P_ETH_MIN_LEN          )
 )VLB_port_module_port1(
     .i_clk                          (i_clk                      ),
     .i_rst                          (i_rst                      ) ,
 
     .i_slot_start                   (w_slot_start_en            ),
     .i_slot_id                      (r_cur_slot_id              ),
-    .i_dest_tor_mac                 (r_dest_tor_mac             ),
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
 
@@ -336,10 +332,10 @@ generate
             end
             else begin
                 //和偶数序号OCS0相连
-                r_even_route_table[0][tor_i][0] <=  (tor_i + 1) > (P_TOR_NUM - 1) ? 
+                r_even_route_table[tor_i][0] <=  (tor_i + 1) > (P_TOR_NUM - 1) ? 
                                             ((tor_i + 1) - (P_TOR_NUM - 1) - 1) : 
                                             (tor_i + 1);
-                r_even_route_table[0][tor_i][1] <=  (tor_i + 1 * 2 + 1) > (P_TOR_NUM - 1) ? 
+                r_even_route_table[tor_i][1] <=  (tor_i + 1 * 2 + 1) > (P_TOR_NUM - 1) ? 
                                             ((tor_i + 1 * 2 + 1) - (P_TOR_NUM - 1) - 1):
                                             (tor_i + 1 * 2 + 1);
             end

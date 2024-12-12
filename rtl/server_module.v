@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/12/11 15:14:52
+// Create Date: 2024/12/12 19:19:54
 // Design Name: 
-// Module Name: VLB_TB
+// Module Name: server_module
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module VLB_TB(
+module server_module(
 
     );
 endmodule

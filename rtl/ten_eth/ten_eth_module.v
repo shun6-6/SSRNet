@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/04/19 11:04:53
+// Create Date: 2024/12/12 10:23:51
 // Design Name: 
-// Module Name: VCU128_10g_eth_top
+// Module Name: ten_eth_module
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,128 +20,112 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module VCU128_10g_eth_top#(
-    parameter                   P_CHANNEL_NUM   = 2         ,
-    parameter                   P_MIN_LENGTH    = 8'd64     ,
-    parameter                   P_MAX_LENGTH    = 15'd9600 
+module ten_eth_module#(
+    parameter                   P_CHANNEL_NUM   = 4         
 )(
-    input                       i_gt_refclk_p   ,
-    input                       i_gt_refclk_n   ,
-    input                       i_sys_clk_p     ,
-    input                       i_sys_clk_n     ,
-    output [P_CHANNEL_NUM-1:0]  o_gt_txp        ,
-    output [P_CHANNEL_NUM-1:0]  o_gt_txn        ,
-    input  [P_CHANNEL_NUM-1:0]  i_gt_rxp        ,
-    input  [P_CHANNEL_NUM-1:0]  i_gt_rxn        ,
-    output [P_CHANNEL_NUM-1:0]  o_sfp_dis       ,
+    input                       i_gt_refclk_p       ,
+    input                       i_gt_refclk_n       ,
+    input                       i_sys_clk_p         ,
+    input                       i_sys_clk_n         ,
+    output [P_CHANNEL_NUM-1:0]  o_gt_txp            ,
+    output [P_CHANNEL_NUM-1:0]  o_gt_txn            ,
+    input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
+    input  [P_CHANNEL_NUM-1:0]  i_gt_rxn            ,
+    output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
 
     output                      o_0_tx_clk_out      ,
     output                      o_0_rx_clk_out      ,
     output                      o_0_user_tx_reset   ,
     output                      o_0_user_rx_reset   ,
     output                      o_0_stat_rx_status  ,
-    output                      tx0_axis_tready     ,
-    input                       tx0_axis_tvalid     ,
-    input  [63 :0]              tx0_axis_tdata      ,
-    input                       tx0_axis_tlast      ,
-    input  [7  :0]              tx0_axis_tkeep      ,
-    input                       tx0_axis_tuser      ,
-    output                      rx0_axis_tvalid     ,
-    output [63 :0]              rx0_axis_tdata      ,
-    output                      rx0_axis_tlast      ,
-    output [7  :0]              rx0_axis_tkeep      ,
-    output                      rx0_axis_tuser      ,
 
     output                      o_1_tx_clk_out      ,
     output                      o_1_rx_clk_out      ,
     output                      o_1_user_tx_reset   ,
     output                      o_1_user_rx_reset   ,
     output                      o_1_stat_rx_status  ,
-    output                      tx1_axis_tready     ,
-    input                       tx1_axis_tvalid     ,
-    input  [63 :0]              tx1_axis_tdata      ,
-    input                       tx1_axis_tlast      ,
-    input  [7  :0]              tx1_axis_tkeep      ,
-    input                       tx1_axis_tuser      ,
-    output                      rx1_axis_tvalid     ,
-    output [63 :0]              rx1_axis_tdata      ,
-    output                      rx1_axis_tlast      ,
-    output [7  :0]              rx1_axis_tkeep      ,
-    output                      rx1_axis_tuser      ,   
 
     output                      o_2_tx_clk_out      ,
     output                      o_2_rx_clk_out      ,
     output                      o_2_user_tx_reset   ,
     output                      o_2_user_rx_reset   ,
     output                      o_2_stat_rx_status  ,
-    output                      tx2_axis_tready     ,
-    input                       tx2_axis_tvalid     ,
-    input  [63 :0]              tx2_axis_tdata      ,
-    input                       tx2_axis_tlast      ,
-    input  [7  :0]              tx2_axis_tkeep      ,
-    input                       tx2_axis_tuser      ,
-    output                      rx2_axis_tvalid     ,
-    output [63 :0]              rx2_axis_tdata      ,
-    output                      rx2_axis_tlast      ,
-    output [7  :0]              rx2_axis_tkeep      ,
-    output                      rx2_axis_tuser      ,
 
     output                      o_3_tx_clk_out      ,
     output                      o_3_rx_clk_out      ,
     output                      o_3_user_tx_reset   ,
     output                      o_3_user_rx_reset   ,
-    output                      o_3_stat_rx_status  ,
-    output                      tx3_axis_tready     ,
-    input                       tx3_axis_tvalid     ,
-    input  [63 :0]              tx3_axis_tdata      ,
-    input                       tx3_axis_tlast      ,
-    input  [7  :0]              tx3_axis_tkeep      ,
-    input                       tx3_axis_tuser      ,
-    output                      rx3_axis_tvalid     ,
-    output [63 :0]              rx3_axis_tdata      ,
-    output                      rx3_axis_tlast      ,
-    output [7  :0]              rx3_axis_tkeep      ,
-    output                      rx3_axis_tuser      
+    output                      o_3_stat_rx_status  
 );
 
-assign o_sfp_dis = 2'b00;
 
-wire            w_dclk              ;
-wire            w_locked            ;
-wire            w_sys_reset         ;
+wire            tx0_axis_tready     ;
+wire            tx0_axis_tvalid     ;
+wire [63 :0]    tx0_axis_tdata      ;
+wire            tx0_axis_tlast      ;
+wire [7  :0]    tx0_axis_tkeep      ;
+wire            tx0_axis_tuser      ;
+wire            rx0_axis_tvalid     ;
+wire [63 :0]    rx0_axis_tdata      ;
+wire            rx0_axis_tlast      ;
+wire [7  :0]    rx0_axis_tkeep      ;
+wire            rx0_axis_tuser      ;
 
 
+wire            w_1_stat_rx_status  ;
+wire            tx1_axis_tready     ;
+wire            tx1_axis_tvalid     ;
+wire [63 :0]    tx1_axis_tdata      ;
+wire            tx1_axis_tlast      ;
+wire [7  :0]    tx1_axis_tkeep      ;
+wire            tx1_axis_tuser      ;
+wire            rx1_axis_tvalid     ;
+wire [63 :0]    rx1_axis_tdata      ;
+wire            rx1_axis_tlast      ;
+wire [7  :0]    rx1_axis_tkeep      ;
+wire            rx1_axis_tuser      ;
 
-clk_wiz_100Mhz clk_wiz_100Mhz_u0
-(
-    .clk_out1               (w_dclk         ),  
-    .locked                 (w_locked       ),  
-    .clk_in1_p              (i_sys_clk_p    ),  
-    .clk_in1_n              (i_sys_clk_n    )   
-);
 
-rst_gen_module#(
-    .P_RST_CYCLE            (20)   
-)rst_gen_module_u0(
-    .i_clk                  (w_dclk         ),
-    .i_rst                  (~w_locked      ),
-    .o_rst                  (w_sys_reset    ) 
-);
+wire            tx2_axis_tready     ;
+wire            tx2_axis_tvalid     ;
+wire [63 :0]    tx2_axis_tdata      ;
+wire            tx2_axis_tlast      ;
+wire [7  :0]    tx2_axis_tkeep      ;
+wire            tx2_axis_tuser      ;
+wire            rx2_axis_tvalid     ;
+wire [63 :0]    rx2_axis_tdata      ;
+wire            rx2_axis_tlast      ;
+wire [7  :0]    rx2_axis_tkeep      ;
+wire            rx2_axis_tuser      ;
 
-uplus_ten_gig_module#(
-    .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
-    .P_MIN_LENGTH           (P_MIN_LENGTH       ),
-    .P_MAX_LENGTH           (P_MAX_LENGTH       )
-)uplus_ten_gig_module_u0(
-    .i_gt_refclk_p          (i_gt_refclk_p      ),
-    .i_gt_refclk_n          (i_gt_refclk_n      ),
-    .i_dclk                 (w_dclk             ),
-    .i_sys_reset            (w_sys_reset        ),
 
-    .o_gt_txp               (o_gt_txp[P_CHANNEL_NUM-1:0]),
-    .o_gt_txn               (o_gt_txn[P_CHANNEL_NUM-1:0]),
-    .i_gt_rxp               (i_gt_rxp[P_CHANNEL_NUM-1:0]),
-    .i_gt_rxn               (i_gt_rxn[P_CHANNEL_NUM-1:0]),
+wire            tx3_axis_tready     ;
+wire            tx3_axis_tvalid     ;
+wire [63 :0]    tx3_axis_tdata      ;
+wire            tx3_axis_tlast      ;
+wire [7  :0]    tx3_axis_tkeep      ;
+wire            tx3_axis_tuser      ;
+wire            rx3_axis_tvalid     ;
+wire [63 :0]    rx3_axis_tdata      ;
+wire            rx3_axis_tlast      ;
+wire [7  :0]    rx3_axis_tkeep      ;
+wire            rx3_axis_tuser      ;
+
+
+VCU128_10g_eth_top#(
+    .P_CHANNEL_NUM          (P_CHANNEL_NUM  )   ,
+    .P_MIN_LENGTH           (8'd64          )   ,
+    .P_MAX_LENGTH           (15'd9600       )   
+)VCU128_10g_eth_top_u0( 
+    .i_gt_refclk_p          (i_gt_refclk_p  )   ,
+    .i_gt_refclk_n          (i_gt_refclk_n  )   ,
+    .i_sys_clk_p            (i_sys_clk_p    )   ,
+    .i_sys_clk_n            (i_sys_clk_n    )   ,
+    .o_gt_txp               (o_gt_txp       )   ,
+    .o_gt_txn               (o_gt_txn       )   ,
+    .i_gt_rxp               (i_gt_rxp       )   ,
+    .i_gt_rxn               (i_gt_rxn       )   ,
+    .o_sfp_dis              (o_sfp_dis      )   ,
 
     .o_0_tx_clk_out         (o_0_tx_clk_out     ),
     .o_0_rx_clk_out         (o_0_rx_clk_out     ),

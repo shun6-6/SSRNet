@@ -264,7 +264,7 @@ always @(posedge i_axis_clk or posedge i_axis_rst)begin
         rs_axis_tdest  <= 'd0;
     end 
     else begin
-        rs_axis_tvalid <= s_axis_tvalid;
+        rs_axis_tvalid <= s_axis_tvalid && (s_axis_tuser == 'd0);
         rs_axis_tdata  <= s_axis_tdata ;
         rs_axis_tlast  <= s_axis_tlast ;
         rs_axis_tkeep  <= s_axis_tkeep ;

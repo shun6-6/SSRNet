@@ -21,6 +21,8 @@
 
 
 module ten_eth_tx(
-
-    );
+    input                   i_clk       ,
+    input                   i_rst       ,
+    
+);
 endmodule
