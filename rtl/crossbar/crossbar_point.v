@@ -82,7 +82,7 @@ wire [15:0]     w_fifo_len_dout         ;
 wire            w_fifo_len_full         ;
 wire            w_fifo_len_empty        ;
 wire [7 :0]     w_fifo_keep_dout        ;
-
+wire            w_wr_active             ;
 wire            w_wr_en                 ;
 wire            w_fifo_data_rden        ;
 /******************************assign*******************************/
@@ -202,11 +202,13 @@ always @(posedge i_clk or posedge i_rst) begin
 end
 
 always @(posedge i_clk or posedge i_rst) begin
-    if(i_rst)
+    if(i_rst)begin
         r_fifo_len_rden_1d <= 'd0;
-    else
+        r_fifo_len_rden_2d <= 'd0;
+    end else begin
         r_fifo_len_rden_1d <= r_fifo_len_rden;
         r_fifo_len_rden_2d = r_fifo_len_rden_1d;
+    end
 end
 
 always @(posedge i_clk or posedge i_rst) begin

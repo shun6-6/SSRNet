@@ -164,7 +164,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_axis_rx_tvalid_1d <= 'd0;
         rs_axis_rx_tdata_1d  <= 'd0;
     end
-    else begin
+    else if(s_axis_rx_tvalid && r_recv_cnt == 0 && s_axis_rx_tdata[7:0] != 8'd0)begin
         rs_axis_rx_tvalid <= s_axis_rx_tvalid   ;
         rs_axis_rx_tdata  <= s_axis_rx_tdata    ;
         rs_axis_rx_tlast  <= s_axis_rx_tlast    ;
@@ -172,6 +172,15 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_axis_rx_tuser  <= s_axis_rx_tuser    ;
         rs_axis_rx_tvalid_1d <= rs_axis_rx_tvalid;
         rs_axis_rx_tdata_1d  <= rs_axis_rx_tdata ;
+    end
+    else begin
+        rs_axis_rx_tvalid    <= 'd0 ;
+        rs_axis_rx_tdata     <= 'd0 ;
+        rs_axis_rx_tlast     <= 'd0 ;
+        rs_axis_rx_tkeep     <= 'd0 ;
+        rs_axis_rx_tuser     <= 'd0 ;
+        rs_axis_rx_tvalid_1d <= 'd0 ;
+        rs_axis_rx_tdata_1d  <= 'd0 ;
     end
 end
 
@@ -205,10 +214,10 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
 		r_recv_cnt <= 'd0;
-    else if(rs_axis_rx_tvalid && !rs_axis_rx_tvalid_1d)
-		r_recv_cnt <= r_recv_cnt + 1'b1;
-    else if(rs_axis_rx_tlast)
+    else if(s_axis_rx_tvalid && s_axis_rx_tlast)
         r_recv_cnt <= 'd0;
+    else if(s_axis_rx_tvalid)
+		r_recv_cnt <= r_recv_cnt + 1'b1;
     else
         r_recv_cnt <= r_recv_cnt;
 end
@@ -217,7 +226,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
 		r_recv_dst_mac <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 0)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
         r_recv_dst_mac <= rs_axis_rx_tdata[63 : 16];
     else
         r_recv_dst_mac <= r_recv_dst_mac;
@@ -226,7 +235,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_recv_src_mac <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
         r_recv_src_mac <= {rs_axis_rx_tdata_1d[15:0],rs_axis_rx_tdata[63 : 32]};
     else
         r_recv_src_mac <= r_recv_src_mac;
@@ -248,7 +257,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_check_valid <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
         ro_check_valid <= 1'b1;
     else
         ro_check_valid <= 'd0;
@@ -257,25 +266,17 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_check_mac <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
         ro_check_mac <= r_recv_dst_mac;
     else
         ro_check_mac <= ro_check_mac;
 end
 
-always @(posedge i_clk or posedge i_rst) begin
-    if(i_rst)
-        ro_check_mac <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
-        ro_check_mac <= r_recv_dst_mac;
-    else
-        ro_check_mac <= ro_check_mac;
-end
 
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_check_id <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
         ro_check_id <= P_RX_PORT_ID;
     else
         ro_check_id <= ro_check_id;
@@ -284,7 +285,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_check_ready <= 'd0;
-    else if(rs_axis_rx_tvalid && r_recv_cnt == 1)
+    else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
 		r_check_ready <= 1'b1;
     else if(!w_fifo_len_empty && w_check_active)
         r_check_ready <= 'd0;

@@ -105,6 +105,20 @@ localparam      P_TOR_NUM_WIDTH     = clogb2(P_TOR_NUM - 1);
 /******************************machine******************************/
 
 /******************************reg**********************************/
+reg             rs_uplink0_rx_axis_tvalid;
+reg  [63 :0]    rs_uplink0_rx_axis_tdata ;
+reg             rs_uplink0_rx_axis_tlast ;
+reg  [7  :0]    rs_uplink0_rx_axis_tkeep ;
+reg             rs_uplink0_rx_axis_tuser ;
+
+reg             rs_uplink1_rx_axis_tvalid;
+reg  [63 :0]    rs_uplink1_rx_axis_tdata ;
+reg             rs_uplink1_rx_axis_tlast ;
+reg  [7  :0]    rs_uplink1_rx_axis_tkeep ;
+reg             rs_uplink1_rx_axis_tuser ;
+reg  [15:0]     r_recv0_cnt;
+reg  [15:0]     r_recv1_cnt;
+
 reg  ro_check_queue_req_valid;
 reg  [2:0]ri_check_queue_resp_ready;
 reg  r_slot_start_en = 0;
@@ -196,11 +210,11 @@ VLB_port_module#(
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
 
-    .s_rx_axis_tvalid               (s_uplink0_rx_axis_tvalid   ),
-    .s_rx_axis_tdata                (s_uplink0_rx_axis_tdata    ),
-    .s_rx_axis_tlast                (s_uplink0_rx_axis_tlast    ),
-    .s_rx_axis_tkeep                (s_uplink0_rx_axis_tkeep    ),
-    .s_rx_axis_tuser                (s_uplink0_rx_axis_tuser    ),
+    .s_rx_axis_tvalid               (rs_uplink0_rx_axis_tvalid   ),
+    .s_rx_axis_tdata                (rs_uplink0_rx_axis_tdata    ),
+    .s_rx_axis_tlast                (rs_uplink0_rx_axis_tlast    ),
+    .s_rx_axis_tkeep                (rs_uplink0_rx_axis_tkeep    ),
+    .s_rx_axis_tuser                (rs_uplink0_rx_axis_tuser    ),
 
     .m_tx_axis_tvalid               (m_uplink0_tx_axis_tvalid   ),
     .m_tx_axis_tdata                (m_uplink0_tx_axis_tdata    ),
@@ -258,11 +272,11 @@ VLB_port_module#(
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
 
-    .s_rx_axis_tvalid               (s_uplink1_rx_axis_tvalid   ),
-    .s_rx_axis_tdata                (s_uplink1_rx_axis_tdata    ),
-    .s_rx_axis_tlast                (s_uplink1_rx_axis_tlast    ),
-    .s_rx_axis_tkeep                (s_uplink1_rx_axis_tkeep    ),
-    .s_rx_axis_tuser                (s_uplink1_rx_axis_tuser    ),
+    .s_rx_axis_tvalid               (rs_uplink1_rx_axis_tvalid   ),
+    .s_rx_axis_tdata                (rs_uplink1_rx_axis_tdata    ),
+    .s_rx_axis_tlast                (rs_uplink1_rx_axis_tlast    ),
+    .s_rx_axis_tkeep                (rs_uplink1_rx_axis_tkeep    ),
+    .s_rx_axis_tuser                (rs_uplink1_rx_axis_tuser    ),
 
     .m_tx_axis_tvalid               (m_uplink1_tx_axis_tvalid   ),
     .m_tx_axis_tdata                (m_uplink1_tx_axis_tdata    ),
@@ -295,6 +309,77 @@ VLB_port_module#(
     .i_tx_relay_valid               (w_port0_tx_relay_valid     )
 );
 /******************************always*******************************/
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_recv0_cnt <= 'd0;
+    else if(s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tlast)
+        r_recv0_cnt <= 'd0;
+    else if(s_uplink0_rx_axis_tvalid)
+		r_recv0_cnt <= r_recv0_cnt + 1'b1;
+    else
+        r_recv0_cnt <= r_recv0_cnt;
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_recv1_cnt <= 'd0;
+    else if(s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tlast)
+        r_recv1_cnt <= 'd0;
+    else if(s_uplink1_rx_axis_tvalid)
+		r_recv1_cnt <= r_recv1_cnt + 1'b1;
+    else
+        r_recv1_cnt <= r_recv1_cnt;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        rs_uplink0_rx_axis_tvalid <= 'd0;
+        rs_uplink0_rx_axis_tdata  <= 'd0;
+        rs_uplink0_rx_axis_tlast  <= 'd0;
+        rs_uplink0_rx_axis_tkeep  <= 'd0;
+        rs_uplink0_rx_axis_tuser  <= 'd0;
+    end
+    else if(r_recv0_cnt == 0 && s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tdata[2:0] == 3'd0)begin
+        rs_uplink0_rx_axis_tvalid <= s_uplink0_rx_axis_tvalid;
+        rs_uplink0_rx_axis_tdata  <= s_uplink0_rx_axis_tdata ;
+        rs_uplink0_rx_axis_tlast  <= s_uplink0_rx_axis_tlast ;
+        rs_uplink0_rx_axis_tkeep  <= s_uplink0_rx_axis_tkeep ;
+        rs_uplink0_rx_axis_tuser  <= s_uplink0_rx_axis_tuser ;
+    end
+    else begin
+        rs_uplink0_rx_axis_tvalid <= 'd0;
+        rs_uplink0_rx_axis_tdata  <= 'd0;
+        rs_uplink0_rx_axis_tlast  <= 'd0;
+        rs_uplink0_rx_axis_tkeep  <= 'd0;
+        rs_uplink0_rx_axis_tuser  <= 'd0;
+    end
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        rs_uplink1_rx_axis_tvalid <= 'd0;
+        rs_uplink1_rx_axis_tdata  <= 'd0;
+        rs_uplink1_rx_axis_tlast  <= 'd0;
+        rs_uplink1_rx_axis_tkeep  <= 'd0;
+        rs_uplink1_rx_axis_tuser  <= 'd0;
+    end
+    else if(r_recv1_cnt == 0 && s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tdata[2:0] == 3'd0)begin
+        rs_uplink1_rx_axis_tvalid <= s_uplink1_rx_axis_tvalid;
+        rs_uplink1_rx_axis_tdata  <= s_uplink1_rx_axis_tdata ;
+        rs_uplink1_rx_axis_tlast  <= s_uplink1_rx_axis_tlast ;
+        rs_uplink1_rx_axis_tkeep  <= s_uplink1_rx_axis_tkeep ;
+        rs_uplink1_rx_axis_tuser  <= s_uplink1_rx_axis_tuser ;
+    end
+    else begin
+        rs_uplink1_rx_axis_tvalid <= 'd0;
+        rs_uplink1_rx_axis_tdata  <= 'd0;
+        rs_uplink1_rx_axis_tlast  <= 'd0;
+        rs_uplink1_rx_axis_tkeep  <= 'd0;
+        rs_uplink1_rx_axis_tuser  <= 'd0;
+    end
+end
+
+
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)

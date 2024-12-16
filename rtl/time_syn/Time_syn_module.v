@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/10/15 11:16:07
+// Create Date: 2024/12/16 11:25:06
 // Design Name: 
-// Module Name: ten_eth_tx
+// Module Name: Time_syn_module
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,9 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module ten_eth_tx(
-    input                   i_clk       ,
-    input                   i_rst       
-    
-);
+module Time_syn_module(
+
+    );
 endmodule

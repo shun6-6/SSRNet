@@ -36,6 +36,9 @@ module SRRNet_Top#(
 
 localparam  P_CROSSBAR_N = 4;
 
+wire    w_dclk              ;
+wire    w_sys_reset         ;
+
 wire    w_0_tx_clk_out      ;
 wire    w_0_rx_clk_out      ;
 wire    w_0_user_tx_reset   ;
@@ -56,6 +59,61 @@ wire    w_3_rx_clk_out      ;
 wire    w_3_user_tx_reset   ;
 wire    w_3_user_rx_reset   ;
 wire    w_3_stat_rx_status  ;
+
+wire    w_ctrl_tx_clk_out    ;
+wire    w_ctrl_rx_clk_out    ;
+wire    w_ctrl_user_tx_reset ;
+wire    w_ctrl_user_rx_reset ;
+wire    w_ctrl_stat_rx_status;
+//eth data
+wire            tx0_axis_tready     ;
+wire            tx0_axis_tvalid     ;
+wire [63 :0]    tx0_axis_tdata      ;
+wire            tx0_axis_tlast      ;
+wire [7  :0]    tx0_axis_tkeep      ;
+wire            tx0_axis_tuser      ;
+wire            m_rx0_axis_tvalid   ;
+wire [63 :0]    m_rx0_axis_tdata    ;
+wire            m_rx0_axis_tlast    ;
+wire [7  :0]    m_rx0_axis_tkeep    ;
+wire            m_rx0_axis_tuser    ;
+wire [2 : 0]    m_rx0_axis_tdest    ;
+wire            tx1_axis_tready     ;
+wire            tx1_axis_tvalid     ;
+wire [63 :0]    tx1_axis_tdata      ;
+wire            tx1_axis_tlast      ;
+wire [7  :0]    tx1_axis_tkeep      ;
+wire            tx1_axis_tuser      ;
+wire            m_rx1_axis_tvalid   ;
+wire [63 :0]    m_rx1_axis_tdata    ;
+wire            m_rx1_axis_tlast    ;
+wire [7  :0]    m_rx1_axis_tkeep    ;
+wire            m_rx1_axis_tuser    ;
+wire [2 : 0]    m_rx1_axis_tdest    ;
+wire            tx2_axis_tready     ;
+wire            tx2_axis_tvalid     ;
+wire [63 :0]    tx2_axis_tdata      ;
+wire            tx2_axis_tlast      ;
+wire [7  :0]    tx2_axis_tkeep      ;
+wire            tx2_axis_tuser      ;
+wire            m_rx2_axis_tvalid   ;
+wire [63 :0]    m_rx2_axis_tdata    ;
+wire            m_rx2_axis_tlast    ;
+wire [7  :0]    m_rx2_axis_tkeep    ;
+wire            m_rx2_axis_tuser    ;
+wire [2 : 0]    m_rx2_axis_tdest    ;
+wire            tx3_axis_tready     ;
+wire            tx3_axis_tvalid     ;
+wire [63 :0]    tx3_axis_tdata      ;
+wire            tx3_axis_tlast      ;
+wire [7  :0]    tx3_axis_tkeep      ;
+wire            tx3_axis_tuser      ;
+wire            m_rx3_axis_tvalid   ;
+wire [63 :0]    m_rx3_axis_tdata    ;
+wire            m_rx3_axis_tlast    ;
+wire [7  :0]    m_rx3_axis_tkeep    ;
+wire            m_rx3_axis_tuser    ;
+wire [2 : 0]    m_rx3_axis_tdest    ;
 //block design
 wire [31:0]                 w_rd_ddr_addr_0;
 wire [31:0]                 w_rd_ddr_addr_1;
@@ -85,51 +143,6 @@ wire                        w_wr_ddr_ready_0;
 wire                        w_wr_ddr_ready_1;
 wire                        w_wr_ddr_ready_2;
 wire                        w_wr_ddr_ready_3;
-
-wire                        s0_axis_rx_tvalid   ;
-wire [63 :0]                s0_axis_rx_tdata    ;
-wire                        s0_axis_rx_tlast    ;
-wire [7  :0]                s0_axis_rx_tkeep    ;
-wire                        s0_axis_rx_tuser    ;
-wire [2 : 0]                s0_axis_rx_tdest    ;
-wire                        m0_axis_tx_tvalid   ;
-wire [63 :0]                m0_axis_tx_tdata    ;
-wire                        m0_axis_tx_tlast    ;
-wire [7  :0]                m0_axis_tx_tkeep    ;
-wire                        m0_axis_tx_tuser    ;
-wire                        s1_axis_rx_tvalid   ;
-wire [63 :0]                s1_axis_rx_tdata    ;
-wire                        s1_axis_rx_tlast    ;
-wire [7  :0]                s1_axis_rx_tkeep    ;
-wire                        s1_axis_rx_tuser    ;
-wire [2 : 0]                s1_axis_rx_tdest    ;
-wire                        m1_axis_tx_tvalid   ;
-wire [63 :0]                m1_axis_tx_tdata    ;
-wire                        m1_axis_tx_tlast    ;
-wire [7  :0]                m1_axis_tx_tkeep    ;
-wire                        m1_axis_tx_tuser    ;
-wire                        s2_axis_rx_tvalid   ;
-wire [63 :0]                s2_axis_rx_tdata    ;
-wire                        s2_axis_rx_tlast    ;
-wire [7  :0]                s2_axis_rx_tkeep    ;
-wire                        s2_axis_rx_tuser    ;
-wire [2 : 0]                s2_axis_rx_tdest    ;
-wire                        m2_axis_tx_tvalid   ;
-wire [63 :0]                m2_axis_tx_tdata    ;
-wire                        m2_axis_tx_tlast    ;
-wire [7  :0]                m2_axis_tx_tkeep    ;
-wire                        m2_axis_tx_tuser    ;
-wire                        s3_axis_rx_tvalid   ;
-wire [63 :0]                s3_axis_rx_tdata    ;
-wire                        s3_axis_rx_tlast    ;
-wire [7  :0]                s3_axis_rx_tkeep    ;
-wire                        s3_axis_rx_tuser    ;
-wire [2 : 0]                s3_axis_rx_tdest    ;
-wire                        m3_axis_tx_tvalid   ;
-wire [63 :0]                m3_axis_tx_tdata    ;
-wire                        m3_axis_tx_tlast    ;
-wire [7  :0]                m3_axis_tx_tkeep    ;
-wire                        m3_axis_tx_tuser    ;
 
 wire                        w_rd_ddr_cpl_0          ;
 wire                        w_rd_ddr_cpl_1          ;
@@ -171,23 +184,230 @@ wire                        w_wr_ddr_valid_0        ;
 wire                        w_wr_ddr_valid_1        ;
 wire                        w_wr_ddr_valid_2        ;
 wire                        w_wr_ddr_valid_3        ;
+//ddr memory manager
+wire  [63:0]                m_axis_0_tdata          ;
+wire  [7 :0]                m_axis_0_tkeep          ;
+wire                        m_axis_0_tlast          ;
+wire                        m_axis_0_tready         ;
+wire                        m_axis_0_tuser          ;
+wire                        m_axis_0_tvalid         ;
+wire  [63:0]                m_axis_1_tdata          ;
+wire  [7 :0]                m_axis_1_tkeep          ;
+wire                        m_axis_1_tlast          ;
+wire                        m_axis_1_tready         ;
+wire                        m_axis_1_tuser          ;
+wire                        m_axis_1_tvalid         ;
+wire  [63:0]                m_axis_2_tdata          ;
+wire  [7 :0]                m_axis_2_tkeep          ;
+wire                        m_axis_2_tlast          ;
+wire                        m_axis_2_tready         ;
+wire                        m_axis_2_tuser          ;
+wire                        m_axis_2_tvalid         ;
+wire  [63:0]                m_axis_3_tdata          ;
+wire  [7 :0]                m_axis_3_tkeep          ;
+wire                        m_axis_3_tlast          ;
+wire                        m_axis_3_tready         ;
+wire                        m_axis_3_tuser          ;
+wire                        m_axis_3_tvalid         ;
+//ctrl axis
+wire                        s_ctrl_axis_tvalid    ;
+wire  [63:0]                s_ctrl_axis_tdata     ;
+wire                        s_ctrl_axis_tlast     ;
+wire  [7 :0]                s_ctrl_axis_tkeep     ;
+wire                        s_ctrl_axis_tuser     ;
 
+wire                        s_ctrl_0_axis_tvalid  ;
+wire  [63:0]                s_ctrl_0_axis_tdata   ;
+wire                        s_ctrl_0_axis_tlast   ;
+wire  [7 :0]                s_ctrl_0_axis_tkeep   ;
+wire                        s_ctrl_0_axis_tuser   ;
+wire                        s_ctrl_1_axis_tvalid  ;
+wire  [63:0]                s_ctrl_1_axis_tdata   ;
+wire                        s_ctrl_1_axis_tlast   ;
+wire  [7 :0]                s_ctrl_1_axis_tkeep   ;
+wire                        s_ctrl_1_axis_tuser   ;
+
+//queue manager
+wire                        w_check_queue_req_valid ;
+wire                        w_check_queue_resp_ready;
+wire  [255:0]               w_local_queue_size      ;
+wire  [255:0]               w_unlocal_queue_size    ;
+
+eth_10g_ctrl_top#(
+    .P_CHANNEL_NUM          (1                      ),
+    .P_MIN_LENGTH           (8'd64                  ),
+    .P_MAX_LENGTH           (15'd9600               )
+)eth_10g_ctrl_link( 
+    .i_gt_refclk_p          (i_gt_refclk_p          ),
+    .i_gt_refclk_n          (i_gt_refclk_n          ),
+    .i_sys_clk_p            (i_sys_clk_p            ),
+    .i_sys_clk_n            (i_sys_clk_n            ),
+    .o_gt_txp               (o_gt_txp               ),
+    .o_gt_txn               (o_gt_txn               ),
+    .i_gt_rxp               (i_gt_rxp               ),
+    .i_gt_rxn               (i_gt_rxn               ),
+    .o_sfp_dis              (o_sfp_dis              ),
+    .i_dclk                 (w_dclk                 ),
+    .i_sys_reset            (w_sys_reset            ),
+    .o_0_tx_clk_out         (w_ctrl_tx_clk_out      ),
+    .o_0_rx_clk_out         (w_ctrl_rx_clk_out      ),
+    .o_0_user_tx_reset      (w_ctrl_user_tx_reset   ),
+    .o_0_user_rx_reset      (w_ctrl_user_rx_reset   ),
+    .o_0_stat_rx_status     (w_ctrl_stat_rx_status  ),
+    .tx0_axis_tready        (tx_ctrl_axis_tready    ),
+    .tx0_axis_tvalid        (tx_ctrl_axis_tvalid    ),
+    .tx0_axis_tdata         (tx_ctrl_axis_tdata     ),
+    .tx0_axis_tlast         (tx_ctrl_axis_tlast     ),
+    .tx0_axis_tkeep         (tx_ctrl_axis_tkeep     ),
+    .tx0_axis_tuser         (tx_ctrl_axis_tuser     ),
+    .rx0_axis_tvalid        (s_ctrl_axis_tvalid     ),
+    .rx0_axis_tdata         (s_ctrl_axis_tdata      ),
+    .rx0_axis_tlast         (s_ctrl_axis_tlast      ),
+    .rx0_axis_tkeep         (s_ctrl_axis_tkeep      ),
+    .rx0_axis_tuser         (s_ctrl_axis_tuser      )
+);
+
+VLB_module#(
+    .C_M_AXI_ADDR_WIDTH     (32                    ),
+    .P_QUEUE_NUM            (8                     ),//== P_TOR_NUM
+    .P_CAPACITY_PKT_TYPE    (16'hff00              ),
+    .P_OFFER_PKT_TYPE       (16'hff01              ),
+    .P_RELAY_PKT_TYPE       (16'hff02              ),
+    .P_SLOT_ID_TYPE         (16'hff03              ),
+    .P_TIME_STAMP_TYPE      (16'hffff              ),
+    .P_SLOT_NUM             (2                     ),
+    .P_TOR_NUM              (8                     ),
+    .P_OCS_NUM              (2                     ),
+    .P_MY_OCS               (0                     ),
+    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_10_00 ),
+    .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
+    .P_SLOT_MAX_PKT_NUM     (32'h00_04_00_00       ),
+    .P_ETH_MIN_LEN          (8                     )
+)VLB_module_u0(
+    .i_clk                       (w_2_tx_clk_out        ),
+    .i_rst                       (w_2_user_tx_reset     ),  
+    .i_syn_time_stamp            (),
+
+    .s_ctrl_rx_axis_tvalid       (s_ctrl_axis_tvalid    ),
+    .s_ctrl_rx_axis_tdata        (s_ctrl_axis_tdata     ),
+    .s_ctrl_rx_axis_tlast        (s_ctrl_axis_tlast     ),
+    .s_ctrl_rx_axis_tkeep        (s_ctrl_axis_tkeep     ),
+    .s_ctrl_rx_axis_tuser        (s_ctrl_axis_tuser     ),
+
+    .s_uplink0_rx_axis_tvalid    (m_rx2_axis_tvalid     ),
+    .s_uplink0_rx_axis_tdata     (m_rx2_axis_tdata      ),
+    .s_uplink0_rx_axis_tlast     (m_rx2_axis_tlast      ),
+    .s_uplink0_rx_axis_tkeep     (m_rx2_axis_tkeep      ),
+    .s_uplink0_rx_axis_tuser     (m_rx2_axis_tuser      ),
+
+    .m_uplink0_tx_axis_tvalid    (s_ctrl_0_axis_tvalid  ),
+    .m_uplink0_tx_axis_tdata     (s_ctrl_0_axis_tdata   ),
+    .m_uplink0_tx_axis_tlast     (s_ctrl_0_axis_tlast   ),
+    .m_uplink0_tx_axis_tkeep     (s_ctrl_0_axis_tkeep   ),
+    .m_uplink0_tx_axis_tuser     (s_ctrl_0_axis_tuser   ),
+    .m_uplink0_tx_axis_tready    (1'b1),
+
+    .s_uplink1_rx_axis_tvalid    (m_rx3_axis_tvalid     ),
+    .s_uplink1_rx_axis_tdata     (m_rx3_axis_tdata      ),
+    .s_uplink1_rx_axis_tlast     (m_rx3_axis_tlast      ),
+    .s_uplink1_rx_axis_tkeep     (m_rx3_axis_tkeep      ),
+    .s_uplink1_rx_axis_tuser     (m_rx3_axis_tuser      ),
+
+    .m_uplink1_tx_axis_tvalid    (s_ctrl_1_axis_tvalid  ),
+    .m_uplink1_tx_axis_tdata     (s_ctrl_1_axis_tdata   ),
+    .m_uplink1_tx_axis_tlast     (s_ctrl_1_axis_tlast   ),
+    .m_uplink1_tx_axis_tkeep     (s_ctrl_1_axis_tkeep   ),
+    .m_uplink1_tx_axis_tuser     (s_ctrl_1_axis_tuser   ),
+    .m_uplink1_tx_axis_tready    (1'b1),
+
+    .o_check_queue_req_valid     (w_check_queue_req_valid ),
+    .i_check_queue_resp_ready    (w_check_queue_resp_ready),
+    .i_local_queue_size          (w_local_queue_size      ),
+    .i_unlocal_queue_size        (w_unlocal_queue_size    ),
+
+    .o_port0_my_local2_pkt_size  (),
+    .o_port0_send_local2_valid   (),
+    .o_port0_cur_direct_tor      (),
+    .o_port0_tx_relay            (),
+    .o_port0_tx_relay_valid      (),
+
+    .o_port1_my_local2_pkt_size  (),
+    .o_port1_send_local2_valid   (),
+    .o_port1_cur_direct_tor      (),
+    .o_port1_tx_relay            (),
+    .o_port1_tx_relay_valid      ()
+);
+
+eth_uplink_port eth_uplink_port_u0(
+    .i_crtl_clk             (w_ctrl_tx_clk_out      ),
+    .i_crtl_rst             (w_ctrl_user_tx_reset   ),
+    .i_data_clk             (w_2_tx_clk_out         ),
+    .i_data_rst             (w_2_user_tx_reset      ),
+
+    .s_ctrl_axis_tvalid     (s_ctrl_0_axis_tvalid   ),
+    .s_ctrl_axis_tdata      (s_ctrl_0_axis_tdata    ),
+    .s_ctrl_axis_tlast      (s_ctrl_0_axis_tlast    ),
+    .s_ctrl_axis_tkeep      (s_ctrl_0_axis_tkeep    ),
+    .s_ctrl_axis_tuser      (s_ctrl_0_axis_tuser    ),
+     
+    .s_data_axis_tvalid     (m_axis_2_tvalid        ),
+    .s_data_axis_tdata      (m_axis_2_tdata         ),
+    .s_data_axis_tlast      (m_axis_2_tlast         ),
+    .s_data_axis_tkeep      (m_axis_2_tkeep         ),
+    .s_data_axis_tuser      (m_axis_2_tuser         ),
+    .s_data_axis_tready     (m_axis_2_tready        ),
+         
+    .m_tx_axis_tvalid       (tx2_axis_tvalid        ),
+    .m_tx_axis_tdata        (tx2_axis_tdata         ),
+    .m_tx_axis_tlast        (tx2_axis_tlast         ),
+    .m_tx_axis_tkeep        (tx2_axis_tkeep         ),
+    .m_tx_axis_tuser        (tx2_axis_tuser         ),
+    .m_tx_axis_tready       (tx2_axis_tready        ) 
+);
+
+eth_uplink_port eth_uplink_port_u1(
+    .i_crtl_clk             (w_ctrl_tx_clk_out      ),
+    .i_crtl_rst             (w_ctrl_user_tx_reset   ),
+    .i_data_clk             (w_3_tx_clk_out         ),
+    .i_data_rst             (w_3_user_tx_reset      ),
+
+    .s_ctrl_axis_tvalid     (s_ctrl_1_axis_tvalid   ),
+    .s_ctrl_axis_tdata      (s_ctrl_1_axis_tdata    ),
+    .s_ctrl_axis_tlast      (s_ctrl_1_axis_tlast    ),
+    .s_ctrl_axis_tkeep      (s_ctrl_1_axis_tkeep    ),
+    .s_ctrl_axis_tuser      (s_ctrl_1_axis_tuser    ),
+     
+    .s_data_axis_tvalid     (m_axis_3_tvalid        ),
+    .s_data_axis_tdata      (m_axis_3_tdata         ),
+    .s_data_axis_tlast      (m_axis_3_tlast         ),
+    .s_data_axis_tkeep      (m_axis_3_tkeep         ),
+    .s_data_axis_tuser      (m_axis_3_tuser         ),
+    .s_data_axis_tready     (m_axis_3_tready        ),
+         
+    .m_tx_axis_tvalid       (tx3_axis_tvalid        ),
+    .m_tx_axis_tdata        (tx3_axis_tdata         ),
+    .m_tx_axis_tlast        (tx3_axis_tlast         ),
+    .m_tx_axis_tkeep        (tx3_axis_tkeep         ),
+    .m_tx_axis_tuser        (tx3_axis_tuser         ),
+    .m_tx_axis_tready       (tx3_axis_tready        ) 
+);
 
 VCU128_10g_eth_top#(
-    .P_CHANNEL_NUM          (P_CHANNEL_NUM  )   ,
-    .P_MIN_LENGTH           (8'd64          )   ,
-    .P_MAX_LENGTH           (15'd9600       )   
-)VCU128_10g_eth_top_u0( 
-    .i_gt_refclk_p          (i_gt_refclk_p  )   ,
-    .i_gt_refclk_n          (i_gt_refclk_n  )   ,
-    .i_sys_clk_p            (i_sys_clk_p    )   ,
-    .i_sys_clk_n            (i_sys_clk_n    )   ,
-    .o_gt_txp               (o_gt_txp       )   ,
-    .o_gt_txn               (o_gt_txn       )   ,
-    .i_gt_rxp               (i_gt_rxp       )   ,
-    .i_gt_rxn               (i_gt_rxn       )   ,
-    .o_sfp_dis              (o_sfp_dis      )   ,
-
+    .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
+    .P_MIN_LENGTH           (8'd64              ),
+    .P_MAX_LENGTH           (15'd9600           )
+)VCU128_10g_eth_top_data_link( 
+    .i_gt_refclk_p          (i_gt_refclk_p      ),
+    .i_gt_refclk_n          (i_gt_refclk_n      ),
+    .i_sys_clk_p            (i_sys_clk_p        ),
+    .i_sys_clk_n            (i_sys_clk_n        ),
+    .o_gt_txp               (o_gt_txp           ),
+    .o_gt_txn               (o_gt_txn           ),
+    .i_gt_rxp               (i_gt_rxp           ),
+    .i_gt_rxn               (i_gt_rxn           ),
+    .o_sfp_dis              (o_sfp_dis          ),
+    .o_dclk                 (w_dclk             ),
+    .o_sys_reset            (w_sys_reset        ),
     .o_0_tx_clk_out         (w_0_tx_clk_out     ),
     .o_0_rx_clk_out         (w_0_rx_clk_out     ),
     .o_0_user_tx_reset      (w_0_user_tx_reset  ),
@@ -199,11 +419,12 @@ VCU128_10g_eth_top#(
     .tx0_axis_tlast         (tx0_axis_tlast     ),
     .tx0_axis_tkeep         (tx0_axis_tkeep     ),
     .tx0_axis_tuser         (tx0_axis_tuser     ),
-    .rx0_axis_tvalid        (rx0_axis_tvalid    ),
-    .rx0_axis_tdata         (rx0_axis_tdata     ),
-    .rx0_axis_tlast         (rx0_axis_tlast     ),
-    .rx0_axis_tkeep         (rx0_axis_tkeep     ),
-    .rx0_axis_tuser         (rx0_axis_tuser     ),
+    .m_rx0_axis_tvalid      (m_rx0_axis_tvalid  ),
+    .m_rx0_axis_tdata       (m_rx0_axis_tdata   ),
+    .m_rx0_axis_tlast       (m_rx0_axis_tlast   ),
+    .m_rx0_axis_tkeep       (m_rx0_axis_tkeep   ),
+    .m_rx0_axis_tuser       (m_rx0_axis_tuser   ),
+    .m_rx0_axis_tdest       (m_rx0_axis_tdest   ),
 
     .o_1_tx_clk_out         (w_1_tx_clk_out     ),
     .o_1_rx_clk_out         (w_1_rx_clk_out     ),
@@ -216,11 +437,12 @@ VCU128_10g_eth_top#(
     .tx1_axis_tlast         (tx1_axis_tlast     ),
     .tx1_axis_tkeep         (tx1_axis_tkeep     ),
     .tx1_axis_tuser         (tx1_axis_tuser     ),
-    .rx1_axis_tvalid        (rx1_axis_tvalid    ),
-    .rx1_axis_tdata         (rx1_axis_tdata     ),
-    .rx1_axis_tlast         (rx1_axis_tlast     ),
-    .rx1_axis_tkeep         (rx1_axis_tkeep     ),
-    .rx1_axis_tuser         (rx1_axis_tuser     ),
+    .m_rx1_axis_tvalid      (m_rx1_axis_tvalid  ),
+    .m_rx1_axis_tdata       (m_rx1_axis_tdata   ),
+    .m_rx1_axis_tlast       (m_rx1_axis_tlast   ),
+    .m_rx1_axis_tkeep       (m_rx1_axis_tkeep   ),
+    .m_rx1_axis_tuser       (m_rx1_axis_tuser   ),
+    .m_rx1_axis_tdest       (m_rx1_axis_tdest   ),
 
     .o_2_tx_clk_out         (w_2_tx_clk_out     ),
     .o_2_rx_clk_out         (w_2_rx_clk_out     ),
@@ -233,11 +455,12 @@ VCU128_10g_eth_top#(
     .tx2_axis_tlast         (tx2_axis_tlast     ),
     .tx2_axis_tkeep         (tx2_axis_tkeep     ),
     .tx2_axis_tuser         (tx2_axis_tuser     ),
-    .rx2_axis_tvalid        (rx2_axis_tvalid    ),
-    .rx2_axis_tdata         (rx2_axis_tdata     ),
-    .rx2_axis_tlast         (rx2_axis_tlast     ),
-    .rx2_axis_tkeep         (rx2_axis_tkeep     ),
-    .rx2_axis_tuser         (rx2_axis_tuser     ),
+    .m_rx2_axis_tvalid      (m_rx2_axis_tvalid  ),
+    .m_rx2_axis_tdata       (m_rx2_axis_tdata   ),
+    .m_rx2_axis_tlast       (m_rx2_axis_tlast   ),
+    .m_rx2_axis_tkeep       (m_rx2_axis_tkeep   ),
+    .m_rx2_axis_tuser       (m_rx2_axis_tuser   ),
+    .m_rx2_axis_tdest       (m_rx2_axis_tdest   ),
 
     .o_3_tx_clk_out         (w_3_tx_clk_out     ),
     .o_3_rx_clk_out         (w_3_rx_clk_out     ),
@@ -250,45 +473,12 @@ VCU128_10g_eth_top#(
     .tx3_axis_tlast         (tx3_axis_tlast     ),
     .tx3_axis_tkeep         (tx3_axis_tkeep     ),
     .tx3_axis_tuser         (tx3_axis_tuser     ),
-    .rx3_axis_tvalid        (rx3_axis_tvalid    ),
-    .rx3_axis_tdata         (rx3_axis_tdata     ),
-    .rx3_axis_tlast         (rx3_axis_tlast     ),
-    .rx3_axis_tkeep         (rx3_axis_tkeep     ),
-    .rx3_axis_tuser         (rx3_axis_tuser     )
-);
-
-
-ten_eth_rx#(
-    .P_RX_PORT_ID           (0                     ),
-    .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 )
-)ten_eth_rx_downlink_port0(
-    .i_clk                  (w_0_tx_clk_out         ),
-    .i_rst                  (w_0_user_rx_reset      ),
-    .i_stat_rx_status       (w_0_stat_rx_status     ),
- 
-    .s_axis_rx_tvalid       (),
-    .s_axis_rx_tdata        (),
-    .s_axis_rx_tlast        (),
-    .s_axis_rx_tkeep        (),
-    .s_axis_rx_tuser        (),
-   
-    .o_check_mac            (),
-    .o_check_id             (),
-    .o_check_valid          (),
-
-    .i_outport              (),
-    .i_result_valid         (),
-    .i_check_id             (),
-    .i_seek_flag            (),
-
-    .m_axis_tvalid          (s0_axis_rx_tvalid  ),
-    .m_axis_tdata           (s0_axis_rx_tdata   ),
-    .m_axis_tlast           (s0_axis_rx_tlast   ),
-    .m_axis_tkeep           (s0_axis_rx_tkeep   ),
-    .m_axis_tuser           (s0_axis_rx_tuser   ),
-    .m_axis_tdest           (s0_axis_rx_tdest   )
+    .m_rx3_axis_tvalid      (m_rx3_axis_tvalid  ),
+    .m_rx3_axis_tdata       (m_rx3_axis_tdata   ),
+    .m_rx3_axis_tlast       (m_rx3_axis_tlast   ),
+    .m_rx3_axis_tkeep       (m_rx3_axis_tkeep   ),
+    .m_rx3_axis_tuser       (m_rx3_axis_tuser   ),
+    .m_rx3_axis_tdest       (m_rx3_axis_tdest   )
 );
 
 crossbar#(
@@ -297,54 +487,54 @@ crossbar#(
     .i_clk                      (i_clk             ),
     .i_rst                      (i_rst             ),
 
-    .s0_axis_rx_tvalid          (s0_axis_rx_tvalid ),
-    .s0_axis_rx_tdata           (s0_axis_rx_tdata  ),
-    .s0_axis_rx_tlast           (s0_axis_rx_tlast  ),
-    .s0_axis_rx_tkeep           (s0_axis_rx_tkeep  ),
-    .s0_axis_rx_tuser           (s0_axis_rx_tuser  ),
-    .s0_axis_rx_tdest           (s0_axis_rx_tdest  ),
-    .m0_axis_tx_tvalid          (m0_axis_tx_tvalid ),
-    .m0_axis_tx_tdata           (m0_axis_tx_tdata  ),
-    .m0_axis_tx_tlast           (m0_axis_tx_tlast  ),
-    .m0_axis_tx_tkeep           (m0_axis_tx_tkeep  ),
-    .m0_axis_tx_tuser           (m0_axis_tx_tuser  ),     
-    .m0_axis_tx_tready          (m0_axis_tx_tready ),          
-    .s1_axis_rx_tvalid          (s1_axis_rx_tvalid ),
-    .s1_axis_rx_tdata           (s1_axis_rx_tdata  ),
-    .s1_axis_rx_tlast           (s1_axis_rx_tlast  ),
-    .s1_axis_rx_tkeep           (s1_axis_rx_tkeep  ),
-    .s1_axis_rx_tuser           (s1_axis_rx_tuser  ),
-    .s1_axis_rx_tdest           (s1_axis_rx_tdest  ),
-    .m1_axis_tx_tvalid          (m1_axis_tx_tvalid ),
-    .m1_axis_tx_tdata           (m1_axis_tx_tdata  ),
-    .m1_axis_tx_tlast           (m1_axis_tx_tlast  ),
-    .m1_axis_tx_tkeep           (m1_axis_tx_tkeep  ),
-    .m1_axis_tx_tuser           (m1_axis_tx_tuser  ),
-    .m1_axis_tx_tready          (m1_axis_tx_tready ),    
-    .s2_axis_rx_tvalid          (s2_axis_rx_tvalid ),
-    .s2_axis_rx_tdata           (s2_axis_rx_tdata  ),
-    .s2_axis_rx_tlast           (s2_axis_rx_tlast  ),
-    .s2_axis_rx_tkeep           (s2_axis_rx_tkeep  ),
-    .s2_axis_rx_tuser           (s2_axis_rx_tuser  ),
-    .s2_axis_rx_tdest           (s2_axis_rx_tdest  ),
-    .m2_axis_tx_tvalid          (m2_axis_tx_tvalid ),
-    .m2_axis_tx_tdata           (m2_axis_tx_tdata  ),
-    .m2_axis_tx_tlast           (m2_axis_tx_tlast  ),
-    .m2_axis_tx_tkeep           (m2_axis_tx_tkeep  ),
-    .m2_axis_tx_tuser           (m2_axis_tx_tuser  ),
-    .m2_axis_tx_tready          (m2_axis_tx_tready ),    
-    .s3_axis_rx_tvalid          (s3_axis_rx_tvalid ),
-    .s3_axis_rx_tdata           (s3_axis_rx_tdata  ),
-    .s3_axis_rx_tlast           (s3_axis_rx_tlast  ),
-    .s3_axis_rx_tkeep           (s3_axis_rx_tkeep  ),
-    .s3_axis_rx_tuser           (s3_axis_rx_tuser  ),
-    .s3_axis_rx_tdest           (s3_axis_rx_tdest  ),
-    .m3_axis_tx_tvalid          (m3_axis_tx_tvalid ),
-    .m3_axis_tx_tdata           (m3_axis_tx_tdata  ),
-    .m3_axis_tx_tlast           (m3_axis_tx_tlast  ),
-    .m3_axis_tx_tkeep           (m3_axis_tx_tkeep  ),
-    .m3_axis_tx_tuser           (m3_axis_tx_tuser  ),
-    .m3_axis_tx_tready          (m3_axis_tx_tready )
+    .s0_axis_rx_tvalid          (m_rx0_axis_tvalid  ),
+    .s0_axis_rx_tdata           (m_rx0_axis_tdata   ),
+    .s0_axis_rx_tlast           (m_rx0_axis_tlast   ),
+    .s0_axis_rx_tkeep           (m_rx0_axis_tkeep   ),
+    .s0_axis_rx_tuser           (m_rx0_axis_tuser   ),
+    .s0_axis_rx_tdest           (m_rx0_axis_tdest   ),
+    .m0_axis_tx_tvalid          (tx0_axis_tvalid    ),
+    .m0_axis_tx_tdata           (tx0_axis_tdata     ),
+    .m0_axis_tx_tlast           (tx0_axis_tlast     ),
+    .m0_axis_tx_tkeep           (tx0_axis_tkeep     ),
+    .m0_axis_tx_tuser           (tx0_axis_tuser     ),     
+    .m0_axis_tx_tready          (tx0_axis_tready    ),          
+    .s1_axis_rx_tvalid          (m_rx1_axis_tvalid  ),
+    .s1_axis_rx_tdata           (m_rx1_axis_tdata   ),
+    .s1_axis_rx_tlast           (m_rx1_axis_tlast   ),
+    .s1_axis_rx_tkeep           (m_rx1_axis_tkeep   ),
+    .s1_axis_rx_tuser           (m_rx1_axis_tuser   ),
+    .s1_axis_rx_tdest           (m_rx1_axis_tdest   ),
+    .m1_axis_tx_tvalid          (tx1_axis_tvalid    ),
+    .m1_axis_tx_tdata           (tx1_axis_tdata     ),
+    .m1_axis_tx_tlast           (tx1_axis_tlast     ),
+    .m1_axis_tx_tkeep           (tx1_axis_tkeep     ),
+    .m1_axis_tx_tuser           (tx1_axis_tuser     ),
+    .m1_axis_tx_tready          (tx1_axis_tready    ),    
+    .s2_axis_rx_tvalid          (m_rx2_axis_tvalid  ),
+    .s2_axis_rx_tdata           (m_rx2_axis_tdata   ),
+    .s2_axis_rx_tlast           (m_rx2_axis_tlast   ),
+    .s2_axis_rx_tkeep           (m_rx2_axis_tkeep   ),
+    .s2_axis_rx_tuser           (m_rx2_axis_tuser   ),
+    .s2_axis_rx_tdest           (m_rx2_axis_tdest   ),
+    .m2_axis_tx_tvalid          (tx2_axis_tvalid    ),
+    .m2_axis_tx_tdata           (tx2_axis_tdata     ),
+    .m2_axis_tx_tlast           (tx2_axis_tlast     ),
+    .m2_axis_tx_tkeep           (tx2_axis_tkeep     ),
+    .m2_axis_tx_tuser           (tx2_axis_tuser     ),
+    .m2_axis_tx_tready          (tx2_axis_tready    ),    
+    .s3_axis_rx_tvalid          (m_rx3_axis_tvalid  ),
+    .s3_axis_rx_tdata           (m_rx3_axis_tdata   ),
+    .s3_axis_rx_tlast           (m_rx3_axis_tlast   ),
+    .s3_axis_rx_tkeep           (m_rx3_axis_tkeep   ),
+    .s3_axis_rx_tuser           (m_rx3_axis_tuser   ),
+    .s3_axis_rx_tdest           (m_rx3_axis_tdest   ),
+    .m3_axis_tx_tvalid          (tx3_axis_tvalid    ),
+    .m3_axis_tx_tdata           (tx3_axis_tdata     ),
+    .m3_axis_tx_tlast           (tx3_axis_tlast     ),
+    .m3_axis_tx_tkeep           (tx3_axis_tkeep     ),
+    .m3_axis_tx_tuser           (tx3_axis_tuser     ),
+    .m3_axis_tx_tready          (tx3_axis_tready    )
 ); 
 
 
@@ -384,14 +574,14 @@ design_1_wrapper design_1_wrapper_u0(
     .c0_ddr4_ui_clk_0               (ddr4_ui_clk),
     .c0_ddr4_ui_clk_sync_rst_0      (ddr4_ui_rst),
     .c0_init_calib_complete_0       (c0_init_calib_complete_0),
-    .i_axis_clk_0                   (),
-    .i_axis_rst_0                   (),
-    .i_axis_clk_1                   (),
-    .i_axis_rst_1                   (),
-    .i_axis_clk_2                   (),
-    .i_axis_rst_2                   (),
-    .i_axis_clk_3                   (),
-    .i_axis_rst_3                   (),
+    .i_axis_clk_0                   (w_0_tx_clk_out     ),
+    .i_axis_rst_0                   (w_0_user_tx_reset  ),
+    .i_axis_clk_1                   (w_0_tx_clk_out     ),
+    .i_axis_rst_1                   (w_0_user_tx_reset  ),
+    .i_axis_clk_2                   (w_0_tx_clk_out     ),
+    .i_axis_rst_2                   (w_0_user_tx_reset  ),
+    .i_axis_clk_3                   (w_0_tx_clk_out     ),
+    .i_axis_rst_3                   (w_0_user_tx_reset  ),
      
     .i_rd_ddr_addr_0                (w_rd_ddr_addr_0     ),
     .i_rd_ddr_addr_1                (w_rd_ddr_addr_1     ),
@@ -421,30 +611,30 @@ design_1_wrapper design_1_wrapper_u0(
     .i_wr_ddr_ready_1               (w_wr_ddr_ready_1    ),
     .i_wr_ddr_ready_2               (w_wr_ddr_ready_2    ),
     .i_wr_ddr_ready_3               (w_wr_ddr_ready_3    ),
-    .m_axis_0_tdata                 (),
-    .m_axis_0_tkeep                 (),
-    .m_axis_0_tlast                 (),
-    .m_axis_0_tready                (1'b1),
-    .m_axis_0_tuser                 (),
-    .m_axis_0_tvalid                (),
-    .m_axis_1_tdata                 (),
-    .m_axis_1_tkeep                 (),
-    .m_axis_1_tlast                 (),
-    .m_axis_1_tready                (1'b1),
-    .m_axis_1_tuser                 (),
-    .m_axis_1_tvalid                (),
-    .m_axis_2_tdata                 (),
-    .m_axis_2_tkeep                 (),
-    .m_axis_2_tlast                 (),
-    .m_axis_2_tready                (1'b1),
-    .m_axis_2_tuser                 (),
-    .m_axis_2_tvalid                (),
-    .m_axis_3_tdata                 (),
-    .m_axis_3_tkeep                 (),
-    .m_axis_3_tlast                 (),
-    .m_axis_3_tready                (1'b1),
-    .m_axis_3_tuser                 (),
-    .m_axis_3_tvalid                (),
+    .m_axis_0_tdata                 (m_axis_0_tdata     ),
+    .m_axis_0_tkeep                 (m_axis_0_tkeep     ),
+    .m_axis_0_tlast                 (m_axis_0_tlast     ),
+    .m_axis_0_tready                (m_axis_0_tready    ),
+    .m_axis_0_tuser                 (m_axis_0_tuser     ),
+    .m_axis_0_tvalid                (m_axis_0_tvalid    ),
+    .m_axis_1_tdata                 (m_axis_1_tdata     ),
+    .m_axis_1_tkeep                 (m_axis_1_tkeep     ),
+    .m_axis_1_tlast                 (m_axis_1_tlast     ),
+    .m_axis_1_tready                (m_axis_1_tready    ),
+    .m_axis_1_tuser                 (m_axis_1_tuser     ),
+    .m_axis_1_tvalid                (m_axis_1_tvalid    ),
+    .m_axis_2_tdata                 (m_axis_2_tdata     ),
+    .m_axis_2_tkeep                 (m_axis_2_tkeep     ),
+    .m_axis_2_tlast                 (m_axis_2_tlast     ),
+    .m_axis_2_tready                (m_axis_2_tready    ),
+    .m_axis_2_tuser                 (m_axis_2_tuser     ),
+    .m_axis_2_tvalid                (m_axis_2_tvalid    ),
+    .m_axis_3_tdata                 (m_axis_3_tdata     ),
+    .m_axis_3_tkeep                 (m_axis_3_tkeep     ),
+    .m_axis_3_tlast                 (m_axis_3_tlast     ),
+    .m_axis_3_tready                (m_axis_3_tready    ),
+    .m_axis_3_tuser                 (m_axis_3_tuser     ),
+    .m_axis_3_tvalid                (m_axis_3_tvalid    ),
     .o_rd_ddr_cpl_0                 (w_rd_ddr_cpl_0         ),
     .o_rd_ddr_cpl_1                 (w_rd_ddr_cpl_1         ),
     .o_rd_ddr_cpl_2                 (w_rd_ddr_cpl_2         ),
@@ -485,30 +675,30 @@ design_1_wrapper design_1_wrapper_u0(
     .o_wr_ddr_valid_1               (w_wr_ddr_valid_1       ),
     .o_wr_ddr_valid_2               (w_wr_ddr_valid_2       ),
     .o_wr_ddr_valid_3               (w_wr_ddr_valid_3       ),
-    .s_axis_0_tdata                 (s0_axis_rx_tdata       ),  
-    .s_axis_0_tdest                 (s0_axis_rx_tdest       ),   
-    .s_axis_0_tkeep                 (s0_axis_rx_tkeep       ),   
-    .s_axis_0_tlast                 (s0_axis_rx_tlast       ),   
-    .s_axis_0_tuser                 (s0_axis_rx_tuser       ),   
-    .s_axis_0_tvalid                (s0_axis_rx_tvalid      ),   
-    .s_axis_1_tdata                 (s1_axis_rx_tdata       ),
-    .s_axis_1_tdest                 (s1_axis_rx_tdest       ),
-    .s_axis_1_tkeep                 (s1_axis_rx_tkeep       ),
-    .s_axis_1_tlast                 (s1_axis_rx_tlast       ),
-    .s_axis_1_tuser                 (s1_axis_rx_tuser       ),
-    .s_axis_1_tvalid                (s1_axis_rx_tvalid      ),
-    .s_axis_2_tdata                 (s2_axis_rx_tdata       ),
-    .s_axis_2_tdest                 (s2_axis_rx_tdest       ),
-    .s_axis_2_tkeep                 (s2_axis_rx_tkeep       ),
-    .s_axis_2_tlast                 (s2_axis_rx_tlast       ),
-    .s_axis_2_tuser                 (s2_axis_rx_tuser       ),
-    .s_axis_2_tvalid                (s2_axis_rx_tvalid      ),
-    .s_axis_3_tdata                 (s3_axis_rx_tdata       ),
-    .s_axis_3_tdest                 (s3_axis_rx_tdest       ),
-    .s_axis_3_tkeep                 (s3_axis_rx_tkeep       ),
-    .s_axis_3_tlast                 (s3_axis_rx_tlast       ),
-    .s_axis_3_tuser                 (s3_axis_rx_tuser       ),
-    .s_axis_3_tvalid                (s3_axis_rx_tvalid      ),
+    .s_axis_0_tdata                 (m_rx0_axis_tdata       ),  
+    .s_axis_0_tdest                 (m_rx0_axis_tdest       ),   
+    .s_axis_0_tkeep                 (m_rx0_axis_tkeep       ),   
+    .s_axis_0_tlast                 (m_rx0_axis_tlast       ),   
+    .s_axis_0_tuser                 (m_rx0_axis_tuser       ),   
+    .s_axis_0_tvalid                (m_rx0_axis_tvalid      ),   
+    .s_axis_1_tdata                 (m_rx1_axis_tdata       ),
+    .s_axis_1_tdest                 (m_rx1_axis_tdest       ),
+    .s_axis_1_tkeep                 (m_rx1_axis_tkeep       ),
+    .s_axis_1_tlast                 (m_rx1_axis_tlast       ),
+    .s_axis_1_tuser                 (m_rx1_axis_tuser       ),
+    .s_axis_1_tvalid                (m_rx1_axis_tvalid      ),
+    .s_axis_2_tdata                 (m_rx2_axis_tdata       ),
+    .s_axis_2_tdest                 (m_rx2_axis_tdest       ),
+    .s_axis_2_tkeep                 (m_rx2_axis_tkeep       ),
+    .s_axis_2_tlast                 (m_rx2_axis_tlast       ),
+    .s_axis_2_tuser                 (m_rx2_axis_tuser       ),
+    .s_axis_2_tvalid                (m_rx2_axis_tvalid      ),
+    .s_axis_3_tdata                 (m_rx3_axis_tdata       ),
+    .s_axis_3_tdest                 (m_rx3_axis_tdest       ),
+    .s_axis_3_tkeep                 (m_rx3_axis_tkeep       ),
+    .s_axis_3_tlast                 (m_rx3_axis_tlast       ),
+    .s_axis_3_tuser                 (m_rx3_axis_tuser       ),
+    .s_axis_3_tvalid                (m_rx3_axis_tvalid      ),
     .sys_rst_0                      (sys_rst                )
 );
 
@@ -593,10 +783,11 @@ mem_manager#(
     .i_rd_unlocal_port1_cpl          (w_rd_ddr_cpl_3        ),
     .i_rd_unlocal_port1_ready        (w_rd_ddr_ready_3      ),
 
+    .i_check_queue_req_valid         (w_check_queue_req_valid ),
+    .o_check_queue_resp_ready        (w_check_queue_resp_ready),
     .o_local_queue_size              (w_local_queue_size  ),
     .o_unlocal_queue_size            (w_unlocal_queue_size)
 );
-
 
 
 endmodule

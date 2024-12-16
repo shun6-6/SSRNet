@@ -42,6 +42,7 @@ module ddr_local_queue#(
     //read DDR 
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_rd_local_byte     ,
     input                                   i_rd_local_byte_valid ,
+    output                                  o_rd_local_byte_ready,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]       o_rd_ddr_addr       ,
     output [15 :0]                          o_rd_ddr_len        ,
     output [7 : 0]                          o_rd_ddr_strb       ,
@@ -58,6 +59,7 @@ module ddr_local_queue#(
 /******************************machine******************************/
 
 /******************************reg**********************************/
+reg                                 ro_rd_local_byte_ready;
 reg                                 ro_wr_ddr_cpl_ready ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_local_byte    ;
 reg  [31:0]                         r_write_ptr         ;
@@ -81,11 +83,14 @@ wire [15:0]                         w_fifo_dout_len     ;
 wire [7 :0]                         w_fifo_dout_strb    ;
 wire [31:0]                         w_max_next_pkt      ;
 wire                                w_wr_cpl_en         ;
+wire                                w_rd_byte_en        ;
 /******************************assign*******************************/
+assign o_rd_local_byte_ready = ro_rd_local_byte_ready;
 assign w_wr_cpl_en = i_wr_ddr_cpl_valid & o_wr_ddr_cpl_ready;
 assign o_wr_ddr_cpl_ready = ro_wr_ddr_cpl_ready;
 assign w_wr_en = ri_wr_ddr_valid & ro_wr_ddr_ready  ;
 assign w_rd_en = i_rd_ddr_ready & ro_rd_ddr_valid;
+assign w_rd_byte_en = o_rd_local_byte_ready && i_rd_local_byte_valid;
 assign w_reset_ptr = ((P_MAX_ADDR - r_write_ptr) < (ri_wr_ddr_len << 3)) && w_wr_en;
 assign o_wr_ddr_addr  = ro_wr_ddr_addr  ;
 assign o_wr_ddr_ready = ro_wr_ddr_ready ;
@@ -210,8 +215,17 @@ end
 //read pointer
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
+        ro_rd_local_byte_ready <= 'd0;
+    else if(w_rd_byte_en)
+        ro_rd_local_byte_ready <= 'd1;
+    else
+        ro_rd_local_byte_ready <= 'd0;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
         ri_rd_local_byte <= 'd0;
-    else if(i_rd_local_byte_valid)
+    else if(w_rd_byte_en)
         ri_rd_local_byte <= i_rd_local_byte;
     else
         ri_rd_local_byte <= ri_rd_local_byte;
@@ -220,7 +234,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_fifo_rden <= 'd0;
-    else if(i_rd_local_byte_valid)
+    else if(w_rd_byte_en)
         r_fifo_rden <= 'd1;
     else if(i_rd_ddr_cpl && i_rd_ddr_ready && !r_rd_ddr_complete)
         r_fifo_rden <= 'd1;
@@ -240,7 +254,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rd_comp_byte <= 'd0;
-    else if(i_rd_local_byte_valid)
+    else if(w_rd_byte_en)
         r_rd_comp_byte <= 'd0;
     else if(w_rd_en)
         r_rd_comp_byte <= r_rd_comp_byte + (o_rd_ddr_len << 3);
@@ -251,7 +265,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rd_ddr_complete <= 'd0;
-    else if(i_rd_local_byte_valid)
+    else if(w_rd_byte_en)
         r_rd_ddr_complete <= 'd0;
     else if(w_rd_en && (w_max_next_pkt < 1518))
         r_rd_ddr_complete <= 'd1;
