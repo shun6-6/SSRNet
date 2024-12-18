@@ -233,6 +233,47 @@ wire                        w_check_queue_resp_ready;
 wire  [255:0]               w_local_queue_size      ;
 wire  [255:0]               w_unlocal_queue_size    ;
 
+//ddr read ctrl
+wire                        w_rd_unlocal_port0_flag         ;
+wire [8 - 1 : 0]            w_rd_unlocal_port0_queue        ;
+wire [32-1 : 0]             w_rd_unlocal_port0_byte         ;
+wire                        w_rd_unlocal_port0_byte_valid   ;
+wire                        w_rd_unlocal_port0_finish       ;
+wire                        w_rd_unlocal_port0_byte_ready   ;
+
+wire                        w_rd_unlocal_port1_flag         ;
+wire [8 - 1 : 0]            w_rd_unlocal_port1_queue        ;
+wire [32-1 : 0]             w_rd_unlocal_port1_byte         ;
+wire                        w_rd_unlocal_port1_byte_valid   ;
+wire                        w_rd_unlocal_port1_finish       ;
+wire                        w_rd_unlocal_port1_byte_ready   ;
+
+wire [32-1 : 0]             w_port0_send_local2_pkt_size    ;
+wire                        w_port0_send_local2_valid       ;
+wire [2 : 0]                w_port0_send_local2_queue       ;
+wire [32-1 : 0]             w_port0_local_direct_pkt_size   ;
+wire [32-1 : 0]             w_port0_local_direct_pkt_valid  ;
+wire [2 : 0]                w_port0_cur_direct_tor          ;
+wire [32-1 : 0]             w_port0_unlocal_direct_pkt_size ;
+wire [32-1 : 0]             w_port0_unlocal_direct_pkt_valid;
+wire [2 : 0]                w_port0_unlocal_direct_pkt_queue;
+wire [255 : 0]              w_port0_tx_relay                ;
+wire                        w_port0_tx_relay_valid          ;
+
+wire [32-1 : 0]             w_port1_send_local2_pkt_size    ;
+wire                        w_port1_send_local2_valid       ;
+wire [2 : 0]                w_port1_send_local2_queue       ;
+wire [32-1 : 0]             w_port1_local_direct_pkt_size   ;
+wire [32-1 : 0]             w_port1_local_direct_pkt_valid  ;
+wire [2 : 0]                w_port1_cur_direct_tor          ;
+wire [32-1 : 0]             w_port1_unlocal_direct_pkt_size ;
+wire [32-1 : 0]             w_port1_unlocal_direct_pkt_valid;
+wire [2 : 0]                w_port1_unlocal_direct_pkt_queue;
+wire [255 : 0]              w_port1_tx_relay                ;
+wire                        w_port1_tx_relay_valid          ;
+
+/*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
+    以及时间同步数据包*/
 eth_10g_ctrl_top#(
     .P_CHANNEL_NUM          (1                      ),
     .P_MIN_LENGTH           (8'd64                  ),
@@ -266,7 +307,8 @@ eth_10g_ctrl_top#(
     .rx0_axis_tkeep         (s_ctrl_axis_tkeep      ),
     .rx0_axis_tuser         (s_ctrl_axis_tuser      )
 );
-
+/*  VLB负载均衡模块接收上行链路收到的控制协议包，按照SRRLB
+    算法进行处理*/
 VLB_module#(
     .C_M_AXI_ADDR_WIDTH     (32                    ),
     .P_QUEUE_NUM            (8                     ),//== P_TOR_NUM
@@ -325,19 +367,98 @@ VLB_module#(
     .i_local_queue_size          (w_local_queue_size      ),
     .i_unlocal_queue_size        (w_unlocal_queue_size    ),
 
-    .o_port0_my_local2_pkt_size  (),
-    .o_port0_send_local2_valid   (),
-    .o_port0_cur_direct_tor      (),
-    .o_port0_tx_relay            (),
-    .o_port0_tx_relay_valid      (),
+    .o_port0_send_local2_pkt_size       (w_port0_send_local2_pkt_size    ),
+    .o_port0_send_local2_valid          (w_port0_send_local2_valid       ),
+    .o_port0_send_local2_queue          (w_port0_send_local2_queue       ),
+    .o_port0_local_direct_pkt_size      (w_port0_local_direct_pkt_size   ),
+    .o_port0_local_direct_pkt_valid     (w_port0_local_direct_pkt_valid  ),
+    .o_port0_cur_direct_tor             (w_port0_cur_direct_tor          ),
+    .o_port0_unlocal_direct_pkt_size    (w_port0_unlocal_direct_pkt_size ),
+    .o_port0_unlocal_direct_pkt_valid   (w_port0_unlocal_direct_pkt_valid),
+    .o_port0_unlocal_direct_pkt_queue   (w_port0_unlocal_direct_pkt_queue),
+    .o_port0_tx_relay                   (w_port0_tx_relay                ),
+    .o_port0_tx_relay_valid             (w_port0_tx_relay_valid          ),
 
-    .o_port1_my_local2_pkt_size  (),
-    .o_port1_send_local2_valid   (),
-    .o_port1_cur_direct_tor      (),
-    .o_port1_tx_relay            (),
-    .o_port1_tx_relay_valid      ()
+    .o_port1_send_local2_pkt_size       (w_port1_send_local2_pkt_size    ),
+    .o_port1_send_local2_valid          (w_port1_send_local2_valid       ),
+    .o_port1_send_local2_queue          (w_port1_send_local2_queue       ),
+    .o_port1_local_direct_pkt_size      (w_port1_local_direct_pkt_size   ),
+    .o_port1_local_direct_pkt_valid     (w_port1_local_direct_pkt_valid  ),
+    .o_port1_cur_direct_tor             (w_port1_cur_direct_tor          ),
+    .o_port1_unlocal_direct_pkt_size    (w_port1_unlocal_direct_pkt_size ),
+    .o_port1_unlocal_direct_pkt_valid   (w_port1_unlocal_direct_pkt_valid),
+    .o_port1_unlocal_direct_pkt_queue   (w_port1_unlocal_direct_pkt_queue),
+    .o_port1_tx_relay                   (w_port1_tx_relay                ),
+    .o_port1_tx_relay_valid             (w_port1_tx_relay_valid          )
 );
+/*  读DDR控制模块接收VLB负载均衡模块的队列描述符信息，
+    从而获知需要转发的直接流量、间接流量大小以及队列等信息，
+    除此之外该模块还需要控制待转发的俩跳流量大小，具体规则如下：
+    时隙开始后直接开始转发缓存在本地的跨时隙带转发流量，然后
+    转发本时隙内的俩跳转发流量，然后转发本地接收到的俩跳流量，
+    然后转发本地的直接流量，最后转发中继流量*/
+DDR_rd_ctrl#(
+    .C_M_AXI_ADDR_WIDTH	     (32             ),
+    .P_WRITE_DDR_PORT_NUM    (1              ),
+    .P_DDR_LOCAL_QUEUE       (4              ),
+    .P_P_WRITE_DDR_PORT      (0              ),
+    .P_MAX_ADDR              (32'h003F_FFFF  ),
+    .P_LOCAL_PORT_NUM        (2              ),
+    .P_UNLOCAL_PORT_NUM      (2              ),
+    .P_QUEUE_NUM             (8              )
+)(
+    .i_clk                                  (w_2_tx_clk_out        ),
+    .i_rst                                  (w_2_user_tx_reset     ),
 
+    .i_port0_send_local2_pkt_size           (w_port0_send_local2_pkt_size    ),
+    .i_port0_send_local2_valid              (w_port0_send_local2_valid       ),
+    .i_port0_send_local2_queue              (w_port0_send_local2_queue       ),
+    .i_port0_local_direct_pkt_size          (w_port0_local_direct_pkt_size   ),
+    .i_port0_local_direct_pkt_valid         (w_port0_local_direct_pkt_valid  ),
+    .i_port0_cur_direct_tor                 (w_port0_cur_direct_tor          ),
+    .i_port0_unlocal_direct_pkt_size        (w_port0_unlocal_direct_pkt_size ),
+    .i_port0_unlocal_direct_pkt_valid       (w_port0_unlocal_direct_pkt_valid),
+    .i_port0_unlocal_direct_pkt_queue       (w_port0_unlocal_direct_pkt_queue),
+    .i_port0_tx_relay                       (w_port0_tx_relay                ),
+    .i_port0_tx_relay_valid                 (w_port0_tx_relay_valid          ),
+
+    .i_port1_send_local2_pkt_size           (w_port1_send_local2_pkt_size    ),
+    .i_port1_send_local2_valid              (w_port1_send_local2_valid       ),
+    .i_port1_send_local2_queue              (w_port1_send_local2_queue       ),
+    .i_port1_local_direct_pkt_size          (w_port1_local_direct_pkt_size   ),
+    .i_port1_local_direct_pkt_valid         (w_port1_local_direct_pkt_valid  ),
+    .i_port1_cur_direct_tor                 (w_port1_cur_direct_tor          ),
+    .i_port1_unlocal_direct_pkt_size        (w_port1_unlocal_direct_pkt_size ),
+    .i_port1_unlocal_direct_pkt_valid       (w_port1_unlocal_direct_pkt_valid),
+    .i_port1_unlocal_direct_pkt_queue       (w_port1_unlocal_direct_pkt_queue),
+    .i_port1_tx_relay                       (w_port1_tx_relay                ),
+    .i_port1_tx_relay_valid                 (w_port1_tx_relay_valid          ),
+
+    .o_port0_rd_flag                        (w_rd_unlocal_port0_flag        ),
+    .o_port0_rd_queue                       (w_rd_unlocal_port0_queue       ),
+    .o_port0_rd_byte                        (w_rd_unlocal_port0_byte        ),
+    .o_port0_rd_byte_valid                  (w_rd_unlocal_port0_byte_valid  ),
+    .i_port0_rd_byte_ready                  (w_rd_unlocal_port0_byte_ready  ),
+    .i_port0_rd_queue_finish                (w_rd_unlocal_port0_finish      ),
+
+    .o_port1_rd_flag                        (w_rd_unlocal_port1_flag        ),
+    .o_port1_rd_queue                       (w_rd_unlocal_port1_queue       ),
+    .o_port1_rd_byte                        (w_rd_unlocal_port1_byte        ),
+    .o_port1_rd_byte_valid                  (w_rd_unlocal_port1_byte_valid  ),
+    .i_port1_rd_byte_ready                  (w_rd_unlocal_port1_byte_ready  ),
+    .i_port1_rd_queue_finish                (w_rd_unlocal_port1_finish      ),
+
+    .i_port0_forward_req                    (),
+    .o_port0_forward_resp                   (),
+    .i_port0_forward_finish                 (),
+
+    .i_port2_forward_req                    (),
+    .o_port2_forward_resp                   (),
+    .i_port2_forward_finish                 () 
+);
+/*  上行链路发送数据时，需要判断数据是控制包还是数据包，
+    该模块接收来自VLB控制模块和DDR读出的有效数据，然后
+    选择数据进行发送，控制数据包的发送优先级最高*/
 eth_uplink_port eth_uplink_port_u0(
     .i_crtl_clk             (w_ctrl_tx_clk_out      ),
     .i_crtl_rst             (w_ctrl_user_tx_reset   ),
@@ -391,7 +512,8 @@ eth_uplink_port eth_uplink_port_u1(
     .m_tx_axis_tuser        (tx3_axis_tuser         ),
     .m_tx_axis_tready       (tx3_axis_tready        ) 
 );
-
+/*  10G以太网高速接口处理模块，接收10G数据，并且完成查表等操作，
+    将数据按照本地、非本地、控制信息等不同种类进行分类*/
 VCU128_10g_eth_top#(
     .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
     .P_MIN_LENGTH           (8'd64              ),
@@ -478,9 +600,12 @@ VCU128_10g_eth_top#(
     .m_rx3_axis_tlast       (m_rx3_axis_tlast   ),
     .m_rx3_axis_tkeep       (m_rx3_axis_tkeep   ),
     .m_rx3_axis_tuser       (m_rx3_axis_tuser   ),
-    .m_rx3_axis_tdest       (m_rx3_axis_tdest   )
+    .m_rx3_axis_tdest       (m_rx3_axis_tdest   ),
+    .i_port0_connect_tor    (w_port0_cur_direct_tor),
+    .i_port1_connect_tor    (w_port1_cur_direct_tor)
 );
-
+/*  crossbar交换机模块，完成本地数据的转发，包括下行链路之间的转发
+    以及上行链路接收的本地服务器数据*/
 crossbar#(
     .P_CROSSBAR_N               (P_CROSSBAR_N)        
 )crossbar_u0(
@@ -537,7 +662,9 @@ crossbar#(
     .m3_axis_tx_tready          (tx3_axis_tready    )
 ); 
 
-
+/*  DDR读写模块，进行AXIS以及AXI直接的转换以及跨时钟处理，
+    相当于一个DMA，用户只需要发送读写描述符（数据地址、大小等）
+    即可完成DDR的读写过程*/
 design_1_wrapper design_1_wrapper_u0(
     .C0_DDR4_0_act_n                (c0_ddr4_act_n			),           
     .C0_DDR4_0_adr                  (c0_ddr4_adr			),
@@ -701,7 +828,9 @@ design_1_wrapper design_1_wrapper_u0(
     .s_axis_3_tvalid                (m_rx3_axis_tvalid      ),
     .sys_rst_0                      (sys_rst                )
 );
-
+/*  内存管理模块，与design_1_wrapper模块配合完成DDR的读写过程，
+    同时记录所有队列里面数据包信息，即首地址、数据长度、尾端KEEP等
+    信号，将队列信息告知VLB模块，帮助VLB模块进行负载均衡计算*/
 mem_manager#(
     .C_M_AXI_ADDR_WIDTH	     (32            ),
     .P_WRITE_DDR_PORT_NUM    (1             ),
@@ -751,9 +880,12 @@ mem_manager#(
     .i_wr_unlocal_port0_cpl_addr     (w_wr_ddr_cpl_addr_2   ),
     .i_wr_unlocal_port0_cpl_strb     (w_wr_ddr_cpl_strb_2   ),
 
-    .i_rd_unlocal_port0_queue        (),
-    .i_rd_unlocal_port0_byte         (),
-    .i_rd_unlocal_port0_byte_valid   (),
+    .i_rd_unlocal_port0_flag         (w_rd_unlocal_port0_flag      ),
+    .i_rd_unlocal_port0_queue        (w_rd_unlocal_port0_queue     ),
+    .i_rd_unlocal_port0_byte         (w_rd_unlocal_port0_byte      ),
+    .i_rd_unlocal_port0_byte_valid   (w_rd_unlocal_port0_byte_valid),
+    .o_rd_unlocal_port0_finish       (w_rd_unlocal_port0_finish    ),
+    .o_rd_unlocal_port0_byte_ready   (w_rd_unlocal_port0_byte_ready),
     .o_rd_unlocal_port0_addr         (w_rd_ddr_addr_2       ),
     .o_rd_unlocal_port0_len          (w_rd_ddr_len_2        ),
     .o_rd_unlocal_port0_strb         (w_rd_ddr_strb_2       ),
@@ -773,9 +905,12 @@ mem_manager#(
     .i_wr_unlocal_port1_cpl_addr     (w_wr_ddr_cpl_addr_3   ),
     .i_wr_unlocal_port1_cpl_strb     (w_wr_ddr_cpl_strb_3   ),
 
-    .i_rd_unlocal_port1_queue        (),
-    .i_rd_unlocal_port1_byte         (),
-    .i_rd_unlocal_port1_byte_valid   (),
+    .i_rd_unlocal_port1_flag         (w_rd_unlocal_port1_flag      ),
+    .i_rd_unlocal_port1_queue        (w_rd_unlocal_port1_queue     ),
+    .i_rd_unlocal_port1_byte         (w_rd_unlocal_port1_byte      ),
+    .i_rd_unlocal_port1_byte_valid   (w_rd_unlocal_port1_byte_valid),
+    .o_rd_unlocal_port1_finish       (w_rd_unlocal_port1_finish    ),
+    .o_rd_unlocal_port1_byte_ready   (w_rd_unlocal_port1_byte_ready),
     .o_rd_unlocal_port1_addr         (w_rd_ddr_addr_3       ),
     .o_rd_unlocal_port1_len          (w_rd_ddr_len_3        ),
     .o_rd_unlocal_port1_strb         (w_rd_ddr_strb_3       ),

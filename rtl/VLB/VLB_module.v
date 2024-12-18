@@ -78,15 +78,27 @@ module VLB_module#(
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_local_queue_size          ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_unlocal_queue_size        ,
     //port0 send data
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_my_local2_pkt_size  ,
-    output                                          o_port0_send_local2_valid   ,
-    output [2 : 0]                                  o_port0_cur_direct_tor      ,
-    output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port0_tx_relay            ,
-    output                                          o_port0_tx_relay_valid      ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_send_local2_pkt_size    ,
+    output                                          o_port0_send_local2_valid       ,
+    output [2 : 0]                                  o_port0_send_local2_queue       ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_local_direct_pkt_size   ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_local_direct_pkt_valid  ,
+    output [2 : 0]                                  o_port0_cur_direct_tor          ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_unlocal_direct_pkt_size ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_unlocal_direct_pkt_valid,
+    output [2 : 0]                                  o_port0_unlocal_direct_pkt_queue,
+    output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port0_tx_relay                ,
+    output                                          o_port0_tx_relay_valid          ,
     //port1 send data
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_my_local2_pkt_size  ,
-    output                                          o_port1_send_local2_valid   ,
-    output [2 : 0]                                  o_port1_cur_direct_tor      ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_send_local2_pkt_size    ,
+    output                                          o_port1_send_local2_valid       ,
+    output [2 : 0]                                  o_port1_send_local2_queue       ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_local_direct_pkt_size   ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_local_direct_pkt_valid  ,
+    output [2 : 0]                                  o_port1_cur_direct_tor          ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_unlocal_direct_pkt_size ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_unlocal_direct_pkt_valid,
+    output [2 : 0]                                  o_port1_unlocal_direct_pkt_queue,
     output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port1_tx_relay            ,
     output                                          o_port1_tx_relay_valid      
 
@@ -232,9 +244,15 @@ VLB_port_module#(
     .i_twin_rx_capacity             (w_port1_rx_capacity        ),
     .i_twin_rx_capacity_valid       (w_port1_rx_capacity_valid  ),
 
-    .o_my_local2_pkt_size           (o_port0_my_local2_pkt_size ),
-    .o_send_local2_valid            (o_port0_send_local2_valid  ),
-    .o_cur_direct_tor               (o_port0_cur_direct_tor     ),
+    .o_send_my_local2_pkt_size      (o_port0_send_local2_pkt_size       ),
+    .o_send_my_local2_valid         (o_port0_send_local2_valid          ),
+    .o_send_my_local2_queue         (o_port0_send_local2_queue          ),
+    .o_local_direct_pkt_size        (o_port0_local_direct_pkt_size      ),
+    .o_local_direct_pkt_valid       (o_port0_local_direct_pkt_valid     ),
+    .o_cur_direct_tor               (o_port0_cur_direct_tor             ),
+    .o_unlocal_direct_pkt_size      (o_port0_unlocal_direct_pkt_size    ),
+    .o_unlocal_direct_pkt_valid     (o_port0_unlocal_direct_pkt_valid   ),
+    .o_unlocal_direct_pkt_queue     (o_port0_unlocal_direct_pkt_queue   ),
 
     .i_local_queue_size             (w_local_queue_size         ),
     .i_unlocal_queue_size           (w_unlocal_queue_size       ),
@@ -294,9 +312,15 @@ VLB_port_module#(
     .i_twin_rx_capacity             (w_port0_rx_capacity        ),
     .i_twin_rx_capacity_valid       (w_port0_rx_capacity_valid  ),
 
-    .o_my_local2_pkt_size           (o_port1_my_local2_pkt_size ),
-    .o_send_local2_valid            (o_port1_send_local2_valid  ),
-    .o_cur_direct_tor               (o_port1_cur_direct_tor     ),
+    .o_send_my_local2_pkt_size      (o_port1_send_local2_pkt_size       ),
+    .o_send_my_local2_valid         (o_port1_send_local2_valid          ),
+    .o_send_my_local2_queue         (o_port1_send_local2_queue          ),
+    .o_local_direct_pkt_size        (o_port1_local_direct_pkt_size      ),
+    .o_local_direct_pkt_valid       (o_port1_local_direct_pkt_valid     ),
+    .o_cur_direct_tor               (o_port1_cur_direct_tor             ),
+    .o_unlocal_direct_pkt_size      (o_port1_unlocal_direct_pkt_size    ),
+    .o_unlocal_direct_pkt_valid     (o_port1_unlocal_direct_pkt_valid   ),
+    .o_unlocal_direct_pkt_queue     (o_port1_unlocal_direct_pkt_queue   ),
 
     .i_local_queue_size             (w_local_queue_size         ),
     .i_unlocal_queue_size           (w_unlocal_queue_size       ),
@@ -339,7 +363,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_uplink0_rx_axis_tkeep  <= 'd0;
         rs_uplink0_rx_axis_tuser  <= 'd0;
     end
-    else if(r_recv0_cnt == 0 && s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tdata[2:0] == 3'd0)begin
+    else if(r_recv0_cnt == 0 && s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tuser == 'd3)begin
         rs_uplink0_rx_axis_tvalid <= s_uplink0_rx_axis_tvalid;
         rs_uplink0_rx_axis_tdata  <= s_uplink0_rx_axis_tdata ;
         rs_uplink0_rx_axis_tlast  <= s_uplink0_rx_axis_tlast ;
@@ -363,7 +387,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_uplink1_rx_axis_tkeep  <= 'd0;
         rs_uplink1_rx_axis_tuser  <= 'd0;
     end
-    else if(r_recv1_cnt == 0 && s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tdata[2:0] == 3'd0)begin
+    else if(r_recv1_cnt == 0 && s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tuser == 'd3)begin
         rs_uplink1_rx_axis_tvalid <= s_uplink1_rx_axis_tvalid;
         rs_uplink1_rx_axis_tdata  <= s_uplink1_rx_axis_tdata ;
         rs_uplink1_rx_axis_tlast  <= s_uplink1_rx_axis_tlast ;

@@ -107,7 +107,10 @@ module VCU128_10g_eth_top#(
     output                      m_rx3_axis_tlast    ,
     output [7  :0]              m_rx3_axis_tkeep    ,
     output                      m_rx3_axis_tuser    ,
-    output [2 : 0]              m_rx3_axis_tdest    
+    output [2 : 0]              m_rx3_axis_tdest    ,
+
+    input  [2 : 0]              i_port0_connect_tor ,
+    input  [2 : 0]              i_port1_connect_tor 
 );
 
 assign o_sfp_dis = 2'b00;
@@ -173,7 +176,8 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 )
+    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_UPLINK_TRUE           (0)
 )ten_eth_rx_downlink_port0(
     .i_clk                  (o_0_tx_clk_out         ),
     .i_rst                  (o_0_user_rx_reset      ),
@@ -192,6 +196,7 @@ ten_eth_rx#(
     .i_result_valid         (w0_result_valid        ),
     .i_check_id             (w0_check_resp_id       ),
     .i_seek_flag            (w0_seek_flag           ),
+    .i_cur_connect_tor      ('d0      ),
 
     .m_axis_tvalid          (m_rx0_axis_tvalid      ),
     .m_axis_tdata           (m_rx0_axis_tdata       ),
@@ -205,7 +210,8 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 )
+    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_UPLINK_TRUE           (0)
 )ten_eth_rx_downlink_port1(
     .i_clk                  (o_1_tx_clk_out         ),
     .i_rst                  (o_1_user_rx_reset      ),
@@ -224,6 +230,7 @@ ten_eth_rx#(
     .i_result_valid         (w1_result_valid        ),
     .i_check_id             (w1_check_resp_id       ),
     .i_seek_flag            (w1_seek_flag           ),
+    .i_cur_connect_tor      ('d0      ),
 
     .m_axis_tvalid          (m_rx1_axis_tvalid      ),
     .m_axis_tdata           (m_rx1_axis_tdata       ),
@@ -237,7 +244,8 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 )
+    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_UPLINK_TRUE           (1)
 )ten_eth_rx_up_port0(
     .i_clk                  (o_1_tx_clk_out         ),
     .i_rst                  (o_1_user_rx_reset      ),
@@ -256,6 +264,7 @@ ten_eth_rx#(
     .i_result_valid         (w1_result_valid        ),
     .i_check_id             (w1_check_resp_id       ),
     .i_seek_flag            (w1_seek_flag           ),
+    .i_cur_connect_tor      (i_port0_connect_tor    ),
 
     .m_axis_tvalid          (m_rx1_axis_tvalid      ),
     .m_axis_tdata           (m_rx1_axis_tdata       ),
@@ -269,7 +278,8 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 )
+    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_UPLINK_TRUE           (1)
 )ten_eth_rx_uplink_port1(
     .i_clk                  (o_1_tx_clk_out         ),
     .i_rst                  (o_1_user_rx_reset      ),
@@ -288,6 +298,7 @@ ten_eth_rx#(
     .i_result_valid         (w1_result_valid        ),
     .i_check_id             (w1_check_resp_id       ),
     .i_seek_flag            (w1_seek_flag           ),
+    .i_cur_connect_tor      (i_port1_connect_tor    ),
 
     .m_axis_tvalid          (m_rx1_axis_tvalid      ),
     .m_axis_tdata           (m_rx1_axis_tdata       ),

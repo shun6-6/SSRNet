@@ -33,7 +33,7 @@ module crossbar_point#(
     input  [63 :0]  s_axis_rx_tdata         ,
     input           s_axis_rx_tlast         ,
     input  [7  :0]  s_axis_rx_tkeep         ,
-    input           s_axis_rx_tuser         ,
+    input  [1 : 0]  s_axis_rx_tuser         ,
     input  [2 : 0]  s_axis_rx_tdest         ,
 
     output          m_axis_tx_tvalid        ,
@@ -54,7 +54,7 @@ reg             rs_axis_rx_tvalid       ;
 reg  [63 :0]    rs_axis_rx_tdata        ;
 reg             rs_axis_rx_tlast        ;
 reg  [7  :0]    rs_axis_rx_tkeep        ;
-reg             rs_axis_rx_tuser        ;
+reg  [1 : 0]    rs_axis_rx_tuser        ;
 reg  [2 : 0]    rs_axis_rx_tdest        ;
 reg             rm_axis_tx_tvalid       ;
 reg  [63 :0]    rm_axis_tx_tdata        ;

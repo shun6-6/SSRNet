@@ -81,7 +81,7 @@ module AXIS_to_AXIFULL#
     input  [63 :0]                              s_axis_tdata        ,
     input                                       s_axis_tlast        ,
     input  [7  :0]                              s_axis_tkeep        ,
-    input                                       s_axis_tuser        ,
+    input  [1 : 0]                              s_axis_tuser        ,
     input  [2 : 0]                              s_axis_tdest        ,
 
     output                                      o_wr_ddr_valid      ,
@@ -131,7 +131,7 @@ reg                                 rs_axis_tvalid      ;
 reg  [63 :0]                        rs_axis_tdata       ;
 reg                                 rs_axis_tlast       ;
 reg  [7  :0]                        rs_axis_tkeep       ;
-reg                                 rs_axis_tuser       ;
+reg  [1 : 0]                        rs_axis_tuser       ;
 reg  [2 : 0]                        rs_axis_tdest       ;
 reg  [15 :0]                        r_axis_data_len     ;
  

@@ -19,12 +19,13 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 //mac地址规则：P_MAC_HEAD + 8'h tor mac(0-7) + 8'h port mac(1-2)
-//o_axis_tuser=1 : dest tor is my tor 0:dest tor is not my tor
+
 module ten_eth_rx#(
     parameter       P_RX_PORT_ID    = 0                     ,
     parameter       P_MAC_HEAD      = 32'h8D_BC_5C_4A       ,
     parameter       P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00 ,
-    parameter       P_MY_PORT_MAC   = 48'h8D_BC_5C_4A_00_01 
+    parameter       P_MY_PORT_MAC   = 48'h8D_BC_5C_4A_00_01 ,
+    parameter       P_UPLINK_TRUE   = 0 
 )(
     input           i_clk                   ,
     input           i_rst                   ,
@@ -44,12 +45,13 @@ module ten_eth_rx#(
     input           i_result_valid          ,
     input  [3 :0]   i_check_id              ,
     input           i_seek_flag             ,
+    input  [2 :0]   i_cur_connect_tor       ,
     //output AXIS
     output          m_axis_tvalid           ,
     output [63 :0]  m_axis_tdata            ,
     output          m_axis_tlast            ,
     output [7  :0]  m_axis_tkeep            ,
-    output          m_axis_tuser            ,
+    output [1 : 0]  m_axis_tuser            ,
     output [2 : 0]  m_axis_tdest             
 );
 /******************************function*****************************/
@@ -63,7 +65,7 @@ reg             ro_axis_tvalid    ;
 reg  [63 :0]    ro_axis_tdata     ;
 reg             ro_axis_tlast     ;
 reg  [7  :0]    ro_axis_tkeep     ;
-reg             ro_axis_tuser     ;
+reg  [1 : 0]    ro_axis_tuser     ;
 reg  [2 : 0]    ro_axis_tdest     ;
 
 reg             rs_axis_rx_tvalid       ;
@@ -86,6 +88,8 @@ reg  [47:0]     ro_check_mac            ;
 reg  [3 :0]     ro_check_id             ;
 reg             ro_check_valid          ;
 
+reg  [1 : 0]    r_fifo_user ;
+reg  [2 : 0]    r_fifo_dest ;
 
 reg  [15:0]     r_rx_data_len           ;
 reg             r_fifo_len_rden         ;
@@ -102,6 +106,7 @@ wire            w_fifo_len_full         ;
 wire            w_fifo_len_empty        ;
 wire [7 :0]     w_fifo_keep_dout        ;
 wire            w_check_active          ;
+wire [4:0]      w_fifo_dest_user_dout   ;
 /******************************assign*******************************/
 assign o_check_mac   = ro_check_mac     ;
 assign o_check_id    = ro_check_id      ;
@@ -148,6 +153,19 @@ FIFO_8x32 FIFO_8x32_keep (
     .wr_en          (rs_axis_rx_tlast   ), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_keep_dout   ), // output wire [7 : 0] dout
+    .full           (                   ), // output wire full
+    .empty          (                   ), // output wire empty
+    .wr_rst_busy    (                   ), // output wire wr_rst_busy
+    .rd_rst_busy    (                   )  // output wire rd_rst_busy
+);
+
+FIFO_5X16 FIFO_5X16_dest_user (
+    .clk            (i_clk              ), // input wire clk
+    .srst           (i_rst              ), // input wire srst
+    .din            ({r_fifo_dest,r_fifo_user}), // input wire [4 : 0] din
+    .wr_en          (rs_axis_rx_tlast   ), // input wire wr_en
+    .rd_en          (r_fifo_len_rden    ), // input wire rd_en
+    .dout           (w_fifo_dest_user_dout), // output wire [4 : 0] dout
     .full           (                   ), // output wire full
     .empty          (                   ), // output wire empty
     .wr_rst_busy    (                   ), // output wire wr_rst_busy
@@ -399,42 +417,49 @@ always @(posedge i_clk or posedge i_rst) begin
         ro_axis_tkeep <= 8'hFF;
 end
 
-// always @(posedge i_clk or posedge i_rst) begin
-//     if(i_rst)
-//         ro_axis_tdest <= 'd0;
-//     else if(r_fifo_len_rden_1d)
-//         ro_axis_tdest <= ri_outport;
-//     else
-//         ro_axis_tdest <= ro_axis_tdest;
-// end
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_fifo_dest <= 'd0;
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC)
+        r_fifo_dest <= r_recv_dst_mac[2:0];
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] != P_MY_TOR_MAC)
+        r_fifo_dest <= r_recv_dst_mac[10:8];
+    else
+        r_fifo_dest <= r_fifo_dest;
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_fifo_user <= 'd0;
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC && r_recv_dst_mac[7:0] != 0)
+        r_fifo_user <= 'd1;//本地转发crossbar
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC && r_recv_dst_mac[7:0] == 0)
+        r_fifo_user <= 'd3;//VLB PKT
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] != P_MY_TOR_MAC && r_recv_dst_mac[15:8] != {5'd0,i_cur_connect_tor})
+        r_fifo_user <= 'd0;//跨机架转发
+    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] != P_MY_TOR_MAC && r_recv_dst_mac[15:8] == {5'd0,i_cur_connect_tor} && P_UPLINK_TRUE)
+        r_fifo_user <= 'd2;//待转发的俩跳流量
+    else
+        r_fifo_user <= r_fifo_user;
+end
 
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tdest <= 'd0;
-    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC)
-        ro_axis_tdest <= r_recv_dst_mac[2:0];
+    else if(r_fifo_data_rden_1d)
+        ro_axis_tdest <= w_fifo_dest_user_dout[4:2];
     else
         ro_axis_tdest <= ro_axis_tdest;
 end
-
+//ro_axis_tuser = 0 : 跨机架传输 / = 1 ：
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tuser <= 'd0;
-    else if(s_axis_rx_tlast && r_recv_dst_mac[47:8] == P_MY_TOR_MAC)
-        ro_axis_tuser <= 'd0;
-    else if(s_axis_rx_tlast)
-        ro_axis_tuser <= 'd1;
+    else if(r_fifo_data_rden_1d)
+        ro_axis_tuser <= w_fifo_dest_user_dout[1:0];
     else
         ro_axis_tuser <= ro_axis_tuser;
 end
 
-// always @(posedge i_clk or posedge i_rst) begin
-//     if(i_rst)
-//         ro_axis_tuser <= 'd0;
-//     else if(!w_fifo_len_empty && w_check_active)
-//         ro_axis_tuser <= ri_seek_flag;
-//     else
-//         ro_axis_tuser <= ro_axis_tuser;
-// end
 
 endmodule
