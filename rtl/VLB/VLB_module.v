@@ -40,12 +40,8 @@ module VLB_module#(
     input                                           i_clk                       ,
     input                                           i_rst                       ,  
     input  [63: 0]                                  i_syn_time_stamp            ,
-    //控制器接口
-    input                                           s_ctrl_rx_axis_tvalid       ,
-    input  [63 :0]                                  s_ctrl_rx_axis_tdata        ,
-    input                                           s_ctrl_rx_axis_tlast        ,
-    input  [7  :0]                                  s_ctrl_rx_axis_tkeep        ,
-    input                                           s_ctrl_rx_axis_tuser        ,
+    input                                           i_slot_start                ,
+    input                                           i_cur_slot_id               ,
     //带内控制协议接口
     input                                           s_uplink0_rx_axis_tvalid    ,
     input  [63 :0]                                  s_uplink0_rx_axis_tdata     ,
@@ -135,12 +131,8 @@ reg  ro_check_queue_req_valid;
 reg  [2:0]ri_check_queue_resp_ready;
 reg  r_slot_start_en = 0;
 //控制器接口AXIS
-reg  [15 :0]                    r_recv_ctrl_cnt     ;
 reg                             r_slot_start        ;
-
 reg  [P_SLOT_NUM_WIDTH - 1 : 0] r_cur_slot_id       ;
-reg  [47: 0]                    r_dest_tor_mac      ;
-reg  [63: 0]                    rs_ctrl_rx_axis_tdata = 'd0;
 
 reg  [P_TOR_NUM_WIDTH - 1 : 0]  r_even_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
 reg  [P_TOR_NUM_WIDTH - 1 : 0]  r_odd_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
@@ -672,57 +664,21 @@ always @(posedge i_clk or posedge i_rst)begin
         r_compt_relay_en <= 2'b00;
 end
 
-//控制器接口，记录时间戳、时隙开始标识以及时隙ID
-always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
-        r_recv_ctrl_cnt <= 'd0;
-    else if(s_ctrl_rx_axis_tvalid && s_ctrl_rx_axis_tlast)
-        r_recv_ctrl_cnt <= 'd0;
-    else if(s_ctrl_rx_axis_tvalid)
-        r_recv_ctrl_cnt <= r_recv_ctrl_cnt + 'd1;
-    else
-        r_recv_ctrl_cnt <= r_recv_ctrl_cnt;
-end
-
-always @(posedge i_clk)begin
-    rs_ctrl_rx_axis_tdata <= s_ctrl_rx_axis_tdata;
-end
+//控制器接口
 
 always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
-        r_dest_tor_mac <= 'd0;
-    else if(s_ctrl_rx_axis_tvalid && r_recv_ctrl_cnt == 1 && s_ctrl_rx_axis_tdata[31:16] == P_SLOT_ID_TYPE)
-        r_dest_tor_mac <= {rs_ctrl_rx_axis_tdata[15:0],s_ctrl_rx_axis_tdata[63:32]};
-    else
-        r_dest_tor_mac <= r_dest_tor_mac;
-end
-
-always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
+    if(i_rst)begin
+        r_slot_start  <= 'd0;
         r_cur_slot_id <= 'd0;
-    else if(s_ctrl_rx_axis_tvalid && r_recv_ctrl_cnt == 1 && s_ctrl_rx_axis_tdata[31:16] == P_SLOT_ID_TYPE)
-        r_cur_slot_id <= s_ctrl_rx_axis_tdata[P_SLOT_NUM_WIDTH - 1 : 0];
-    else
+    end
+    else if(i_slot_start)begin
+        r_slot_start  <= i_slot_start;
+        r_cur_slot_id <= i_cur_slot_id; 
+    end
+    else begin
+        r_slot_start  <= 'd0 ;
         r_cur_slot_id <= r_cur_slot_id;
+    end
 end
-
-always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
-        r_slot_start <= 'd0;
-    else if(s_ctrl_rx_axis_tvalid && r_recv_ctrl_cnt == 1 && s_ctrl_rx_axis_tdata[31:16] == P_SLOT_ID_TYPE)
-        r_slot_start <= 'd1;
-    else
-        r_slot_start <= 'd0;
-end
-
-
-// always @(posedge i_clk or posedge i_rst)begin
-//     if(i_rst)
-
-//     else if()
-
-//     else
-
-// end
 
 endmodule

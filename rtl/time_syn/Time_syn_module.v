@@ -19,19 +19,20 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module Time_syn_module#(
     parameter       P_MASTER_TIME_PORT   = 0,
-    parameter       P_SLAVER_TIME_PORT   = 1
+    parameter       P_SLAVER_TIME_PORT   = 1,
+    parameter       P_SLOT_ID_TYPE       = 16'hff03
 )(
     input           i_clk               ,
     input           i_rst               ,
     /*----ctrl port----*/
     input           i_stat_rx_status    ,
-    input           i_time_syn_start    ,
+    //input           i_time_syn_start    ,
     input           i_select_std_port   ,//选取该节点作为标准时间节点
     output [63:0]   o_local_time        ,
-    output [63:0]   o_time_offest       ,
+    output          o_cur_slot_id       ,
+    output          o_slot_start        ,
     /*----axis port----*/
     input           i_tx_axis_tready    ,
     output          o_tx_axis_tvalid    ,
@@ -83,6 +84,7 @@ reg  [63:0]     r_return_ts         ;
 reg             r_cmpt_std_end      ;
 reg  [63:0]     r_time_offest       ;
 reg             r_wait_time_out     ;
+reg             ro_slot_start       ;
 //***********************************************wire****************************************************//
 wire [63:0]     w_recv_time_stamp   ;//接收到的从设备时间戳
 wire            w_recv_ts_valid     ;
@@ -91,30 +93,36 @@ wire            w_recv_std_valid    ;
 wire [63:0]     w_recv_return_ts    ;
 wire            w_recv_return_valid ;
 wire            w_time_syn_pos      ;
+wire            w_syn_start;
+//**********************************************assign***************************************************//
+assign o_local_time = r_local_time;
+assign o_slot_start = ro_slot_start;
+assign w_time_syn_pos = ri_time_syn_start && !ri_time_syn_start_1d;
 //*********************************************component*************************************************//
-ila_fsm your_instance_name (
-	.clk    (i_clk              ), // input wire clk
-	.probe0 (r_cur_s_state      ), // input wire [7:0]  probe0  
-	.probe1 (r_cur_m_state      ), // input wire [7:0]  probe1 
-	.probe2 (r_send_ts_valid    ), // input wire [0:0]  probe2 
-	.probe3 (r_local_time       ), // input wire [63:0]  probe3 
-	.probe4 (r_send_std_valid   ), // input wire [0:0]  probe4 
-	.probe5 (r_return_valid     ), // input wire [0:0]  probe5 
-	.probe6 (r_return_ts        ), // input wire [63:0]  probe6 
-	.probe7 (r_cmpt_std_end     ), // input wire [0:0]  probe7 
-	.probe8 (r_time_offest      ), // input wire [63:0]  probe8 
-	.probe9 (w_recv_time_stamp  ), // input wire [63:0]  probe9 
-	.probe10(w_recv_ts_valid    ), // input wire [0:0]  probe10 
-	.probe11(w_recv_std_time    ), // input wire [63:0]  probe11 
-	.probe12(w_recv_std_valid   ), // input wire [0:0]  probe12 
-	.probe13(w_recv_return_ts   ), // input wire [63:0]  probe13 
-	.probe14(w_recv_return_valid),  // input wire [0:0]  probe14
-    .probe15(ri_select_std_port ),
-    .probe16(r_state_m_cnt )
-);
+// ila_fsm your_instance_name (
+// 	.clk    (i_clk              ), // input wire clk
+// 	.probe0 (r_cur_s_state      ), // input wire [7:0]  probe0  
+// 	.probe1 (r_cur_m_state      ), // input wire [7:0]  probe1 
+// 	.probe2 (r_send_ts_valid    ), // input wire [0:0]  probe2 
+// 	.probe3 (r_local_time       ), // input wire [63:0]  probe3 
+// 	.probe4 (r_send_std_valid   ), // input wire [0:0]  probe4 
+// 	.probe5 (r_return_valid     ), // input wire [0:0]  probe5 
+// 	.probe6 (r_return_ts        ), // input wire [63:0]  probe6 
+// 	.probe7 (r_cmpt_std_end     ), // input wire [0:0]  probe7 
+// 	.probe8 (r_time_offest      ), // input wire [63:0]  probe8 
+// 	.probe9 (w_recv_time_stamp  ), // input wire [63:0]  probe9 
+// 	.probe10(w_recv_ts_valid    ), // input wire [0:0]  probe10 
+// 	.probe11(w_recv_std_time    ), // input wire [63:0]  probe11 
+// 	.probe12(w_recv_std_valid   ), // input wire [0:0]  probe12 
+// 	.probe13(w_recv_return_ts   ), // input wire [63:0]  probe13 
+// 	.probe14(w_recv_return_valid),  // input wire [0:0]  probe14
+//     .probe15(ri_select_std_port ),
+//     .probe16(r_state_m_cnt )
+// );
 
-
-time_syn_rx time_syn_rx_u0(
+time_syn_rx#(
+    .P_SLOT_ID_TYPE     (P_SLOT_ID_TYPE)
+)time_syn_rx_u0(
     .i_clk               (i_clk                 ),
     .i_rst               (i_rst                 ),
 
@@ -124,12 +132,14 @@ time_syn_rx time_syn_rx_u0(
     .o_recv_std_valid    (w_recv_std_valid      ),
     .o_recv_return_ts    (w_recv_return_ts      ),
     .o_recv_return_valid (w_recv_return_valid   ),
+    .o_cur_slot_id       (o_cur_slot_id         ),
+    .o_syn_start         (w_syn_start           ),
 
-    .i_rx_axis_tvalid    (i_rx_axis_tvalid      ),
-    .i_rx_axis_tdata     (i_rx_axis_tdata       ),
-    .i_rx_axis_tlast     (i_rx_axis_tlast       ),
-    .i_rx_axis_tkeep     (i_rx_axis_tkeep       ),
-    .i_rx_axis_tuser     (i_rx_axis_tuser       ) 
+    .s_ctrl_rx_axis_tvalid(i_rx_axis_tvalid      ),
+    .s_ctrl_rx_axis_tdata (i_rx_axis_tdata       ),
+    .s_ctrl_rx_axis_tlast (i_rx_axis_tlast       ),
+    .s_ctrl_rx_axis_tkeep (i_rx_axis_tkeep       ),
+    .s_ctrl_rx_axis_tuser (i_rx_axis_tuser       ) 
 );
 
 time_syn_tx time_syn_tx_u0(
@@ -150,10 +160,6 @@ time_syn_tx time_syn_tx_u0(
     .o_tx_axis_tkeep     (o_tx_axis_tkeep       ),
     .o_tx_axis_tuser     (o_tx_axis_tuser       ) 
 );
-//**********************************************assign***************************************************//
-assign o_local_time = r_local_time;
-assign o_time_offest = r_time_offest;
-assign w_time_syn_pos = ri_time_syn_start && !ri_time_syn_start_1d;
 //**********************************************always***************************************************//
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
@@ -163,7 +169,7 @@ always @(posedge i_clk or posedge i_rst)begin
     end
     else begin
         ri_stat_rx_status <= i_stat_rx_status;
-        ri_time_syn_start <= i_time_syn_start;
+        ri_time_syn_start <= w_syn_start;
         ri_time_syn_start_1d <= ri_time_syn_start;
     end
 end
@@ -289,7 +295,7 @@ end
 always @(*)begin
     case(r_cur_s_state)
         P_S_IDLE        :begin
-            if(P_SLAVER_TIME_PORT && ri_stat_rx_status && ri_time_syn_start_1d)
+            if(P_SLAVER_TIME_PORT && ri_stat_rx_status && w_time_syn_pos)
                 r_nxt_s_state = P_S_SEND_S_TS;
             else
                 r_nxt_s_state = P_S_IDLE;
@@ -360,4 +366,16 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_wait_time_out <= r_wait_time_out;
 end
+
+//时间同步结束后即可开始一次时隙操作
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_slot_start <= 'd0;
+    else if(r_cur_s_state == P_S_SYN_END)
+        ro_slot_start <= 'd1;
+    else
+        ro_slot_start <= 'd0;
+end
+
+
 endmodule

@@ -272,6 +272,11 @@ wire [2 : 0]                w_port1_unlocal_direct_pkt_queue;
 wire [255 : 0]              w_port1_tx_relay                ;
 wire                        w_port1_tx_relay_valid          ;
 
+//ctrl
+wire [63:0]                 w_local_time    ;
+wire                        w_cur_slot_id   ;
+wire                        w_slot_start    ;
+
 /*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
     以及时间同步数据包*/
 eth_10g_ctrl_top#(
@@ -307,6 +312,37 @@ eth_10g_ctrl_top#(
     .rx0_axis_tkeep         (s_ctrl_axis_tkeep      ),
     .rx0_axis_tuser         (s_ctrl_axis_tuser      )
 );
+
+/*  时间同步模块，在一次时隙开始的时候，控制器会下发一次时隙编号
+    给所有TOR，收到时隙编号后开始进行时间同步，同步结束后即标志着
+    一次时隙开始*/
+Time_syn_module#(
+    .P_MASTER_TIME_PORT     (0       )   ,
+    .P_SLAVER_TIME_PORT     (1       )   ,
+    .P_SLOT_ID_TYPE         (16'hff03)
+)Time_syn_module_u0(
+    .i_clk                  (w_ctrl_tx_clk_out      ),
+    .i_rst                  (w_ctrl_user_rx_reset   ),
+
+    .i_stat_rx_status       (w_ctrl_stat_rx_status  ),
+    .i_select_std_port      ('d0),//选取该节点作为标准时间节点
+    .o_local_time           (w_local_time           ),
+    .o_cur_slot_id          (w_cur_slot_id          ),
+    .o_slot_start           (w_slot_start           ),
+
+    .i_tx_axis_tready       (tx_ctrl_axis_tready    ),
+    .o_tx_axis_tvalid       (tx_ctrl_axis_tvalid    ),
+    .o_tx_axis_tdata        (tx_ctrl_axis_tdata     ),
+    .o_tx_axis_tlast        (tx_ctrl_axis_tlast     ),
+    .o_tx_axis_tkeep        (tx_ctrl_axis_tkeep     ),
+    .o_tx_axis_tuser        (tx_ctrl_axis_tuser     ),
+    .i_rx_axis_tvalid       (s_ctrl_axis_tvalid     ),
+    .i_rx_axis_tdata        (s_ctrl_axis_tdata      ),
+    .i_rx_axis_tlast        (s_ctrl_axis_tlast      ),
+    .i_rx_axis_tkeep        (s_ctrl_axis_tkeep      ),
+    .i_rx_axis_tuser        (s_ctrl_axis_tuser      )
+);
+
 /*  VLB负载均衡模块接收上行链路收到的控制协议包，按照SRRLB
     算法进行处理*/
 VLB_module#(
@@ -328,13 +364,9 @@ VLB_module#(
 )VLB_module_u0(
     .i_clk                       (w_2_tx_clk_out        ),
     .i_rst                       (w_2_user_tx_reset     ),  
-    .i_syn_time_stamp            (),
-
-    .s_ctrl_rx_axis_tvalid       (s_ctrl_axis_tvalid    ),
-    .s_ctrl_rx_axis_tdata        (s_ctrl_axis_tdata     ),
-    .s_ctrl_rx_axis_tlast        (s_ctrl_axis_tlast     ),
-    .s_ctrl_rx_axis_tkeep        (s_ctrl_axis_tkeep     ),
-    .s_ctrl_rx_axis_tuser        (s_ctrl_axis_tuser     ),
+    .i_syn_time_stamp            (w_local_time          ),
+    .i_slot_start                (w_slot_start          ),
+    .i_cur_slot_id               (w_cur_slot_id         ),
 
     .s_uplink0_rx_axis_tvalid    (m_rx2_axis_tvalid     ),
     .s_uplink0_rx_axis_tdata     (m_rx2_axis_tdata      ),
