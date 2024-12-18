@@ -41,8 +41,9 @@ module ddr_local_queue#(
     input  [7 : 0]                          i_wr_ddr_cpl_strb   ,
     //read DDR 
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_rd_local_byte     ,
-    input                                   i_rd_local_byte_valid ,
+    input                                   i_rd_local_byte_valid,
     output                                  o_rd_local_byte_ready,
+    output                                  o_rd_queue_finish   ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]       o_rd_ddr_addr       ,
     output [15 :0]                          o_rd_ddr_len        ,
     output [7 : 0]                          o_rd_ddr_strb       ,
@@ -100,6 +101,7 @@ assign o_rd_ddr_strb = w_fifo_dout_strb ;
 assign o_rd_ddr_valid = ro_rd_ddr_valid ;
 assign w_max_next_pkt = ri_rd_local_byte - r_rd_comp_byte;
 assign o_queue_size        = ro_queue_size       ;
+assign o_rd_queue_finish = r_rd_ddr_complete;
 /******************************component****************************/
 FIFO_32X4096 FIFO_32X4096_ADDR (
   .clk          (i_clk              ), // input wire clk

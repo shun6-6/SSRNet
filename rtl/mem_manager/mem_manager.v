@@ -73,6 +73,7 @@ module mem_manager#(
     input  [P_DDR_LOCAL_QUEUE - 1 : 0]      i_rd_unlocal_port0_queue        ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_rd_unlocal_port0_byte         ,
     input                                   i_rd_unlocal_port0_byte_valid   ,
+    output                                  o_rd_unlocal_port0_finish       ,
     output                                  o_rd_unlocal_port0_byte_ready   ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]       o_rd_unlocal_port0_addr         ,
     output [15 :0]                          o_rd_unlocal_port0_len          ,
@@ -98,6 +99,7 @@ module mem_manager#(
     input  [P_DDR_LOCAL_QUEUE - 1 : 0]      i_rd_unlocal_port1_queue        ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_rd_unlocal_port1_byte         ,
     input                                   i_rd_unlocal_port1_byte_valid   ,
+    output                                  o_rd_unlocal_port1_finish       ,
     output                                  o_rd_unlocal_port1_byte_ready   ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]       o_rd_unlocal_port1_addr         ,
     output [15 :0]                          o_rd_unlocal_port1_len          ,
@@ -211,6 +213,14 @@ reg  [P_LOCAL_PORT_NUM - 1 : 0]     ro_wr_unlocal_port_cpl_ready;
 
 wire [P_QUEUE_NUM - 1 : 0]          w_wr_unlocal_queue_cpl_ready;
 
+//read fiinish flag
+reg  [1 : 0] ro_rd_local_finish;
+reg  [1 : 0] ro_rd_unlocal_finish;
+wire [P_QUEUE_NUM - 1 : 0] w_rd_local_finish;
+wire [P_QUEUE_NUM - 1 : 0] w_rd_unlocal_finish;
+assign o_rd_unlocal_port0_finish = i_rd_unlocal_port0_flag ? ro_rd_unlocal_finish[0] : ro_rd_local_finish[0];
+assign o_rd_unlocal_port1_finish = i_rd_unlocal_port1_flag ? ro_rd_unlocal_finish[1] : ro_rd_local_finish[1];
+
 assign o_check_queue_resp_ready = ro_check_queue_resp_ready;
 //write single
 assign w_wr_local_port_valid[0] = i_wr_local_port0_valid;
@@ -261,10 +271,10 @@ assign o_rd_unlocal_port0_len   = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_l
 assign o_rd_unlocal_port0_strb  = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_strb [0] : r_rd_local_queue_strb [0];
 assign o_rd_unlocal_port0_valid = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_valid[0] : r_rd_local_queue_valid[0];
 
-assign o_rd_unlocal_port1_addr  = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_addr [1] : r_rd_local_queue_addr [1];
-assign o_rd_unlocal_port1_len   = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_len  [1] : r_rd_local_queue_len  [1];
-assign o_rd_unlocal_port1_strb  = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_strb [1] : r_rd_local_queue_strb [1];
-assign o_rd_unlocal_port1_valid = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_valid[1] : r_rd_local_queue_valid[1];
+assign o_rd_unlocal_port1_addr  = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_addr [1] : r_rd_local_queue_addr [1];
+assign o_rd_unlocal_port1_len   = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_len  [1] : r_rd_local_queue_len  [1];
+assign o_rd_unlocal_port1_strb  = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_strb [1] : r_rd_local_queue_strb [1];
+assign o_rd_unlocal_port1_valid = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_valid[1] : r_rd_local_queue_valid[1];
 
 assign o_rd_unlocal_port0_byte_ready = i_rd_unlocal_port0_flag ? ro_rd_unlocal_byte_ready[0] : ro_rd_local_byte_ready[0];
 assign o_rd_unlocal_port1_byte_ready = i_rd_unlocal_port1_flag ? ro_rd_unlocal_byte_ready[1] : ro_rd_local_byte_ready[1];
@@ -432,6 +442,7 @@ generate
             .i_rd_local_byte        (r_rd_local_byte[gen_local_i]       ),
             .i_rd_local_byte_valid  (r_rd_local_byte_valid[gen_local_i] ),
             .o_rd_local_byte_ready  (w_rd_local_byte_ready[gen_local_i] ),
+            .o_rd_queue_finish      (w_rd_local_finish[gen_local_i]     ),
             .o_rd_ddr_addr          (w_rd_local_queue_addr [gen_local_i]),
             .o_rd_ddr_len           (w_rd_local_queue_len  [gen_local_i]),
             .o_rd_ddr_strb          (w_rd_local_queue_strb [gen_local_i]),
@@ -799,6 +810,75 @@ generate
             end
         end
 
+        always @(posedge i_clk or posedge i_rst) begin
+            if(i_rst)begin
+                ro_rd_local_finish[gen_local_o] <= 'd0;
+            end
+            else begin
+                case(w_rd_local_queue[gen_local_o])
+                0 : begin
+                    if(r_rd_local_port_id[0] == gen_local_o && w_rd_local_finish[0])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[0];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                1 : begin
+                    if(r_rd_local_port_id[1] == gen_local_o && w_rd_local_finish[1])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[1];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                2 : begin
+                    if(r_rd_local_port_id[2] == gen_local_o && w_rd_local_finish[2])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[2];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                3 : begin
+                    if(r_rd_local_port_id[3] == gen_local_o && w_rd_local_finish[3])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[3];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                4 : begin
+                    if(r_rd_local_port_id[4] == gen_local_o && w_rd_local_finish[4])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[4];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                5 : begin
+                    if(r_rd_local_port_id[5] == gen_local_o && w_rd_local_finish[5])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[5];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                6 : begin
+                    if(r_rd_local_port_id[6] == gen_local_o && w_rd_local_finish[6])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[6];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                7 : begin
+                    if(r_rd_local_port_id[7] == gen_local_o && w_rd_local_finish[7])begin
+                        ro_rd_local_finish[gen_local_o] <= w_rd_local_finish[7];
+                    end else begin
+                        ro_rd_local_finish[gen_local_o] <= 'd0;
+                    end
+                end
+                default : begin
+                    ro_rd_local_finish[gen_local_o] <= 'd0;
+                end
+                endcase
+            end
+        end
+
     end
 endgenerate
 
@@ -942,6 +1022,7 @@ generate
             .i_rd_local_byte        (r_rd_unlocal_byte[gen_unlocal_i]       ),
             .i_rd_local_byte_valid  (r_rd_unlocal_byte_valid[gen_unlocal_i] ),
             .o_rd_local_byte_ready  (w_rd_unlocal_byte_ready[gen_unlocal_i] ),
+            .o_rd_queue_finish      (w_rd_unlocal_finish[gen_unlocal_i]     ),
             .o_rd_ddr_addr          (w_rd_unlocal_queue_addr [gen_unlocal_i]),
             .o_rd_ddr_len           (w_rd_unlocal_queue_len  [gen_unlocal_i]),
             .o_rd_ddr_strb          (w_rd_unlocal_queue_strb [gen_unlocal_i]),
@@ -1304,6 +1385,75 @@ generate
                     r_rd_unlocal_queue_len  [gen_unlocal_o] <= 'd0;
                     r_rd_unlocal_queue_strb [gen_unlocal_o] <= 'd0;
                     r_rd_unlocal_queue_valid[gen_unlocal_o] <= 'd0;
+                end
+                endcase
+            end
+        end
+
+        always @(posedge i_clk or posedge i_rst) begin
+            if(i_rst)begin
+                ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+            end
+            else begin
+                case(w_rd_unlocal_queue[gen_unlocal_o])
+                0 : begin
+                    if(r_rd_unlocal_port_id[0] == gen_unlocal_o && w_rd_unlocal_finish[0])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[0];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                1 : begin
+                    if(r_rd_unlocal_port_id[1] == gen_unlocal_o && w_rd_unlocal_finish[1])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[1];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                2 : begin
+                    if(r_rd_unlocal_port_id[2] == gen_unlocal_o && w_rd_unlocal_finish[2])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[2];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                3 : begin
+                    if(r_rd_unlocal_port_id[3] == gen_unlocal_o && w_rd_unlocal_finish[3])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[3];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                4 : begin
+                    if(r_rd_unlocal_port_id[4] == gen_unlocal_o && w_rd_unlocal_finish[4])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[4];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                5 : begin
+                    if(r_rd_unlocal_port_id[5] == gen_unlocal_o && w_rd_unlocal_finish[5])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[5];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                6 : begin
+                    if(r_rd_unlocal_port_id[6] == gen_unlocal_o && w_rd_unlocal_finish[6])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[6];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                7 : begin
+                    if(r_rd_unlocal_port_id[7] == gen_unlocal_o && w_rd_unlocal_finish[7])begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= w_rd_unlocal_finish[7];
+                    end else begin
+                        ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
+                    end
+                end
+                default : begin
+                    ro_rd_unlocal_finish[gen_unlocal_o] <= 'd0;
                 end
                 endcase
             end
