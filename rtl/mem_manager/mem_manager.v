@@ -419,7 +419,7 @@ generate
         end
 
         ddr_local_queue#(
-            .P_BASE_ADDR            (32'h0000_0000          ),
+            .P_BASE_ADDR            (32'h0000_0000 + gen_local_i * 32'h0008_0000),
             .C_M_AXI_ADDR_WIDTH	    (C_M_AXI_ADDR_WIDTH	    ),
             .P_WRITE_DDR_PORT_NUM   (P_WRITE_DDR_PORT_NUM   ),
             .P_DDR_LOCAL_QUEUE      (P_DDR_LOCAL_QUEUE      ),
@@ -999,7 +999,7 @@ generate
         end
 
         ddr_local_queue#(
-            .P_BASE_ADDR            (32'h0000_0000          ),
+            .P_BASE_ADDR            (32'h1000_0000 + gen_unlocal_i * 32'h0008_0000),
             .C_M_AXI_ADDR_WIDTH	    (C_M_AXI_ADDR_WIDTH	    ),
             .P_WRITE_DDR_PORT_NUM   (P_WRITE_DDR_PORT_NUM   ),
             .P_DDR_LOCAL_QUEUE      (P_DDR_LOCAL_QUEUE      ),

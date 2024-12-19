@@ -77,8 +77,6 @@ wire [7 :0]     w_fifo_keep_dout        ;
 wire            w_fifo_data_rden        ;
 wire            w_wr_active             ;
 /******************************assign*******************************/
-assign m_tx_axis_tuser = 'd0;
-
 assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready   : 'd0  ;
 assign m_tx_axis_tvalid   = r_fifo_arbiter == 2 ? s_data_axis_tvalid : rm_tx_axis_tvalid   ;
 assign m_tx_axis_tdata    = r_fifo_arbiter == 2 ? s_data_axis_tdata  : rm_tx_axis_tdata    ;
@@ -94,7 +92,7 @@ FIFO_IND_64X2048 FIFO_IND_64X2048_data (
   .rd_clk       (i_data_clk         ), // input wire rd_clk
   .din          (s_ctrl_axis_tdata  ), // input wire [63 : 0] din
   .wr_en        (s_ctrl_axis_tvalid ), // input wire wr_en
-  .rd_en        (), // input wire rd_en
+  .rd_en        (w_fifo_data_rden   ), // input wire rd_en
   .dout         (w_fifo_data_dout   ), // output wire [63 : 0] dout
   .full         (), // output wire full
   .empty        (), // output wire empty

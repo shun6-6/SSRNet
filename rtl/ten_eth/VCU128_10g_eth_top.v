@@ -21,9 +21,10 @@
 
 
 module VCU128_10g_eth_top#(
-    parameter                   P_CHANNEL_NUM   = 4         ,
-    parameter                   P_MIN_LENGTH    = 8'd64     ,
-    parameter                   P_MAX_LENGTH    = 15'd9600 
+    parameter                   P_CHANNEL_NUM   = 4                     ,
+    parameter                   P_MIN_LENGTH    = 8'd64                 ,
+    parameter                   P_MAX_LENGTH    = 15'd9600              ,
+    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
 )(
     input                       i_gt_refclk_p       ,
     input                       i_gt_refclk_n       ,
@@ -36,6 +37,8 @@ module VCU128_10g_eth_top#(
     output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
     output                      o_dclk              ,
     output                      o_sys_reset         ,
+    input  [63:0]               i_time_stamp        ,
+
     output                      o_0_tx_clk_out      ,
     output                      o_0_rx_clk_out      ,
     output                      o_0_user_tx_reset   ,
@@ -149,11 +152,41 @@ wire                    w0_result_valid     ;
 wire [3 :0]             w0_check_resp_id    ;
 wire                    w0_seek_flag        ;
 
+wire [47:0]             w1_check_mac        ;
+wire [3 :0]             w1_check_req_id     ;
+wire                    w1_check_valid      ;
+wire [3 :0]             w1_outport          ;
+wire                    w1_result_valid     ;
+wire [3 :0]             w1_check_resp_id    ;
+wire                    w1_seek_flag        ;
+
+wire [47:0]             w2_check_mac        ;
+wire [3 :0]             w2_check_req_id     ;
+wire                    w2_check_valid      ;
+wire [3 :0]             w2_outport          ;
+wire                    w2_result_valid     ;
+wire [3 :0]             w2_check_resp_id    ;
+wire                    w2_seek_flag        ;
+
+wire [47:0]             w3_check_mac        ;
+wire [3 :0]             w3_check_req_id     ;
+wire                    w3_check_valid      ;
+wire [3 :0]             w3_outport          ;
+wire                    w3_result_valid     ;
+wire [3 :0]             w3_check_resp_id    ;
+wire                    w3_seek_flag        ;
+
 wire                    server0_axis_tx_tvalid  ;
 wire [63 :0]            server0_axis_tx_tdata   ;
 wire                    server0_axis_tx_tlast   ;
 wire [7  :0]            server0_axis_tx_tkeep   ;
 wire                    server0_axis_tx_tuser   ;
+
+wire                    server1_axis_tx_tvalid  ;
+wire [63 :0]            server1_axis_tx_tdata   ;
+wire                    server1_axis_tx_tlast   ;
+wire [7  :0]            server1_axis_tx_tkeep   ;
+wire                    server1_axis_tx_tuser   ;
 
 clk_wiz_100Mhz clk_wiz_100Mhz_u0
 (
@@ -171,13 +204,69 @@ rst_gen_module#(
     .o_rst                  (o_sys_reset    ) 
 );
 
+localparam            P_MY_PORT0_MAC = {P_MY_TOR_MAC[47:8],8'd1};
+localparam            P_MY_PORT1_MAC = {P_MY_TOR_MAC[47:8],8'd1};
+server_module#(
+    .P_UPLINK_TRUE      (0                  ) ,
+    .P_SEED             (8'hA5              ) ,
+    .P_MAC_HEAD         (32'h8D_BC_5C_4A    ) ,
+    .P_MY_TOR_MAC       (P_MY_TOR_MAC       ) ,
+    .P_MY_PORT_MAC      (P_MY_PORT0_MAC     ) 
+)server_module_server0(
+    .i_clk              (o_0_tx_clk_out     ),
+    .i_rst              (o_0_user_rx_reset  ),
+    .i_stat_rx_status   (o_0_stat_rx_status ),
+    .i_time_stamp       (i_time_stamp       ),
+
+    .i_check_mac        (w0_check_mac       ),
+    .i_check_id         (w0_check_req_id    ),
+    .i_check_valid      (w0_check_valid     ),
+    .o_outport          (w0_outport         ),
+    .o_result_valid     (w0_result_valid    ),
+    .o_check_id         (w0_check_resp_id   ),
+    .o_seek_flag        (w0_seek_flag       ),
+
+    .rx_axis_tvalid     (server0_axis_tx_tvalid ),
+    .rx_axis_tdata      (server0_axis_tx_tdata  ),
+    .rx_axis_tlast      (server0_axis_tx_tlast  ),
+    .rx_axis_tkeep      (server0_axis_tx_tkeep  ),
+    .rx_axis_tuser      (server0_axis_tx_tuser  )
+);
+
+server_module#(
+    .P_UPLINK_TRUE      (0                  ) ,
+    .P_SEED             (8'hA5              ) ,
+    .P_MAC_HEAD         (32'h8D_BC_5C_4A    ) ,
+    .P_MY_TOR_MAC       (P_MY_TOR_MAC       ) ,
+    .P_MY_PORT_MAC      (P_MY_PORT1_MAC     ) 
+)server_module_server1(
+    .i_clk              (o_1_tx_clk_out     ),
+    .i_rst              (o_1_user_rx_reset  ),
+    .i_stat_rx_status   (o_1_stat_rx_status ),
+    .i_time_stamp       (i_time_stamp       ),
+
+    .i_check_mac        (w1_check_mac       ),
+    .i_check_id         (w1_check_req_id    ),
+    .i_check_valid      (w1_check_valid     ),
+    .o_outport          (w1_outport         ),
+    .o_result_valid     (w1_result_valid    ),
+    .o_check_id         (w1_check_resp_id   ),
+    .o_seek_flag        (w1_seek_flag       ),
+
+    .rx_axis_tvalid     (server1_axis_tx_tvalid ),
+    .rx_axis_tdata      (server1_axis_tx_tdata  ),
+    .rx_axis_tlast      (server1_axis_tx_tlast  ),
+    .rx_axis_tkeep      (server1_axis_tx_tkeep  ),
+    .rx_axis_tuser      (server1_axis_tx_tuser  )
+);
+
 
 ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
     .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
-    .P_UPLINK_TRUE           (0)
+    .P_UPLINK_TRUE          (0)
 )ten_eth_rx_downlink_port0(
     .i_clk                  (o_0_tx_clk_out         ),
     .i_rst                  (o_0_user_rx_reset      ),
@@ -196,7 +285,7 @@ ten_eth_rx#(
     .i_result_valid         (w0_result_valid        ),
     .i_check_id             (w0_check_resp_id       ),
     .i_seek_flag            (w0_seek_flag           ),
-    .i_cur_connect_tor      ('d0      ),
+    .i_cur_connect_tor      ('d0                    ),
 
     .m_axis_tvalid          (m_rx0_axis_tvalid      ),
     .m_axis_tdata           (m_rx0_axis_tdata       ),
@@ -247,9 +336,9 @@ ten_eth_rx#(
     .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
     .P_UPLINK_TRUE           (1)
 )ten_eth_rx_up_port0(
-    .i_clk                  (o_1_tx_clk_out         ),
-    .i_rst                  (o_1_user_rx_reset      ),
-    .i_stat_rx_status       (o_1_stat_rx_status     ),
+    .i_clk                  (o_2_tx_clk_out         ),
+    .i_rst                  (o_2_user_rx_reset      ),
+    .i_stat_rx_status       (o_2_stat_rx_status     ),
  
     .s_axis_rx_tvalid       (rx2_axis_tvalid        ),
     .s_axis_rx_tdata        (rx2_axis_tdata         ),
@@ -257,21 +346,21 @@ ten_eth_rx#(
     .s_axis_rx_tkeep        (rx2_axis_tkeep         ),
     .s_axis_rx_tuser        (rx2_axis_tuser         ),
    
-    .o_check_mac            (w1_check_mac           ),
-    .o_check_id             (w1_check_req_id        ),
-    .o_check_valid          (w1_check_valid         ),
-    .i_outport              (w1_outport             ),
-    .i_result_valid         (w1_result_valid        ),
-    .i_check_id             (w1_check_resp_id       ),
-    .i_seek_flag            (w1_seek_flag           ),
+    .o_check_mac            (w2_check_mac           ),
+    .o_check_id             (w2_check_req_id        ),
+    .o_check_valid          (w2_check_valid         ),
+    .i_outport              (w2_outport             ),
+    .i_result_valid         (w2_result_valid        ),
+    .i_check_id             (w2_check_resp_id       ),
+    .i_seek_flag            (w2_seek_flag           ),
     .i_cur_connect_tor      (i_port0_connect_tor    ),
 
-    .m_axis_tvalid          (m_rx1_axis_tvalid      ),
-    .m_axis_tdata           (m_rx1_axis_tdata       ),
-    .m_axis_tlast           (m_rx1_axis_tlast       ),
-    .m_axis_tkeep           (m_rx1_axis_tkeep       ),
-    .m_axis_tuser           (m_rx1_axis_tuser       ),
-    .m_axis_tdest           (m_rx1_axis_tdest       )
+    .m_axis_tvalid          (m_rx2_axis_tvalid      ),
+    .m_axis_tdata           (m_rx2_axis_tdata       ),
+    .m_axis_tlast           (m_rx2_axis_tlast       ),
+    .m_axis_tkeep           (m_rx2_axis_tkeep       ),
+    .m_axis_tuser           (m_rx2_axis_tuser       ),
+    .m_axis_tdest           (m_rx2_axis_tdest       )
 );
 
 ten_eth_rx#(
@@ -281,9 +370,9 @@ ten_eth_rx#(
     .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
     .P_UPLINK_TRUE           (1)
 )ten_eth_rx_uplink_port1(
-    .i_clk                  (o_1_tx_clk_out         ),
-    .i_rst                  (o_1_user_rx_reset      ),
-    .i_stat_rx_status       (o_1_stat_rx_status     ),
+    .i_clk                  (o_3_tx_clk_out         ),
+    .i_rst                  (o_3_user_rx_reset      ),
+    .i_stat_rx_status       (o_3_stat_rx_status     ),
  
     .s_axis_rx_tvalid       (rx3_axis_tvalid        ),
     .s_axis_rx_tdata        (rx3_axis_tdata         ),
@@ -291,21 +380,21 @@ ten_eth_rx#(
     .s_axis_rx_tkeep        (rx3_axis_tkeep         ),
     .s_axis_rx_tuser        (rx3_axis_tuser         ),
    
-    .o_check_mac            (w1_check_mac           ),
-    .o_check_id             (w1_check_req_id        ),
-    .o_check_valid          (w1_check_valid         ),
-    .i_outport              (w1_outport             ),
-    .i_result_valid         (w1_result_valid        ),
-    .i_check_id             (w1_check_resp_id       ),
-    .i_seek_flag            (w1_seek_flag           ),
+    .o_check_mac            (w3_check_mac           ),
+    .o_check_id             (w3_check_req_id        ),
+    .o_check_valid          (w3_check_valid         ),
+    .i_outport              (w3_outport             ),
+    .i_result_valid         (w3_result_valid        ),
+    .i_check_id             (w3_check_resp_id       ),
+    .i_seek_flag            (w3_seek_flag           ),
     .i_cur_connect_tor      (i_port1_connect_tor    ),
 
-    .m_axis_tvalid          (m_rx1_axis_tvalid      ),
-    .m_axis_tdata           (m_rx1_axis_tdata       ),
-    .m_axis_tlast           (m_rx1_axis_tlast       ),
-    .m_axis_tkeep           (m_rx1_axis_tkeep       ),
-    .m_axis_tuser           (m_rx1_axis_tuser       ),
-    .m_axis_tdest           (m_rx1_axis_tdest       )
+    .m_axis_tvalid          (m_rx3_axis_tvalid      ),
+    .m_axis_tdata           (m_rx3_axis_tdata       ),
+    .m_axis_tlast           (m_rx3_axis_tlast       ),
+    .m_axis_tkeep           (m_rx3_axis_tkeep       ),
+    .m_axis_tuser           (m_rx3_axis_tuser       ),
+    .m_axis_tdest           (m_rx3_axis_tdest       )
 );
 
 uplus_ten_gig_module#(

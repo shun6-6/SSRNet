@@ -21,7 +21,8 @@
 
 
 module SRRNet_Top#(
-    parameter                   P_CHANNEL_NUM   = 4         
+    parameter                   P_CHANNEL_NUM   = 4 ,
+    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
 )(
     input                       i_gt_refclk_p       ,
     input                       i_gt_refclk_n       ,
@@ -31,7 +32,30 @@ module SRRNet_Top#(
     output [P_CHANNEL_NUM-1:0]  o_gt_txn            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxn            ,
-    output [P_CHANNEL_NUM-1:0]  o_sfp_dis           
+    output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
+    input                       i_ctrl_gt_refclk_p  ,
+    input                       i_ctrl_gt_refclk_n  ,
+    output                      o_ctrl_gt_txp       ,
+    output                      o_ctrl_gt_txn       ,
+    input                       i_ctrl_gt_rxp       ,
+    input                       i_ctrl_gt_rxn       ,
+    output                      o_ctrl_sfp_dis      ,
+
+    input                       sys_rst             ,
+    output                      C0_DDR4_0_act_n     ,
+    output [16:0]               C0_DDR4_0_adr       ,
+    output [1:0]                C0_DDR4_0_ba        ,
+    output                      C0_DDR4_0_bg        ,
+    output                      C0_DDR4_0_ck_c      ,
+    output                      C0_DDR4_0_ck_t      ,
+    output                      C0_DDR4_0_cke       ,
+    output [1:0]                C0_DDR4_0_cs_n      ,
+    inout [8:0]                 C0_DDR4_0_dm_n      ,
+    inout [71:0]                C0_DDR4_0_dq        ,
+    inout [8:0]                 C0_DDR4_0_dqs_c     ,
+    inout [8:0]                 C0_DDR4_0_dqs_t     ,
+    output                      C0_DDR4_0_odt       ,
+    output                      C0_DDR4_0_reset_n   
 );
 
 localparam  P_CROSSBAR_N = 4;
@@ -277,6 +301,19 @@ wire [63:0]                 w_local_time    ;
 wire                        w_cur_slot_id   ;
 wire                        w_slot_start    ;
 
+//uplink send data
+wire                        uplink0_tx_axis_tvalid          ;
+wire [63:0]                 uplink0_tx_axis_tdata           ;
+wire                        uplink0_tx_axis_tlast           ;
+wire [7 :0]                 uplink0_tx_axis_tkeep           ;
+wire                        uplink0_tx_axis_tuser           ;
+
+wire                        uplink1_tx_axis_tvalid          ;
+wire [63:0]                 uplink1_tx_axis_tdata           ;
+wire                        uplink1_tx_axis_tlast           ;
+wire [7 :0]                 uplink1_tx_axis_tkeep           ;
+wire                        uplink1_tx_axis_tuser           ;
+
 /*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
     以及时间同步数据包*/
 eth_10g_ctrl_top#(
@@ -284,15 +321,13 @@ eth_10g_ctrl_top#(
     .P_MIN_LENGTH           (8'd64                  ),
     .P_MAX_LENGTH           (15'd9600               )
 )eth_10g_ctrl_link( 
-    .i_gt_refclk_p          (i_gt_refclk_p          ),
-    .i_gt_refclk_n          (i_gt_refclk_n          ),
-    .i_sys_clk_p            (i_sys_clk_p            ),
-    .i_sys_clk_n            (i_sys_clk_n            ),
-    .o_gt_txp               (o_gt_txp               ),
-    .o_gt_txn               (o_gt_txn               ),
-    .i_gt_rxp               (i_gt_rxp               ),
-    .i_gt_rxn               (i_gt_rxn               ),
-    .o_sfp_dis              (o_sfp_dis              ),
+    .i_gt_refclk_p          (i_ctrl_gt_refclk_p     ),
+    .i_gt_refclk_n          (i_ctrl_gt_refclk_n     ),
+    .o_gt_txp               (o_ctrl_gt_txp          ),
+    .o_gt_txn               (o_ctrl_gt_txn          ),
+    .i_gt_rxp               (i_ctrl_gt_rxp          ),
+    .i_gt_rxn               (i_ctrl_gt_rxn          ),
+    .o_sfp_dis              (o_ctrl_sfp_dis         ),
     .i_dclk                 (w_dclk                 ),
     .i_sys_reset            (w_sys_reset            ),
     .o_0_tx_clk_out         (w_ctrl_tx_clk_out      ),
@@ -357,7 +392,7 @@ VLB_module#(
     .P_TOR_NUM              (8                     ),
     .P_OCS_NUM              (2                     ),
     .P_MY_OCS               (0                     ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_10_00 ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_SLOT_MAX_PKT_NUM     (32'h00_04_00_00       ),
     .P_ETH_MIN_LEN          (8                     )
@@ -434,7 +469,7 @@ DDR_rd_ctrl#(
     .P_WRITE_DDR_PORT_NUM    (1              ),
     .P_DDR_LOCAL_QUEUE       (4              ),
     .P_P_WRITE_DDR_PORT      (0              ),
-    .P_MAX_ADDR              (32'h003F_FFFF  ),
+    .P_MAX_ADDR              (32'h0008_0000  ),
     .P_LOCAL_PORT_NUM        (2              ),
     .P_UNLOCAL_PORT_NUM      (2              ),
     .P_QUEUE_NUM             (8              )
@@ -510,11 +545,11 @@ eth_uplink_port eth_uplink_port_u0(
     .s_data_axis_tuser      (m_axis_2_tuser         ),
     .s_data_axis_tready     (m_axis_2_tready        ),
          
-    .m_tx_axis_tvalid       (tx2_axis_tvalid        ),
-    .m_tx_axis_tdata        (tx2_axis_tdata         ),
-    .m_tx_axis_tlast        (tx2_axis_tlast         ),
-    .m_tx_axis_tkeep        (tx2_axis_tkeep         ),
-    .m_tx_axis_tuser        (tx2_axis_tuser         ),
+    .m_tx_axis_tvalid       (uplink0_tx_axis_tvalid ),
+    .m_tx_axis_tdata        (uplink0_tx_axis_tdata  ),
+    .m_tx_axis_tlast        (uplink0_tx_axis_tlast  ),
+    .m_tx_axis_tkeep        (uplink0_tx_axis_tkeep  ),
+    .m_tx_axis_tuser        (uplink0_tx_axis_tuser  ),
     .m_tx_axis_tready       (tx2_axis_tready        ) 
 );
 
@@ -537,11 +572,11 @@ eth_uplink_port eth_uplink_port_u1(
     .s_data_axis_tuser      (m_axis_3_tuser         ),
     .s_data_axis_tready     (m_axis_3_tready        ),
          
-    .m_tx_axis_tvalid       (tx3_axis_tvalid        ),
-    .m_tx_axis_tdata        (tx3_axis_tdata         ),
-    .m_tx_axis_tlast        (tx3_axis_tlast         ),
-    .m_tx_axis_tkeep        (tx3_axis_tkeep         ),
-    .m_tx_axis_tuser        (tx3_axis_tuser         ),
+    .m_tx_axis_tvalid       (uplink1_tx_axis_tvalid ),
+    .m_tx_axis_tdata        (uplink1_tx_axis_tdata  ),
+    .m_tx_axis_tlast        (uplink1_tx_axis_tlast  ),
+    .m_tx_axis_tkeep        (uplink1_tx_axis_tkeep  ),
+    .m_tx_axis_tuser        (uplink1_tx_axis_tuser  ),
     .m_tx_axis_tready       (tx3_axis_tready        ) 
 );
 /*  10G以太网高速接口处理模块，接收10G数据，并且完成查表等操作，
@@ -549,7 +584,8 @@ eth_uplink_port eth_uplink_port_u1(
 VCU128_10g_eth_top#(
     .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
     .P_MIN_LENGTH           (8'd64              ),
-    .P_MAX_LENGTH           (15'd9600           )
+    .P_MAX_LENGTH           (15'd9600           ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC       )
 )VCU128_10g_eth_top_data_link( 
     .i_gt_refclk_p          (i_gt_refclk_p      ),
     .i_gt_refclk_n          (i_gt_refclk_n      ),
@@ -878,7 +914,7 @@ mem_manager#(
     .i_wr_local_port0_valid          (w_wr_ddr_valid_0      ),
     .i_wr_local_port0_len            (w_wr_ddr_len_0        ),
     .i_wr_local_port0_queue          (w_wr_ddr_queue_0      ),
-    .o_wr_local_port0_addr           (w_rd_ddr_addr_0       ),     
+    .o_wr_local_port0_addr           (w_wr_ddr_addr_0       ),     
     .o_wr_local_port0_ready          (w_wr_ddr_ready_0      ),
     .i_wr_local_port0_cpl_valid      (w_wr_ddr_cpl_valid_0  ),
     .o_wr_local_port0_cpl_ready      (w_wr_ddr_cpl_ready_0  ),
@@ -890,7 +926,7 @@ mem_manager#(
     .i_wr_local_port1_valid          (w_wr_ddr_valid_1      ),
     .i_wr_local_port1_len            (w_wr_ddr_len_1        ),
     .i_wr_local_port1_queue          (w_wr_ddr_queue_1      ),
-    .o_wr_local_port1_addr           (w_rd_ddr_addr_1       ),
+    .o_wr_local_port1_addr           (w_wr_ddr_addr_1       ),
     .o_wr_local_port1_ready          (w_wr_ddr_ready_1      ),
     .i_wr_local_port1_cpl_valid      (w_wr_ddr_cpl_valid_1  ),
     .o_wr_local_port1_cpl_ready      (w_wr_ddr_cpl_ready_1  ),
@@ -903,7 +939,7 @@ mem_manager#(
     .i_wr_unlocal_port0_valid        (w_wr_ddr_valid_2      ),
     .i_wr_unlocal_port0_len          (w_wr_ddr_len_2        ),
     .i_wr_unlocal_port0_queue        (w_wr_ddr_queue_2      ),
-    .o_wr_unlocal_port0_addr         (w_rd_ddr_addr_2       ),
+    .o_wr_unlocal_port0_addr         (w_wr_ddr_addr_2       ),
     .o_wr_unlocal_port0_ready        (w_wr_ddr_ready_2      ),
     .i_wr_unlocal_port0_cpl_valid    (w_wr_ddr_cpl_valid_2  ),
     .o_wr_unlocal_port0_cpl_ready    (w_wr_ddr_cpl_ready_2  ),
@@ -928,7 +964,7 @@ mem_manager#(
     .i_wr_unlocal_port1_valid        (w_wr_ddr_valid_3      ),
     .i_wr_unlocal_port1_len          (w_wr_ddr_len_3        ),
     .i_wr_unlocal_port1_queue        (w_wr_ddr_queue_3      ),
-    .o_wr_unlocal_port1_addr         (w_rd_ddr_addr_3       ),
+    .o_wr_unlocal_port1_addr         (w_wr_ddr_addr_3       ),
     .o_wr_unlocal_port1_ready        (w_wr_ddr_ready_3      ),
     .i_wr_unlocal_port1_cpl_valid    (w_wr_ddr_cpl_valid_3  ),
     .o_wr_unlocal_port1_cpl_ready    (w_wr_ddr_cpl_ready_3  ),

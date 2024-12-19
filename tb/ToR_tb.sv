@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/10/15 11:16:07
+// Create Date: 2024/12/19 19:17:04
 // Design Name: 
-// Module Name: ten_eth_tx
+// Module Name: ToR_tb
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,9 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module ten_eth_tx(
-    input                   i_clk       ,
-    input                   i_rst       
-    
-);
+module ToR_tb(
+
+    );
 endmodule

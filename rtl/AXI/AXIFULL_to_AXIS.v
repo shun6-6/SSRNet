@@ -221,7 +221,7 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
 end
 
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
-    if(i_axis_rst)
+    if(w_axi_rst)
         ro_rd_ddr_cpl <= 'd0;
     else if(w_axi_rd_active && M_AXI_RLAST)
         ro_rd_ddr_cpl <= 'd1;

@@ -32,7 +32,7 @@ module time_syn_rx#(
     output          o_recv_std_valid        ,
     output [63:0]   o_recv_return_ts        ,
     output          o_recv_return_valid     ,
-    output          o_time_slot_id          ,
+    output          o_cur_slot_id          ,
     output          o_syn_start             ,
     /*----axis port----*/
     input           s_ctrl_rx_axis_tvalid   ,
@@ -81,7 +81,7 @@ assign  o_recv_std_time     = ri_rx_axis_tdata      ;
 assign  o_recv_std_valid    = ro_recv_std_valid     ;
 assign  o_recv_return_ts    = ri_rx_axis_tdata      ;
 assign  o_recv_return_valid = ro_recv_return_valid  ;
-assign  o_time_slot_id = r_cur_slot_id;
+assign  o_cur_slot_id = r_cur_slot_id;
 assign  o_syn_start   = r_slot_start  ;
 //**********************************************always***************************************************//
 always @(posedge i_clk or posedge i_rst)begin

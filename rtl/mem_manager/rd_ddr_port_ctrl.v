@@ -167,7 +167,7 @@ generate
                 r_relay_finish[i] <= 'd1;
             else if(r_cur_state == P_TX_RELAY_PKT && i_rd_queue_finish && (r_relay_finish[i] == 0) && i == 0)
                 r_relay_finish[i] <= 'd1;
-            else if(r_cur_state == P_TX_RELAY_PKT && i_rd_queue_finish && (&r_relay_finish[0:i-1]) && i > 0)
+            else if(r_cur_state == P_TX_RELAY_PKT && i_rd_queue_finish && (&{{r_relay_finish[i:0] << 1},1'b1}) && i > 0)
                 r_relay_finish[i] <= 'd1;
             else if(ri_tx_relay_valid && ri_tx_relay[i] != 0)
                 r_relay_finish[i] <= 'd0;

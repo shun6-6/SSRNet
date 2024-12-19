@@ -26,9 +26,7 @@ module eth_10g_ctrl_top#(
     parameter                   P_MAX_LENGTH    = 15'd9600 
 )(
     input                       i_gt_refclk_p       ,
-    input                       i_gt_refclk_n       ,
-    input                       i_sys_clk_p         ,
-    input                       i_sys_clk_n         ,
+    input                       i_gt_refclk_n       ,                     
     output [P_CHANNEL_NUM-1:0]  o_gt_txp            ,
     output [P_CHANNEL_NUM-1:0]  o_gt_txn            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
