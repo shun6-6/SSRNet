@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2024/12/16 11:25:06
+// Create Date: 2024/12/20 10:36:54
 // Design Name: 
-// Module Name: Time_syn_module
+// Module Name: ocs_ctrl_trx
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -19,33 +19,35 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-module Time_syn_module#(
-    parameter       P_MASTER_TIME_PORT   = 0,
-    parameter       P_SLAVER_TIME_PORT   = 1,
-    parameter       P_SLOT_ID_TYPE       = 16'hff03
+
+module ocs_ctrl_trx#(
+    parameter       P_MASTER_TIME_PORT  = 1                     ,
+    parameter       P_SLAVER_TIME_PORT  = 0                     ,
+    parameter       P_SLOT_ID_TYPE      = 16'hff03              ,
+    parameter       P_MY_MAC            = 48'h8D_BC_5C_4A_1A_1F ,
+    parameter       P_DEST_TOR_MAC      = 48'h8D_BC_5C_4A_00_00
 )(
     input           i_clk               ,
     input           i_rst               ,
-    /*----ctrl port----*/
+
+    input  [7 : 0]  i_chnl_ready        ,
+    input  [63: 0]  i_time_stamp        ,
     input           i_stat_rx_status    ,
-    //input           i_time_syn_start    ,
-    input           i_select_std_port   ,//选取该节点作为标准时间节点
-    output [63:0]   o_local_time        ,
-    output          o_cur_slot_id       ,
-    output          o_slot_start        ,
-    output          o_sim_start         ,
-    /*----axis port----*/
-    input           i_tx_axis_tready    ,
-    output          o_tx_axis_tvalid    ,
-    output [63:0]   o_tx_axis_tdata     ,
-    output          o_tx_axis_tlast     ,
-    output [7 :0]   o_tx_axis_tkeep     ,
-    output          o_tx_axis_tuser     ,
+    input           i_select_std_port   ,
+    input           i_new_slot_start    ,
+
     input           i_rx_axis_tvalid    ,
-    input  [63:0]   i_rx_axis_tdata     ,
+    input  [63 :0]  i_rx_axis_tdata     ,
     input           i_rx_axis_tlast     ,
-    input  [7 :0]   i_rx_axis_tkeep     ,
-    input           i_rx_axis_tuser        
+    input  [7  :0]  i_rx_axis_tkeep     ,
+    input           i_rx_axis_tuser     ,
+  
+    output          o_tx_axis_tvalid    ,
+    output [63 :0]  o_tx_axis_tdata     ,
+    output          o_tx_axis_tlast     ,
+    output [7  :0]  o_tx_axis_tkeep     ,
+    output          o_tx_axis_tuser     ,
+    input           i_tx_axis_tready    
 );
 //*********************************************parameter*************************************************//
 localparam      P_S_IDLE        =   0   ,   //空闲状态
@@ -62,6 +64,7 @@ localparam      P_S_SEND_S_TS   =   4   ,   //从设备向主设备发送时间�
 localparam      P_FRAME_LEN     =   8'd8;
 localparam      P_PROCESS       =   4;
 localparam      P_TIME_OUT      =   300;
+localparam      P_INIT_TIME     =   64'd66;
 //*********************************************function**************************************************//
 
 //***********************************************FSM*****************************************************//
@@ -94,12 +97,50 @@ wire            w_recv_std_valid    ;
 wire [63:0]     w_recv_return_ts    ;
 wire            w_recv_return_valid ;
 wire            w_time_syn_pos      ;
-wire            w_syn_start;
+wire            w_syn_start         ;
+
+wire            w_ctrl_axis_tvalid  ;
+wire [63: 0]    w_ctrl_axis_tdata   ;
+wire            w_ctrl_axis_tlast   ;
+wire [7 : 0]    w_ctrl_axis_tkeep   ;
+wire            w_ctrl_axis_tuser   ;
+
+wire            w_syn_axis_tvalid   ;
+wire [63: 0]    w_syn_axis_tdata    ;
+wire            w_syn_axis_tlast    ;
+wire [7 : 0]    w_syn_axis_tkeep    ;
+wire            w_syn_axis_tuser    ;
 //**********************************************assign***************************************************//
 assign o_local_time = r_local_time;
 assign o_slot_start = ro_slot_start;
 assign w_time_syn_pos = ri_time_syn_start && !ri_time_syn_start_1d;
+
+assign o_tx_axis_tvalid = r_cur_m_state == P_S_WAIT_S_TS ? w_ctrl_axis_tvalid : w_syn_axis_tvalid;
+assign o_tx_axis_tdata  = r_cur_m_state == P_S_WAIT_S_TS ? w_ctrl_axis_tdata  : w_syn_axis_tdata ;
+assign o_tx_axis_tlast  = r_cur_m_state == P_S_WAIT_S_TS ? w_ctrl_axis_tlast  : w_syn_axis_tlast ;
+assign o_tx_axis_tkeep  = r_cur_m_state == P_S_WAIT_S_TS ? w_ctrl_axis_tkeep  : w_syn_axis_tkeep ;
+assign o_tx_axis_tuser  = r_cur_m_state == P_S_WAIT_S_TS ? w_ctrl_axis_tuser  : w_syn_axis_tuser ;
 //*********************************************component*************************************************//
+ctrl_tx#(
+    .P_SLOT_ID_TYPE     (P_SLOT_ID_TYPE     ),
+    .P_MY_MAC           (P_MY_MAC           ),
+    .P_DEST_TOR_MAC     (P_DEST_TOR_MAC     )
+)(
+    .i_clk              (i_clk              ),
+    .i_rst              (i_rst              ),
+
+    .i_chnl_ready       (i_chnl_ready       ),
+    .i_new_slot_start   (i_new_slot_start   ),
+    .i_slot_id          (i_slot_id          ),
+    .i_time_stamp       (i_time_stamp       ),
+
+    .o_tx_axis_tvalid   (w_ctrl_axis_tvalid ),
+    .o_tx_axis_tdata    (w_ctrl_axis_tdata  ),
+    .o_tx_axis_tlast    (w_ctrl_axis_tlast  ),
+    .o_tx_axis_tkeep    (w_ctrl_axis_tkeep  ),
+    .o_tx_axis_tuser    (w_ctrl_axis_tuser  ),
+    .i_tx_axis_tready   (i_tx_axis_tready   ) 
+);
 
 time_syn_rx#(
     .P_SLOT_ID_TYPE     (P_SLOT_ID_TYPE)
@@ -115,7 +156,6 @@ time_syn_rx#(
     .o_recv_return_valid (w_recv_return_valid   ),
     .o_cur_slot_id       (o_cur_slot_id         ),
     .o_syn_start         (w_syn_start           ),
-    .o_sim_start         (o_sim_start           ),
 
     .s_ctrl_rx_axis_tvalid(i_rx_axis_tvalid      ),
     .s_ctrl_rx_axis_tdata (i_rx_axis_tdata       ),
@@ -136,11 +176,11 @@ time_syn_tx time_syn_tx_u0(
     .i_return_ts         (r_return_ts           ),
 
     .i_tx_axis_tready    (i_tx_axis_tready      ),
-    .o_tx_axis_tvalid    (o_tx_axis_tvalid      ),
-    .o_tx_axis_tdata     (o_tx_axis_tdata       ),
-    .o_tx_axis_tlast     (o_tx_axis_tlast       ),
-    .o_tx_axis_tkeep     (o_tx_axis_tkeep       ),
-    .o_tx_axis_tuser     (o_tx_axis_tuser       ) 
+    .o_tx_axis_tvalid    (w_syn_axis_tvalid     ),
+    .o_tx_axis_tdata     (w_syn_axis_tdata      ),
+    .o_tx_axis_tlast     (w_syn_axis_tlast      ),
+    .o_tx_axis_tkeep     (w_syn_axis_tkeep      ),
+    .o_tx_axis_tuser     (w_syn_axis_tuser      ) 
 );
 //**********************************************always***************************************************//
 always @(posedge i_clk or posedge i_rst)begin
@@ -167,7 +207,7 @@ end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
-        r_local_time <= 'd0;
+        r_local_time <= P_INIT_TIME;
     else if(ri_select_std_port)//若是规定的主时间节点，则维护本地时钟即可
         r_local_time <= r_local_time + 1;
     else if(w_recv_std_valid && r_cur_s_state == P_S_WAIT_STD)//若不是规定的主时间节点，则需要根据接收到的主时钟进行矫正

@@ -36,6 +36,7 @@ module VCU128_10g_eth_top#(
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxn            ,
     output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
     input  [63:0]               i_time_stamp        ,
+    input                       i_sim_start         ,
 
     output                      o_0_tx_clk_out      ,
     output                      o_0_rx_clk_out      ,
@@ -246,6 +247,8 @@ server_module#(
     .i_rst              (o_0_user_rx_reset  ),
     .i_stat_rx_status   (o_0_stat_rx_status ),
     .i_time_stamp       (i_time_stamp       ),
+    .i_cur_connect_tor  (i_port0_connect_tor),
+    .i_sim_start        (i_sim_start        ),
 
     .i_check_mac        (w0_check_mac       ),
     .i_check_id         (w0_check_req_id    ),
@@ -280,6 +283,8 @@ server_module#(
     .i_rst              (o_1_user_rx_reset  ),
     .i_stat_rx_status   (o_1_stat_rx_status ),
     .i_time_stamp       (i_time_stamp       ),
+    .i_cur_connect_tor  (i_port1_connect_tor),
+    .i_sim_start        (i_sim_start        ),
 
     .i_check_mac        (w1_check_mac       ),
     .i_check_id         (w1_check_req_id    ),

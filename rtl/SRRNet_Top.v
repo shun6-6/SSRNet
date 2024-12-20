@@ -339,6 +339,8 @@ wire [7 :0]                 w_port1_forward_axis_tkeep      ;
 wire                        w_port1_forward_axis_tuser      ;
 wire                        w_port1_forward_axis_tready     ;
 
+wire w_sim_start;
+
 /*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
     以及时间同步数据包*/
 // eth_10g_ctrl_top#(
@@ -392,6 +394,7 @@ VCU128_10g_eth_top#(
     .i_gt_rxp               (i_gt_rxp           ),
     .i_gt_rxn               (i_gt_rxn           ),
     .o_sfp_dis              (o_sfp_dis          ),
+    .i_sim_start            (w_sim_start        ),
     .o_0_tx_clk_out         (w_0_tx_clk_out     ),
     .o_0_rx_clk_out         (w_0_rx_clk_out     ),
     .o_0_user_tx_reset      (w_0_user_tx_reset  ),
@@ -501,6 +504,7 @@ Time_syn_module#(
     .o_local_time           (w_local_time           ),
     .o_cur_slot_id          (w_cur_slot_id          ),
     .o_slot_start           (w_slot_start           ),
+    .o_sim_start            (w_sim_start            ),
 
     .i_tx_axis_tready       (tx_ctrl_axis_tready    ),
     .o_tx_axis_tvalid       (tx_ctrl_axis_tvalid    ),

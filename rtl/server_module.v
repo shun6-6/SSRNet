@@ -32,6 +32,7 @@ module server_module#(
     input           i_stat_rx_status    ,
     input  [63:0]   i_time_stamp        ,
     input  [2 : 0]  i_cur_connect_tor   ,
+    input           i_sim_start         ,
 
     input  [47:0]   i_check_mac         , 
     input  [3 :0]   i_check_id          ,
@@ -69,8 +70,8 @@ localparam      P_TX_IDLE   = 'd0,
 reg  [5 : 0]    r_cur_state ;
 reg  [5 : 0]    r_nxt_state ;
 reg  [15: 0]    r_st_cnt    ;
-
 /******************************reg**********************************/
+reg             ri_sim_start        ;
 reg             r_tx_axis_tvalid    ;
 reg  [63:0]     r_tx_axis_tdata     ;
 reg             r_tx_axis_tlast     ;
@@ -109,6 +110,15 @@ assign feedback = r_random_dest[7] ^ r_random_dest[5] ^ r_random_dest[4] ^ r_ran
 /******************************component****************************/
 
 /******************************always*******************************/
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        ri_sim_start <= 'd0;
+    else if(i_sim_start)
+        ri_sim_start <= i_sim_start;
+    else
+        ri_sim_start <= ri_sim_start;
+end
+
 //generate randon dest tor and server
 always @(posedge i_clk or posedge i_rst) begin
     if (i_rst) 
@@ -164,7 +174,7 @@ end
 
 always @(*)begin
     case (r_cur_state)
-        P_TX_IDLE   : r_nxt_state = !P_UPLINK_TRUE && i_stat_rx_status ? P_TX_RANDOM : P_TX_IDLE;
+        P_TX_IDLE   : r_nxt_state = !P_UPLINK_TRUE && ri_sim_start ? P_TX_RANDOM : P_TX_IDLE;
         P_TX_RANDOM : r_nxt_state = r_st_cnt == 2 ? P_TX_DATA : P_TX_RANDOM;
         P_TX_DATA   : r_nxt_state = r_tx_cnt == P_PKT_LEN - 2 ? P_TX_GAP : P_TX_DATA;
         P_TX_GAP    : r_nxt_state = r_st_cnt == P_GAP_CYCLE ? P_TX_IDLE : P_TX_GAP;

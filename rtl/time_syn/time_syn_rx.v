@@ -21,7 +21,8 @@
 
 
 module time_syn_rx#(
-    parameter       P_SLOT_ID_TYPE       = 16'hff03
+    parameter       P_SLOT_ID_TYPE  = 16'hff03  ,
+    parameter       P_SIM_START     = 16'hff0a   
 )(
     input           i_clk                   ,
     input           i_rst                   ,
@@ -32,8 +33,9 @@ module time_syn_rx#(
     output          o_recv_std_valid        ,
     output [63:0]   o_recv_return_ts        ,
     output          o_recv_return_valid     ,
-    output          o_cur_slot_id          ,
+    output          o_cur_slot_id           ,
     output          o_syn_start             ,
+    output          o_sim_start             ,
     /*----axis port----*/
     input           s_ctrl_rx_axis_tvalid   ,
     input  [63:0]   s_ctrl_rx_axis_tdata    ,
@@ -62,7 +64,7 @@ reg  [63:0]     ro_recv_std_time    ;
 reg             ro_recv_std_valid   ;
 reg  [63:0]     ro_recv_return_ts   ;
 reg             ro_recv_return_valid;
-
+reg             ro_sim_start        ;
 //控制器接口AXIS
 reg  [15 :0]                    r_recv_ctrl_cnt     ;
 reg                             r_slot_start        ;
@@ -83,6 +85,7 @@ assign  o_recv_return_ts    = ri_rx_axis_tdata      ;
 assign  o_recv_return_valid = ro_recv_return_valid  ;
 assign  o_cur_slot_id = r_cur_slot_id;
 assign  o_syn_start   = r_slot_start  ;
+assign  o_sim_start = ro_sim_start;
 //**********************************************always***************************************************//
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
@@ -176,6 +179,16 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_slot_start <= 'd0;
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_sim_start <= 'd0;
+    else if(s_ctrl_rx_axis_tvalid && r_recv_ctrl_cnt == 1 && s_ctrl_rx_axis_tdata[31:16] == P_SIM_START)
+        ro_sim_start <= 'd1;
+    else
+        ro_sim_start <= 'd0;
+end
+
 
 
 endmodule
