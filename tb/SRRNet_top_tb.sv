@@ -38,35 +38,109 @@ always begin
     #5;
 end
 
-wire [1:0]  w_tor_0_down_txp;
-wire [1:0]  w_tor_0_down_rxp;
-wire [1:0]  w_tor_0_down_txn;
-wire [1:0]  w_tor_0_down_rxn;
-wire [1:0]  w_tor_0_up_txp  ;
-wire [1:0]  w_tor_0_up_rxp  ;
-wire [1:0]  w_tor_0_up_txn  ;
-wire [1:0]  w_tor_0_up_rxn  ;
+wire [7:0]  w_tor_ctrl_txp  ;
+wire [7:0]  w_tor_ctrl_txn  ;
+wire [7:0]  w_tor_ctrl_rxp  ;
+wire [7:0]  w_tor_ctrl_rxn  ;
 
-ToR_DDR_tb#(
-    .P_CHANNEL_NUM      (4                    )  ,
-    .P_MY_TOR_MAC       (48'h8D_BC_5C_4A_00_00)
-)ToR_DDR_tb_u0(
-    .i_gt_refclk_p          (gt_clk         ),
-    .i_gt_refclk_n          (~gt_clk        ),
-    .i_sys_clk_p            (sys_clk        ),
-    .i_sys_clk_n            (~sys_clk       ),
-    .o_gt_txp               ({w_tor_0_up_txp,w_tor_0_down_txp}),
-    .o_gt_txn               ({w_tor_0_up_txn,w_tor_0_down_txn}),
-    .i_gt_rxp               ({w_tor_0_up_rxp,w_tor_0_down_rxp}),
-    .i_gt_rxn               ({w_tor_0_up_rxn,w_tor_0_down_rxn}),
-    .o_sfp_dis              (),
-    .i_ctrl_gt_refclk_p     (),
-    .i_ctrl_gt_refclk_n     (),
-    .o_ctrl_gt_txp          (),
-    .o_ctrl_gt_txn          (),
-    .i_ctrl_gt_rxp          (),
-    .i_ctrl_gt_rxn          (),
-    .o_ctrl_sfp_dis         () 
+wire [7:0]  w_tor_up0_txp   ;
+wire [7:0]  w_tor_up0_txn   ;
+wire [7:0]  w_tor_up0_rxp   ;
+wire [7:0]  w_tor_up0_rxn   ;
+
+wire [7:0]  w_tor_up1_txp   ;
+wire [7:0]  w_tor_up1_txn   ;
+wire [7:0]  w_tor_up1_rxp   ;
+wire [7:0]  w_tor_up1_rxn   ;
+
+wire        w_slot_id       ;
+
+OCS_controller#(
+    .P_CHANNEL_NUM      (8             ),
+    .P_MIN_LENGTH       (8'd64         ),
+    .P_MAX_LENGTH       (15'd9600      ),
+    .P_CONFIG_DELAY     (32'h0000_0960 ),
+    .P_SLOT_LEN         (32'h0000_5CD0 ) 
+)(
+    .i_gt_0_refclk_p    (gt_clk         ),
+    .i_gt_0_refclk_n    (~gt_clk        ),
+    .i_gt_1_refclk_p    (gt_clk         ),
+    .i_gt_1_refclk_n    (~gt_clk        ),
+    .i_sys_clk_p        (sys_clk        ),
+    .i_sys_clk_n        (~sys_clk       ),
+    .o_gt_txp           (w_tor_ctrl_txp ),
+    .o_gt_txn           (w_tor_ctrl_txn ),
+    .i_gt_rxp           (w_tor_ctrl_rxp ),
+    .i_gt_rxn           (w_tor_ctrl_rxn ),
+    .o_sfp_dis          (),
+    .o_slot_id          (w_slot_id  )
 );
+
+OCS0_module OCS0_module_u(
+    .i_slot_id      (w_slot_id      ),
+    .i_tor_txp      (w_tor_up0_txp  ),
+    .i_tor_txn      (w_tor_up0_txn  ),
+    .o_tor_rxp      (w_tor_up0_rxp  ),
+    .o_tor_rxn      (w_tor_up0_rxn  ) 
+);
+
+OCS1_module OCS1_module_u(
+    .i_slot_id      (w_slot_id      ),
+    .i_tor_txp      (w_tor_up1_txp  ),
+    .i_tor_txn      (w_tor_up1_txn  ),
+    .o_tor_rxp      (w_tor_up1_rxp  ),
+    .o_tor_rxn      (w_tor_up1_rxn  ) 
+);
+
+genvar i;
+generate
+    for(i = 0; i < 8; i = i + 1) begin : gen_loop
+        ToR_DDR_tb#(
+            .P_CHANNEL_NUM      (3),
+            .P_MY_TOR_MAC       ({8'h8D, 8'hBC, 8'h5C, 8'h4A, i[7:0], 8'h00})  // 修改此行
+        ) ToR_DDR_tb_u0 (
+            .i_gt_refclk_p          (gt_clk         ),
+            .i_gt_refclk_n          (~gt_clk        ),
+            .i_sys_clk_p            (sys_clk        ),
+            .i_sys_clk_n            (~sys_clk       ),
+            .o_gt_txp               ({w_tor_ctrl_txp[i], w_tor_up1_txp[i], w_tor_up0_txp[i]}),  // 修改索引
+            .o_gt_txn               ({w_tor_ctrl_txn[i], w_tor_up1_txn[i], w_tor_up0_txn[i]}),  // 修改索引
+            .i_gt_rxp               ({w_tor_ctrl_rxp[i], w_tor_up1_rxp[i], w_tor_up0_rxp[i]}),  // 修改索引
+            .i_gt_rxn               ({w_tor_ctrl_rxn[i], w_tor_up1_rxn[i], w_tor_up0_rxn[i]}),  // 修改索引
+            .o_sfp_dis              ()
+        );
+    end
+endgenerate
+
+
+// ToR_DDR_tb#(
+//     .P_CHANNEL_NUM      (3                    )  ,
+//     .P_MY_TOR_MAC       (48'h8D_BC_5C_4A_00_00)
+// )ToR_DDR_tb_u0(
+//     .i_gt_refclk_p          (gt_clk         ),
+//     .i_gt_refclk_n          (~gt_clk        ),
+//     .i_sys_clk_p            (sys_clk        ),
+//     .i_sys_clk_n            (~sys_clk       ),
+//     .o_gt_txp               ({w_tor_ctrl_txp[0],w_tor_up1_txp[0],w_tor_up0_txp[0]}),
+//     .o_gt_txn               ({w_tor_ctrl_txn[0],w_tor_up1_txn[0],w_tor_up0_txn[0]}),
+//     .i_gt_rxp               ({w_tor_ctrl_rxp[0],w_tor_up1_rxp[0],w_tor_up0_rxp[0]}),
+//     .i_gt_rxn               ({w_tor_ctrl_rxn[0],w_tor_up1_rxn[0],w_tor_up0_rxn[0]}),
+//     .o_sfp_dis              ()
+// );
+
+// ToR_DDR_tb#(
+//     .P_CHANNEL_NUM      (3                    )  ,
+//     .P_MY_TOR_MAC       (48'h8D_BC_5C_4A_01_00)
+// )ToR_DDR_tb_u1(
+//     .i_gt_refclk_p          (gt_clk         ),
+//     .i_gt_refclk_n          (~gt_clk        ),
+//     .i_sys_clk_p            (sys_clk        ),
+//     .i_sys_clk_n            (~sys_clk       ),
+//     .o_gt_txp               ({w_tor_ctrl_txp[1],w_tor_up1_txp[1],w_tor_up0_txp[1]}),
+//     .o_gt_txn               ({w_tor_ctrl_txn[1],w_tor_up1_txn[1],w_tor_up0_txn[1]}),
+//     .i_gt_rxp               ({w_tor_ctrl_rxp[1],w_tor_up1_rxp[1],w_tor_up0_rxp[1]}),
+//     .i_gt_rxn               ({w_tor_ctrl_rxn[1],w_tor_up1_rxn[1],w_tor_up0_rxn[1]}),
+//     .o_sfp_dis              ()
+// );
 
 endmodule

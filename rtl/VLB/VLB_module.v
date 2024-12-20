@@ -34,7 +34,7 @@ module VLB_module#(
     parameter       P_MY_OCS            = 0                     ,
     parameter       P_MY_TOR_MAC        = 48'h8D_BC_5C_4A_10_00 ,
     parameter       P_MAC_HEAD          = 32'h8D_BC_5C_4A       ,
-    parameter       P_SLOT_MAX_PKT_NUM  = 32'h00_04_00_00       ,
+    parameter       P_SLOT_MAX_BYTE_NUM = 32'h00_04_00_00       ,
     parameter       P_ETH_MIN_LEN       = 8  
 )(
     input                                           i_clk                       ,
@@ -203,7 +203,7 @@ VLB_port_module#(
     .P_MY_OCS_ID            ('d0                   ),
     .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
     .P_MAC_HEAD             (P_MAC_HEAD             ),
-    .P_SLOT_MAX_PKT_NUM     (P_SLOT_MAX_PKT_NUM     ),
+    .P_SLOT_MAX_BYTE_NUM     (P_SLOT_MAX_BYTE_NUM     ),
     .P_ETH_MIN_LEN          (P_ETH_MIN_LEN          )
 )VLB_port_module_port0(
     .i_clk                          (i_clk                      ),
@@ -271,7 +271,7 @@ VLB_port_module#(
     .P_MY_OCS_ID            ('d1                   ),
     .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
     .P_MAC_HEAD             (P_MAC_HEAD             ),
-    .P_SLOT_MAX_PKT_NUM     (P_SLOT_MAX_PKT_NUM     ),
+    .P_SLOT_MAX_BYTE_NUM     (P_SLOT_MAX_BYTE_NUM     ),
     .P_ETH_MIN_LEN          (P_ETH_MIN_LEN          )
 )VLB_port_module_port1(
     .i_clk                          (i_clk                      ),
@@ -463,7 +463,7 @@ generate
             if(i_rst)
                 r_my_avail[tor_i] <= 'd0;
             else if(r_slot_start_en)
-                r_my_avail[tor_i] <= P_SLOT_MAX_PKT_NUM - r_local_queue_size[tor_i] - r_unlocal_queue_size[tor_i];
+                r_my_avail[tor_i] <= P_SLOT_MAX_BYTE_NUM - r_local_queue_size[tor_i] - r_unlocal_queue_size[tor_i];
             else if(r_compt_relay_en[0])//updata avail after every compute relay pkt
                 r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay[0][tor_i];
             else if(r_compt_relay_en[1])

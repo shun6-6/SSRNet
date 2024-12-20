@@ -38,7 +38,7 @@ module VLB_port_module#(
     parameter       P_MY_OCS_ID         = 0                     ,
     parameter       P_MY_TOR_MAC        = 48'h8D_BC_5C_4A_10_00 ,
     parameter       P_MAC_HEAD          = 32'h8D_BC_5C_4A       ,
-    parameter       P_SLOT_MAX_PKT_NUM  = 32'h00_04_00_00       ,
+    parameter       P_SLOT_MAX_BYTE_NUM = 32'h00_04_00_00       ,
     parameter       P_ETH_MIN_LEN       = 8                     
 )(
     input                                           i_clk                       ,
@@ -398,10 +398,10 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_local_pkt_num1 <= 'd0;
     else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd2)begin
-        if(P_SLOT_MAX_PKT_NUM - r_my_relay_pkt_num > r_local_queue_size[r_direct_tor])
+        if(P_SLOT_MAX_BYTE_NUM - r_my_relay_pkt_num > r_local_queue_size[r_direct_tor])
             r_local_pkt_num1 <= r_local_queue_size[r_direct_tor];
         else
-            r_local_pkt_num1 <= P_SLOT_MAX_PKT_NUM - r_local_pkt_num2 - r_my_relay_pkt_num;
+            r_local_pkt_num1 <= P_SLOT_MAX_BYTE_NUM - r_local_pkt_num2 - r_my_relay_pkt_num;
     end
     else
         r_local_pkt_num1 <= r_local_pkt_num1;
@@ -411,10 +411,10 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_local_pkt_num2 <= 'd0;
     else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd3)begin
-        if(P_SLOT_MAX_PKT_NUM - r_my_relay_pkt_num - r_local_pkt_num1 > r_local_queue_size[r_route_table[r_direct_tor][r_cur_slot_id]])
+        if(P_SLOT_MAX_BYTE_NUM - r_my_relay_pkt_num - r_local_pkt_num1 > r_local_queue_size[r_route_table[r_direct_tor][r_cur_slot_id]])
             r_local_pkt_num2 <= r_local_queue_size[r_route_table[r_direct_tor][r_cur_slot_id]];
         else
-            r_local_pkt_num2 <= P_SLOT_MAX_PKT_NUM - r_my_relay_pkt_num - r_local_pkt_num1;
+            r_local_pkt_num2 <= P_SLOT_MAX_BYTE_NUM - r_my_relay_pkt_num - r_local_pkt_num1;
     end
     else if(r_updata_capacity == 'd2)
         if(ri_twin_rx_capacity <= r_local_pkt_num2)
@@ -438,8 +438,8 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_my_capacity <= 'd0;
     else if(r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd4)
-        r_my_capacity <= (P_SLOT_MAX_PKT_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num) > 0
-                            ? P_SLOT_MAX_PKT_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num
+        r_my_capacity <= (P_SLOT_MAX_BYTE_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num) > 0
+                            ? P_SLOT_MAX_BYTE_NUM - r_local_pkt_num1 - r_local_pkt_num2 - r_my_relay_pkt_num
                             : 'd0;
     else if(r_updata_capacity == 'd2)begin
         if(ri_twin_rx_capacity >= r_local_pkt_num2)begin

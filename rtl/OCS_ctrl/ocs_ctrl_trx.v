@@ -31,10 +31,10 @@ module ocs_ctrl_trx#(
     input           i_rst               ,
 
     input  [7 : 0]  i_chnl_ready        ,
-    input  [63: 0]  i_time_stamp        ,
     input           i_stat_rx_status    ,
     input           i_select_std_port   ,
     input           i_new_slot_start    ,
+    input           i_slot_id           ,
 
     input           i_rx_axis_tvalid    ,
     input  [63 :0]  i_rx_axis_tdata     ,
@@ -132,7 +132,7 @@ ctrl_tx#(
     .i_chnl_ready       (i_chnl_ready       ),
     .i_new_slot_start   (i_new_slot_start   ),
     .i_slot_id          (i_slot_id          ),
-    .i_time_stamp       (i_time_stamp       ),
+    .i_time_stamp       (r_local_time       ),
 
     .o_tx_axis_tvalid   (w_ctrl_axis_tvalid ),
     .o_tx_axis_tdata    (w_ctrl_axis_tdata  ),

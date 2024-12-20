@@ -38,14 +38,14 @@ module ToR_DDR_tb#(
     output [P_CHANNEL_NUM-1:0]  o_gt_txn            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxn            ,
-    output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
-    input                       i_ctrl_gt_refclk_p  ,
-    input                       i_ctrl_gt_refclk_n  ,
-    output                      o_ctrl_gt_txp       ,
-    output                      o_ctrl_gt_txn       ,
-    input                       i_ctrl_gt_rxp       ,
-    input                       i_ctrl_gt_rxn       ,
-    output                      o_ctrl_sfp_dis      
+    output [P_CHANNEL_NUM-1:0]  o_sfp_dis           
+    // input                       i_ctrl_gt_refclk_p  ,
+    // input                       i_ctrl_gt_refclk_n  ,
+    // output                      o_ctrl_gt_txp       ,
+    // output                      o_ctrl_gt_txn       ,
+    // input                       i_ctrl_gt_rxp       ,
+    // input                       i_ctrl_gt_rxn       ,
+    // output                      o_ctrl_sfp_dis      
 
 );
 
@@ -224,13 +224,13 @@ module ToR_DDR_tb#(
     .i_gt_rxp               (i_gt_rxp           ),
     .i_gt_rxn               (i_gt_rxn           ),
     .o_sfp_dis              (o_sfp_dis          ),
-    .i_ctrl_gt_refclk_p     (i_ctrl_gt_refclk_p ),
-    .i_ctrl_gt_refclk_n     (i_ctrl_gt_refclk_n ),
-    .o_ctrl_gt_txp          (o_ctrl_gt_txp      ),
-    .o_ctrl_gt_txn          (o_ctrl_gt_txn      ),
-    .i_ctrl_gt_rxp          (i_ctrl_gt_rxp      ),
-    .i_ctrl_gt_rxn          (i_ctrl_gt_rxn      ),
-    .o_ctrl_sfp_dis         (o_ctrl_sfp_dis     ),
+    // .i_ctrl_gt_refclk_p     (i_ctrl_gt_refclk_p ),
+    // .i_ctrl_gt_refclk_n     (i_ctrl_gt_refclk_n ),
+    // .o_ctrl_gt_txp          (o_ctrl_gt_txp      ),
+    // .o_ctrl_gt_txn          (o_ctrl_gt_txn      ),
+    // .i_ctrl_gt_rxp          (i_ctrl_gt_rxp      ),
+    // .i_ctrl_gt_rxn          (i_ctrl_gt_rxn      ),
+    // .o_ctrl_sfp_dis         (o_ctrl_sfp_dis     ),
 
     .sys_rst                (sys_rst            ),
     .C0_DDR4_0_act_n        (c0_ddr4_act_n      ),

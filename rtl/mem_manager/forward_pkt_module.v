@@ -106,7 +106,7 @@ FIFO_16X128 FIFO_16X128_len (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            (r_rx_data_len + 16'd1), // input wire [15 : 0] din
-    .wr_en          (s_axis_rx_tlast    ), // input wire wr_en
+    .wr_en          (s_axis_tlast       ), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_len_dout    ), // output wire [15 : 0] dout
     .full           (w_fifo_len_full    ), // output wire full
@@ -118,8 +118,8 @@ FIFO_16X128 FIFO_16X128_len (
 FIFO_8X128 FIFO_8X128_keep (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
-    .din            (s_axis_rx_tkeep    ), // input wire [7 : 0] din
-    .wr_en          (s_axis_rx_tlast    ), // input wire wr_en
+    .din            (s_axis_tkeep       ), // input wire [7 : 0] din
+    .wr_en          (s_axis_tlast       ), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_keep_dout   ), // output wire [7 : 0] dout
     .full           (                   ), // output wire full

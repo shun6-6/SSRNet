@@ -59,6 +59,7 @@ module SRRNet_Top#(
 );
 
 localparam  P_CROSSBAR_N = 4;
+localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_4000;
 
 wire    w_dclk              ;
 wire    w_sys_reset         ;
@@ -533,9 +534,9 @@ VLB_module#(
     .P_TOR_NUM              (8                     ),
     .P_OCS_NUM              (2                     ),
     .P_MY_OCS               (0                     ),
-    .P_MY_TOR_MAC           (P_MY_TOR_MAC           ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC          ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_SLOT_MAX_PKT_NUM     (32'h00_04_00_00       ),
+    .P_SLOT_MAX_BYTE_NUM    (P_SLOT_MAX_BYTE_NUM),
     .P_ETH_MIN_LEN          (8                     )
 )VLB_module_u0(
     .i_clk                       (w_2_tx_clk_out        ),
