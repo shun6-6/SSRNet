@@ -38,6 +38,14 @@ module eth_uplink_port(
     input  [7  :0]  s_data_axis_tkeep       ,
     input           s_data_axis_tuser       ,
     output          s_data_axis_tready      ,
+
+    input           i_forward_pkt_valid     ,
+    input           s_forward_axis_tvalid   ,
+    input  [63 :0]  s_forward_axis_tdata    ,
+    input           s_forward_axis_tlast    ,
+    input  [7  :0]  s_forward_axis_tkeep    ,
+    input           s_forward_axis_tuser    ,
+    output          s_forward_axis_tready   ,
     //output AXIS
     output          m_tx_axis_tvalid        ,
     output [63 :0]  m_tx_axis_tdata         ,
@@ -78,13 +86,21 @@ wire            w_fifo_data_rden        ;
 wire            w_wr_active             ;
 /******************************assign*******************************/
 assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready   : 'd0  ;
-assign m_tx_axis_tvalid   = r_fifo_arbiter == 2 ? s_data_axis_tvalid : rm_tx_axis_tvalid   ;
-assign m_tx_axis_tdata    = r_fifo_arbiter == 2 ? s_data_axis_tdata  : rm_tx_axis_tdata    ;
-assign m_tx_axis_tlast    = r_fifo_arbiter == 2 ? s_data_axis_tlast  : rm_tx_axis_tlast    ;
-assign m_tx_axis_tkeep    = r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep    ;
-assign m_tx_axis_tuser    = r_fifo_arbiter == 2 ? s_data_axis_tuser  : 'd0   ;
+assign s_forward_axis_tready = i_forward_pkt_valid;
 assign w_wr_active      = m_tx_axis_tvalid & m_tx_axis_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_wr_active) || r_fifo_len_rden_2d;
+
+assign m_tx_axis_tvalid   = i_forward_pkt_valid ? s_forward_axis_tvalid :
+                            r_fifo_arbiter == 2 ? s_data_axis_tvalid : rm_tx_axis_tvalid   ;
+assign m_tx_axis_tdata    = i_forward_pkt_valid ? s_forward_axis_tdata  :
+                            r_fifo_arbiter == 2 ? s_data_axis_tdata  : rm_tx_axis_tdata    ;
+assign m_tx_axis_tlast    = i_forward_pkt_valid ? s_forward_axis_tlast  :
+                            r_fifo_arbiter == 2 ? s_data_axis_tlast  : rm_tx_axis_tlast    ;
+assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
+                            r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep    ;
+assign m_tx_axis_tuser    = i_forward_pkt_valid ? s_forward_axis_tuser  :
+                            r_fifo_arbiter == 2 ? s_data_axis_tuser  : 'd0   ;
+
 /******************************component****************************/
 FIFO_IND_64X2048 FIFO_IND_64X2048_data (
   .rst          (i_crtl_rst         ), // input wire rst

@@ -75,10 +75,12 @@ module DDR_rd_ctrl#(
     input                                           i_port0_forward_req         ,
     output                                          o_port0_forward_resp        ,
     input                                           i_port0_forward_finish      ,
+    output                                          o_port0_forward_valid       ,
 
-    input                                           i_port2_forward_req         ,
-    output                                          o_port2_forward_resp        ,
-    input                                           i_port2_forward_finish       
+    input                                           i_port1_forward_req         ,
+    output                                          o_port1_forward_resp        ,
+    input                                           i_port1_forward_finish      ,
+    output                                          o_port1_forward_valid        
 );
 
 rd_ddr_port_ctrl#(
@@ -115,7 +117,8 @@ rd_ddr_port_ctrl#(
 
     .i_forward_req                  (i_port0_forward_req            ),
     .o_forward_resp                 (o_port0_forward_resp           ),
-    .i_forward_finish               (i_port0_forward_finish         ) 
+    .i_forward_finish               (i_port0_forward_finish         ),
+    .o_forward_valid                (o_port0_forward_valid          )
 );
 
 rd_ddr_port_ctrl#(
@@ -152,7 +155,8 @@ rd_ddr_port_ctrl#(
 
     .i_forward_req                  (i_port1_forward_req            ),
     .o_forward_resp                 (o_port1_forward_resp           ),
-    .i_forward_finish               (i_port1_forward_finish         ) 
+    .i_forward_finish               (i_port1_forward_finish         ),
+    .o_forward_valid                (o_port1_forward_valid          )
 );
 
 endmodule

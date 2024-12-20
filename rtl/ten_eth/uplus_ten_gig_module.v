@@ -83,24 +83,24 @@ module uplus_ten_gig_module#(
     output [63 :0]              rx2_axis_tdata      ,
     output                      rx2_axis_tlast      ,
     output [7  :0]              rx2_axis_tkeep      ,
-    output                      rx2_axis_tuser      ,
+    output                      rx2_axis_tuser      
 
-    output                      o_3_tx_clk_out      ,
-    output                      o_3_rx_clk_out      ,
-    output                      o_3_user_tx_reset   ,
-    output                      o_3_user_rx_reset   ,
-    output                      o_3_stat_rx_status  ,
-    output                      tx3_axis_tready     ,
-    input                       tx3_axis_tvalid     ,
-    input  [63 :0]              tx3_axis_tdata      ,
-    input                       tx3_axis_tlast      ,
-    input  [7  :0]              tx3_axis_tkeep      ,
-    input                       tx3_axis_tuser      ,
-    output                      rx3_axis_tvalid     ,
-    output [63 :0]              rx3_axis_tdata      ,
-    output                      rx3_axis_tlast      ,
-    output [7  :0]              rx3_axis_tkeep      ,
-    output                      rx3_axis_tuser       
+    // output                      o_3_tx_clk_out      ,
+    // output                      o_3_rx_clk_out      ,
+    // output                      o_3_user_tx_reset   ,
+    // output                      o_3_user_rx_reset   ,
+    // output                      o_3_stat_rx_status  ,
+    // output                      tx3_axis_tready     ,
+    // input                       tx3_axis_tvalid     ,
+    // input  [63 :0]              tx3_axis_tdata      ,
+    // input                       tx3_axis_tlast      ,
+    // input  [7  :0]              tx3_axis_tkeep      ,
+    // input                       tx3_axis_tuser      ,
+    // output                      rx3_axis_tvalid     ,
+    // output [63 :0]              rx3_axis_tdata      ,
+    // output                      rx3_axis_tlast      ,
+    // output [7  :0]              rx3_axis_tkeep      ,
+    // output                      rx3_axis_tuser       
 );
 
 
@@ -243,41 +243,41 @@ uplus_ten_gig_channel#(
     .rx_axis_tuser      (rx2_axis_tuser     ) 
 );
 
-uplus_ten_gig_channel#(
-    .P_MIN_LENGTH       (P_MIN_LENGTH       ),
-    .P_MAX_LENGTH       (P_MAX_LENGTH       )
-)uplus_ten_gig_channel_u3(
-    .i_sys_reset        (i_sys_reset        ),
-    .i_dclk             (i_dclk             ),
-    .o_gt_txp           (o_gt_txp[3]        ),
-    .o_gt_txn           (o_gt_txn[3]        ),
-    .i_gt_rxp           (i_gt_rxp[3]        ),
-    .i_gt_rxn           (i_gt_rxn[3]        ),
-    .o_tx_clk_out       (o_3_tx_clk_out     ),
-    .o_rx_clk_out       (o_3_rx_clk_out     ),
-    .o_user_tx_reset    (o_3_user_tx_reset  ),
-    .o_user_rx_reset    (o_3_user_rx_reset  ),
-    .o_stat_rx_status   (o_3_stat_rx_status ),
-    .o_qpll0reset       (       ),//只需要一个通道复位即可
-    .i_qpll0lock        (w_qpll0lock        ),
-    .i_qpll0outclk      (w_qpll0outclk      ),
-    .i_qpll0outrefclk   (w_qpll0outrefclk   ),
-    .o_qpll1reset       (       ),
-    .i_qpll1lock        (w_qpll1lock        ),
-    .i_qpll1outclk      (w_qpll1outclk      ),
-    .i_qpll1outrefclk   (w_qpll1outrefclk   ),
-    .tx_axis_tready     (tx3_axis_tready    ),
-    .tx_axis_tvalid     (tx3_axis_tvalid    ),
-    .tx_axis_tdata      (tx3_axis_tdata     ),
-    .tx_axis_tlast      (tx3_axis_tlast     ),
-    .tx_axis_tkeep      (tx3_axis_tkeep     ),
-    .tx_axis_tuser      (tx3_axis_tuser     ),
-    .rx_axis_tvalid     (rx3_axis_tvalid    ),
-    .rx_axis_tdata      (rx3_axis_tdata     ),
-    .rx_axis_tlast      (rx3_axis_tlast     ),
-    .rx_axis_tkeep      (rx3_axis_tkeep     ),
-    .rx_axis_tuser      (rx3_axis_tuser     ) 
-);
+// uplus_ten_gig_channel#(
+//     .P_MIN_LENGTH       (P_MIN_LENGTH       ),
+//     .P_MAX_LENGTH       (P_MAX_LENGTH       )
+// )uplus_ten_gig_channel_u3(
+//     .i_sys_reset        (i_sys_reset        ),
+//     .i_dclk             (i_dclk             ),
+//     .o_gt_txp           (o_gt_txp[3]        ),
+//     .o_gt_txn           (o_gt_txn[3]        ),
+//     .i_gt_rxp           (i_gt_rxp[3]        ),
+//     .i_gt_rxn           (i_gt_rxn[3]        ),
+//     .o_tx_clk_out       (o_3_tx_clk_out     ),
+//     .o_rx_clk_out       (o_3_rx_clk_out     ),
+//     .o_user_tx_reset    (o_3_user_tx_reset  ),
+//     .o_user_rx_reset    (o_3_user_rx_reset  ),
+//     .o_stat_rx_status   (o_3_stat_rx_status ),
+//     .o_qpll0reset       (       ),//只需要一个通道复位即可
+//     .i_qpll0lock        (w_qpll0lock        ),
+//     .i_qpll0outclk      (w_qpll0outclk      ),
+//     .i_qpll0outrefclk   (w_qpll0outrefclk   ),
+//     .o_qpll1reset       (       ),
+//     .i_qpll1lock        (w_qpll1lock        ),
+//     .i_qpll1outclk      (w_qpll1outclk      ),
+//     .i_qpll1outrefclk   (w_qpll1outrefclk   ),
+//     .tx_axis_tready     (tx3_axis_tready    ),
+//     .tx_axis_tvalid     (tx3_axis_tvalid    ),
+//     .tx_axis_tdata      (tx3_axis_tdata     ),
+//     .tx_axis_tlast      (tx3_axis_tlast     ),
+//     .tx_axis_tkeep      (tx3_axis_tkeep     ),
+//     .tx_axis_tuser      (tx3_axis_tuser     ),
+//     .rx_axis_tvalid     (rx3_axis_tvalid    ),
+//     .rx_axis_tdata      (rx3_axis_tdata     ),
+//     .rx_axis_tlast      (rx3_axis_tlast     ),
+//     .rx_axis_tkeep      (rx3_axis_tkeep     ),
+//     .rx_axis_tuser      (rx3_axis_tuser     ) 
+// );
 
 
 endmodule

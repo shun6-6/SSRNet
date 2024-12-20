@@ -54,7 +54,8 @@ module rd_ddr_port_ctrl#(
     //dispose recieved two jump forward pkt
     input                                           i_forward_req               ,
     output                                          o_forward_resp              ,
-    input                                           i_forward_finish            
+    input                                           i_forward_finish            ,
+    output                                          o_forward_valid             
 );
 /******************************function*****************************/
 
@@ -93,6 +94,7 @@ assign o_rd_queue      = ro_rd_queue        ;
 assign o_rd_byte       = ro_rd_byte         ;
 assign o_rd_byte_valid = ro_rd_byte_valid   ;
 assign w_rd_byte_en = o_rd_byte_valid & i_rd_byte_ready;
+assign o_forward_valid = r_cur_state == P_TX_RECV_TWO_PTK;
 /******************************component****************************/
 
 /******************************always*******************************/

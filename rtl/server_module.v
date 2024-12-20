@@ -42,11 +42,19 @@ module server_module#(
     output [3 :0]   o_check_id          ,
     output [1 :0]   o_seek_flag         ,
 
-    output          rx_axis_tvalid      ,
-    output [63:0]   rx_axis_tdata       ,
-    output          rx_axis_tlast       ,
-    output [7 :0]   rx_axis_tkeep       ,
-    output          rx_axis_tuser       
+    output          tx_axis_tvalid      ,
+    output [63:0]   tx_axis_tdata       ,
+    output          tx_axis_tlast       ,
+    output [7 :0]   tx_axis_tkeep       ,
+    output          tx_axis_tuser       ,
+
+    input           rx_axis_tvalid      ,
+    input  [63:0]   rx_axis_tdata       ,
+    input           rx_axis_tlast       ,
+    input  [7 :0]   rx_axis_tkeep       ,
+    input           rx_axis_tuser       ,
+    output          rx_axis_tready      
+
 );
 /******************************function*****************************/
 
@@ -63,11 +71,11 @@ reg  [5 : 0]    r_nxt_state ;
 reg  [15: 0]    r_st_cnt    ;
 
 /******************************reg**********************************/
-reg             r_rx_axis_tvalid    ;
-reg  [63:0]     r_rx_axis_tdata     ;
-reg             r_rx_axis_tlast     ;
-reg  [7 :0]     r_rx_axis_tkeep     ;
-reg             r_rx_axis_tuser     ;
+reg             r_tx_axis_tvalid    ;
+reg  [63:0]     r_tx_axis_tdata     ;
+reg             r_tx_axis_tlast     ;
+reg  [7 :0]     r_tx_axis_tkeep     ;
+reg             r_tx_axis_tuser     ;
 reg  [15:0]     r_tx_cnt            ;
 
 reg  [7 : 0]    r_random_dest       ;
@@ -87,15 +95,16 @@ reg             ri_check_valid      ;
 wire feedback;
 
 /******************************assign*******************************/
+assign rx_axis_tready = 1'b1;
 assign o_outport      = ro_outport     ;
 assign o_result_valid = ro_result_valid;
 assign o_check_id     = ro_check_id    ;
 assign o_seek_flag    = ro_seek_flag   ;
-assign rx_axis_tvalid = r_rx_axis_tvalid;
-assign rx_axis_tdata  = r_rx_axis_tdata ;
-assign rx_axis_tlast  = r_rx_axis_tlast ;
-assign rx_axis_tkeep  = 8'hff ;
-assign rx_axis_tuser  = 'd0 ;
+assign tx_axis_tvalid = r_tx_axis_tvalid;
+assign tx_axis_tdata  = r_tx_axis_tdata ;
+assign tx_axis_tlast  = r_tx_axis_tlast ;
+assign tx_axis_tkeep  = 8'hff ;
+assign tx_axis_tuser  = 'd0 ;
 assign feedback = r_random_dest[7] ^ r_random_dest[5] ^ r_random_dest[4] ^ r_random_dest[3];
 /******************************component****************************/
 
@@ -168,7 +177,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_tx_cnt <= 'd0;
     else if(r_tx_cnt == P_PKT_LEN - 1)
         r_tx_cnt <= 'd0;
-    else if(r_rx_axis_tvalid)
+    else if(r_tx_axis_tvalid)
         r_tx_cnt <= r_tx_cnt + 'd1;
     else
         r_tx_cnt <= r_tx_cnt;
@@ -176,35 +185,35 @@ end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
-        r_rx_axis_tvalid <= 'd0;
+        r_tx_axis_tvalid <= 'd0;
     else if(r_tx_cnt == P_PKT_LEN - 1)
-        r_rx_axis_tvalid <= 'd0;
+        r_tx_axis_tvalid <= 'd0;
     else if(r_cur_state == P_TX_DATA)
-        r_rx_axis_tvalid <= 'd1;
+        r_tx_axis_tvalid <= 'd1;
     else
-        r_rx_axis_tvalid <= r_rx_axis_tvalid;
+        r_tx_axis_tvalid <= r_tx_axis_tvalid;
 end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
-        r_rx_axis_tdata <= 'd0;
+        r_tx_axis_tdata <= 'd0;
     else if(r_cur_state == P_TX_DATA)
         case (r_st_cnt)
-            0       : r_rx_axis_tdata <= {r_dest_mac,P_MY_PORT_MAC[47:32]};
-            1       : r_rx_axis_tdata <= {P_MY_PORT_MAC[31:0],16'h0800,16'd0};
-            default : r_rx_axis_tdata <= i_time_stamp;
+            0       : r_tx_axis_tdata <= {r_dest_mac,P_MY_PORT_MAC[47:32]};
+            1       : r_tx_axis_tdata <= {P_MY_PORT_MAC[31:0],16'h0800,16'd0};
+            default : r_tx_axis_tdata <= i_time_stamp;
         endcase
     else
-        r_rx_axis_tdata <= 'd0;
+        r_tx_axis_tdata <= 'd0;
 end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
-        r_rx_axis_tlast <= 'd0;
+        r_tx_axis_tlast <= 'd0;
     else if(r_tx_cnt == P_PKT_LEN - 2)
-        r_rx_axis_tlast <= 'd1;
+        r_tx_axis_tlast <= 'd1;
     else
-        r_rx_axis_tlast <= 'd0;
+        r_tx_axis_tlast <= 'd0;
 end
 
 //完成查表功能

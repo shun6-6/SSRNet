@@ -21,7 +21,7 @@
 
 
 module SRRNet_Top#(
-    parameter                   P_CHANNEL_NUM   = 4 ,
+    parameter                   P_CHANNEL_NUM   = 3 ,
     parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
 )(
     input                       i_gt_refclk_p       ,
@@ -33,13 +33,13 @@ module SRRNet_Top#(
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxn            ,
     output [P_CHANNEL_NUM-1:0]  o_sfp_dis           ,
-    input                       i_ctrl_gt_refclk_p  ,
-    input                       i_ctrl_gt_refclk_n  ,
-    output                      o_ctrl_gt_txp       ,
-    output                      o_ctrl_gt_txn       ,
-    input                       i_ctrl_gt_rxp       ,
-    input                       i_ctrl_gt_rxn       ,
-    output                      o_ctrl_sfp_dis      ,
+    // input                       i_ctrl_gt_refclk_p  ,
+    // input                       i_ctrl_gt_refclk_n  ,
+    // output                      o_ctrl_gt_txp       ,
+    // output                      o_ctrl_gt_txn       ,
+    // input                       i_ctrl_gt_rxp       ,
+    // input                       i_ctrl_gt_rxn       ,
+    // output                      o_ctrl_sfp_dis      ,
 
     input                       sys_rst             ,
     output                      C0_DDR4_0_act_n     ,
@@ -296,10 +296,20 @@ wire [2 : 0]                w_port1_unlocal_direct_pkt_queue;
 wire [255 : 0]              w_port1_tx_relay                ;
 wire                        w_port1_tx_relay_valid          ;
 
+wire                        w_port0_forward_req             ;
+wire                        w_port0_forward_resp            ;
+wire                        w_port0_forward_finish          ;
+wire                        w_port0_forward_valid           ;
+wire                        w_port1_forward_req             ;
+wire                        w_port1_forward_resp            ;
+wire                        w_port1_forward_finish          ;
+wire                        w_port1_forward_valid           ;
+
 //ctrl
 wire [63:0]                 w_local_time    ;
 wire                        w_cur_slot_id   ;
 wire                        w_slot_start    ;
+
 
 //uplink send data
 wire                        uplink0_tx_axis_tvalid          ;
@@ -314,38 +324,165 @@ wire                        uplink1_tx_axis_tlast           ;
 wire [7 :0]                 uplink1_tx_axis_tkeep           ;
 wire                        uplink1_tx_axis_tuser           ;
 
+//forward pkt
+wire                        w_port0_forward_axis_tvalid     ;
+wire [63:0]                 w_port0_forward_axis_tdata      ;
+wire                        w_port0_forward_axis_tlast      ;
+wire [7 :0]                 w_port0_forward_axis_tkeep      ;
+wire                        w_port0_forward_axis_tuser      ;
+wire                        w_port0_forward_axis_tready     ;
+
+wire                        w_port1_forward_axis_tvalid     ;
+wire [63:0]                 w_port1_forward_axis_tdata      ;
+wire                        w_port1_forward_axis_tlast      ;
+wire [7 :0]                 w_port1_forward_axis_tkeep      ;
+wire                        w_port1_forward_axis_tuser      ;
+wire                        w_port1_forward_axis_tready     ;
+
 /*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
     以及时间同步数据包*/
-eth_10g_ctrl_top#(
-    .P_CHANNEL_NUM          (1                      ),
-    .P_MIN_LENGTH           (8'd64                  ),
-    .P_MAX_LENGTH           (15'd9600               )
-)eth_10g_ctrl_link( 
-    .i_gt_refclk_p          (i_ctrl_gt_refclk_p     ),
-    .i_gt_refclk_n          (i_ctrl_gt_refclk_n     ),
-    .o_gt_txp               (o_ctrl_gt_txp          ),
-    .o_gt_txn               (o_ctrl_gt_txn          ),
-    .i_gt_rxp               (i_ctrl_gt_rxp          ),
-    .i_gt_rxn               (i_ctrl_gt_rxn          ),
-    .o_sfp_dis              (o_ctrl_sfp_dis         ),
-    .i_dclk                 (w_dclk                 ),
-    .i_sys_reset            (w_sys_reset            ),
-    .o_0_tx_clk_out         (w_ctrl_tx_clk_out      ),
-    .o_0_rx_clk_out         (w_ctrl_rx_clk_out      ),
-    .o_0_user_tx_reset      (w_ctrl_user_tx_reset   ),
-    .o_0_user_rx_reset      (w_ctrl_user_rx_reset   ),
-    .o_0_stat_rx_status     (w_ctrl_stat_rx_status  ),
-    .tx0_axis_tready        (tx_ctrl_axis_tready    ),
-    .tx0_axis_tvalid        (tx_ctrl_axis_tvalid    ),
-    .tx0_axis_tdata         (tx_ctrl_axis_tdata     ),
-    .tx0_axis_tlast         (tx_ctrl_axis_tlast     ),
-    .tx0_axis_tkeep         (tx_ctrl_axis_tkeep     ),
-    .tx0_axis_tuser         (tx_ctrl_axis_tuser     ),
-    .rx0_axis_tvalid        (s_ctrl_axis_tvalid     ),
-    .rx0_axis_tdata         (s_ctrl_axis_tdata      ),
-    .rx0_axis_tlast         (s_ctrl_axis_tlast      ),
-    .rx0_axis_tkeep         (s_ctrl_axis_tkeep      ),
-    .rx0_axis_tuser         (s_ctrl_axis_tuser      )
+// eth_10g_ctrl_top#(
+//     .P_CHANNEL_NUM          (1                      ),
+//     .P_MIN_LENGTH           (8'd64                  ),
+//     .P_MAX_LENGTH           (15'd9600               )
+// )eth_10g_ctrl_link( 
+//     .i_gt_refclk_p          (i_ctrl_gt_refclk_p     ),
+//     .i_gt_refclk_n          (i_ctrl_gt_refclk_n     ),
+//     .o_gt_txp               (o_ctrl_gt_txp          ),
+//     .o_gt_txn               (o_ctrl_gt_txn          ),
+//     .i_gt_rxp               (i_ctrl_gt_rxp          ),
+//     .i_gt_rxn               (i_ctrl_gt_rxn          ),
+//     .o_sfp_dis              (o_ctrl_sfp_dis         ),
+//     .i_dclk                 (w_dclk                 ),
+//     .i_sys_reset            (w_sys_reset            ),
+//     .o_0_tx_clk_out         (w_ctrl_tx_clk_out      ),
+//     .o_0_rx_clk_out         (w_ctrl_rx_clk_out      ),
+//     .o_0_user_tx_reset      (w_ctrl_user_tx_reset   ),
+//     .o_0_user_rx_reset      (w_ctrl_user_rx_reset   ),
+//     .o_0_stat_rx_status     (w_ctrl_stat_rx_status  ),
+//     .tx0_axis_tready        (tx_ctrl_axis_tready    ),
+//     .tx0_axis_tvalid        (tx_ctrl_axis_tvalid    ),
+//     .tx0_axis_tdata         (tx_ctrl_axis_tdata     ),
+//     .tx0_axis_tlast         (tx_ctrl_axis_tlast     ),
+//     .tx0_axis_tkeep         (tx_ctrl_axis_tkeep     ),
+//     .tx0_axis_tuser         (tx_ctrl_axis_tuser     ),
+//     .rx0_axis_tvalid        (s_ctrl_axis_tvalid     ),
+//     .rx0_axis_tdata         (s_ctrl_axis_tdata      ),
+//     .rx0_axis_tlast         (s_ctrl_axis_tlast      ),
+//     .rx0_axis_tkeep         (s_ctrl_axis_tkeep      ),
+//     .rx0_axis_tuser         (s_ctrl_axis_tuser      )
+// );
+
+/*  10G以太网高速接口处理模块，接收10G数据，并且完成查表等操作，
+    将数据按照本地、非本地、控制信息等不同种类进行分类,
+    下行链路通过本地server模块代替，因此暂时只需要俩个
+    上行链路数据以太网和一个控制以太网接口即可*/
+VCU128_10g_eth_top#(
+    .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
+    .P_MIN_LENGTH           (8'd64              ),
+    .P_MAX_LENGTH           (15'd9600           ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC       )
+)VCU128_10g_eth_data_ctrl_link( 
+    .i_gt_refclk_p          (i_gt_refclk_p      ),
+    .i_gt_refclk_n          (i_gt_refclk_n      ),
+    .i_sys_clk_p            (i_sys_clk_p        ),
+    .i_sys_clk_n            (i_sys_clk_n        ),
+    .o_gt_txp               (o_gt_txp           ),
+    .o_gt_txn               (o_gt_txn           ),
+    .i_gt_rxp               (i_gt_rxp           ),
+    .i_gt_rxn               (i_gt_rxn           ),
+    .o_sfp_dis              (o_sfp_dis          ),
+    .o_0_tx_clk_out         (w_0_tx_clk_out     ),
+    .o_0_rx_clk_out         (w_0_rx_clk_out     ),
+    .o_0_user_tx_reset      (w_0_user_tx_reset  ),
+    .o_0_user_rx_reset      (w_0_user_rx_reset  ),
+    .o_0_stat_rx_status     (w_0_stat_rx_status ),
+    .tx0_axis_tready        (tx0_axis_tready    ),
+    .tx0_axis_tvalid        (tx0_axis_tvalid    ),
+    .tx0_axis_tdata         (tx0_axis_tdata     ),
+    .tx0_axis_tlast         (tx0_axis_tlast     ),
+    .tx0_axis_tkeep         (tx0_axis_tkeep     ),
+    .tx0_axis_tuser         (tx0_axis_tuser     ),
+    .m_rx0_axis_tvalid      (m_rx0_axis_tvalid  ),
+    .m_rx0_axis_tdata       (m_rx0_axis_tdata   ),
+    .m_rx0_axis_tlast       (m_rx0_axis_tlast   ),
+    .m_rx0_axis_tkeep       (m_rx0_axis_tkeep   ),
+    .m_rx0_axis_tuser       (m_rx0_axis_tuser   ),
+    .m_rx0_axis_tdest       (m_rx0_axis_tdest   ),
+
+    .o_1_tx_clk_out         (w_1_tx_clk_out     ),
+    .o_1_rx_clk_out         (w_1_rx_clk_out     ),
+    .o_1_user_tx_reset      (w_1_user_tx_reset  ),
+    .o_1_user_rx_reset      (w_1_user_rx_reset  ),
+    .o_1_stat_rx_status     (w_1_stat_rx_status ),
+    .tx1_axis_tready        (tx1_axis_tready    ),
+    .tx1_axis_tvalid        (tx1_axis_tvalid    ),
+    .tx1_axis_tdata         (tx1_axis_tdata     ),
+    .tx1_axis_tlast         (tx1_axis_tlast     ),
+    .tx1_axis_tkeep         (tx1_axis_tkeep     ),
+    .tx1_axis_tuser         (tx1_axis_tuser     ),
+    .m_rx1_axis_tvalid      (m_rx1_axis_tvalid  ),
+    .m_rx1_axis_tdata       (m_rx1_axis_tdata   ),
+    .m_rx1_axis_tlast       (m_rx1_axis_tlast   ),
+    .m_rx1_axis_tkeep       (m_rx1_axis_tkeep   ),
+    .m_rx1_axis_tuser       (m_rx1_axis_tuser   ),
+    .m_rx1_axis_tdest       (m_rx1_axis_tdest   ),
+
+    .o_2_tx_clk_out         (w_2_tx_clk_out     ),
+    .o_2_rx_clk_out         (w_2_rx_clk_out     ),
+    .o_2_user_tx_reset      (w_2_user_tx_reset  ),
+    .o_2_user_rx_reset      (w_2_user_rx_reset  ),
+    .o_2_stat_rx_status     (w_2_stat_rx_status ),
+    .tx2_axis_tready        (tx2_axis_tready    ),
+    .tx2_axis_tvalid        (tx2_axis_tvalid    ),
+    .tx2_axis_tdata         (tx2_axis_tdata     ),
+    .tx2_axis_tlast         (tx2_axis_tlast     ),
+    .tx2_axis_tkeep         (tx2_axis_tkeep     ),
+    .tx2_axis_tuser         (tx2_axis_tuser     ),
+    .m_rx2_axis_tvalid      (m_rx2_axis_tvalid  ),
+    .m_rx2_axis_tdata       (m_rx2_axis_tdata   ),
+    .m_rx2_axis_tlast       (m_rx2_axis_tlast   ),
+    .m_rx2_axis_tkeep       (m_rx2_axis_tkeep   ),
+    .m_rx2_axis_tuser       (m_rx2_axis_tuser   ),
+    .m_rx2_axis_tdest       (m_rx2_axis_tdest   ),
+
+    .o_3_tx_clk_out         (w_3_tx_clk_out     ),
+    .o_3_rx_clk_out         (w_3_rx_clk_out     ),
+    .o_3_user_tx_reset      (w_3_user_tx_reset  ),
+    .o_3_user_rx_reset      (w_3_user_rx_reset  ),
+    .o_3_stat_rx_status     (w_3_stat_rx_status ),
+    .tx3_axis_tready        (tx3_axis_tready    ),
+    .tx3_axis_tvalid        (tx3_axis_tvalid    ),
+    .tx3_axis_tdata         (tx3_axis_tdata     ),
+    .tx3_axis_tlast         (tx3_axis_tlast     ),
+    .tx3_axis_tkeep         (tx3_axis_tkeep     ),
+    .tx3_axis_tuser         (tx3_axis_tuser     ),
+    .m_rx3_axis_tvalid      (m_rx3_axis_tvalid  ),
+    .m_rx3_axis_tdata       (m_rx3_axis_tdata   ),
+    .m_rx3_axis_tlast       (m_rx3_axis_tlast   ),
+    .m_rx3_axis_tkeep       (m_rx3_axis_tkeep   ),
+    .m_rx3_axis_tuser       (m_rx3_axis_tuser   ),
+    .m_rx3_axis_tdest       (m_rx3_axis_tdest   ),
+
+    .o_ctrl_tx_clk_out      (w_ctrl_tx_clk_out    ),
+    .o_ctrl_rx_clk_out      (w_ctrl_rx_clk_out    ),
+    .o_ctrl_user_tx_reset   (w_ctrl_user_tx_reset ),
+    .o_ctrl_user_rx_reset   (w_ctrl_user_rx_reset ),
+    .o_ctrl_stat_rx_status  (w_ctrl_stat_rx_status),
+    .tx_ctrl_axis_tready    (tx_ctrl_axis_tready  ),
+    .tx_ctrl_axis_tvalid    (tx_ctrl_axis_tvalid  ),
+    .tx_ctrl_axis_tdata     (tx_ctrl_axis_tdata   ),
+    .tx_ctrl_axis_tlast     (tx_ctrl_axis_tlast   ),
+    .tx_ctrl_axis_tkeep     (tx_ctrl_axis_tkeep   ),
+    .tx_ctrl_axis_tuser     (tx_ctrl_axis_tuser   ),
+    .s_ctrl_axis_tvalid     (s_ctrl_axis_tvalid   ),
+    .s_ctrl_axis_tdata      (s_ctrl_axis_tdata    ),
+    .s_ctrl_axis_tlast      (s_ctrl_axis_tlast    ),
+    .s_ctrl_axis_tkeep      (s_ctrl_axis_tkeep    ),
+    .s_ctrl_axis_tuser      (s_ctrl_axis_tuser    ),
+
+    .i_port0_connect_tor    (w_port0_cur_direct_tor),
+    .i_port1_connect_tor    (w_port1_cur_direct_tor)
 );
 
 /*  时间同步模块，在一次时隙开始的时候，控制器会下发一次时隙编号
@@ -515,14 +652,57 @@ DDR_rd_ctrl#(
     .i_port1_rd_byte_ready                  (w_rd_unlocal_port1_byte_ready  ),
     .i_port1_rd_queue_finish                (w_rd_unlocal_port1_finish      ),
 
-    .i_port0_forward_req                    (),
-    .o_port0_forward_resp                   (),
-    .i_port0_forward_finish                 (),
-
-    .i_port2_forward_req                    (),
-    .o_port2_forward_resp                   (),
-    .i_port2_forward_finish                 () 
+    .i_port0_forward_req                    (w_port0_forward_req            ),
+    .o_port0_forward_resp                   (w_port0_forward_resp           ),
+    .i_port0_forward_finish                 (w_port0_forward_finish         ),
+    .o_port0_forward_valid                  (w_port0_forward_valid          ),
+    .i_port1_forward_req                    (w_port1_forward_req            ),
+    .o_port1_forward_resp                   (w_port1_forward_resp           ),
+    .i_port1_forward_finish                 (w_port1_forward_finish         ),
+    .o_port1_forward_valid                  (w_port1_forward_valid          )
 );
+
+
+forward_pkt_buffer forward_pkt_buffer_u0(
+    .i_axi0_clk                 (w_2_tx_clk_out         ),
+    .i_axi0_rst                 (w_2_user_tx_reset      ),
+    .i_axi1_clk                 (w_3_tx_clk_out         ),
+    .i_axi1_rst                 (w_3_user_tx_reset      ),
+
+    .o_port0_forward_req        (w_port0_forward_req    ),
+    .i_port0_forward_resp       (w_port0_forward_resp   ),
+    .o_port0_forward_finish     (w_port0_forward_finish ),
+    .o_port1_forward_req        (w_port1_forward_req    ),
+    .i_port1_forward_resp       (w_port1_forward_resp   ),
+    .o_port1_forward_finish     (w_port1_forward_finish ),
+ 
+    .s_axis_rx0_tvalid          (m_rx2_axis_tvalid      ),
+    .s_axis_rx0_tdata           (m_rx2_axis_tdata       ),
+    .s_axis_rx0_tlast           (m_rx2_axis_tlast       ),
+    .s_axis_rx0_tkeep           (m_rx2_axis_tkeep       ),
+    .s_axis_rx0_tuser           (m_rx2_axis_tuser       ),
+
+    .m_axis_tx0_tvalid          (w_port0_forward_axis_tvalid),
+    .m_axis_tx0_tdata           (w_port0_forward_axis_tdata ),
+    .m_axis_tx0_tlast           (w_port0_forward_axis_tlast ),
+    .m_axis_tx0_tkeep           (w_port0_forward_axis_tkeep ),
+    .m_axis_tx0_tuser           (w_port0_forward_axis_tuser ),
+    .m_axis_tx0_tready          (w_port0_forward_axis_tready),
+
+    .s_axis_rx1_tvalid          (m_rx3_axis_tvalid      ),
+    .s_axis_rx1_tdata           (m_rx3_axis_tdata       ),
+    .s_axis_rx1_tlast           (m_rx3_axis_tlast       ),
+    .s_axis_rx1_tkeep           (m_rx3_axis_tkeep       ),
+    .s_axis_rx1_tuser           (m_rx3_axis_tuser       ),
+
+    .m_axis_tx1_tvalid          (w_port1_forward_axis_tvalid),
+    .m_axis_tx1_tdata           (w_port1_forward_axis_tdata ),
+    .m_axis_tx1_tlast           (w_port1_forward_axis_tlast ),
+    .m_axis_tx1_tkeep           (w_port1_forward_axis_tkeep ),
+    .m_axis_tx1_tuser           (w_port1_forward_axis_tuser ),
+    .m_axis_tx1_tready          (w_port1_forward_axis_tready)
+);
+
 /*  上行链路发送数据时，需要判断数据是控制包还是数据包，
     该模块接收来自VLB控制模块和DDR读出的有效数据，然后
     选择数据进行发送，控制数据包的发送优先级最高*/
@@ -544,6 +724,14 @@ eth_uplink_port eth_uplink_port_u0(
     .s_data_axis_tkeep      (m_axis_2_tkeep         ),
     .s_data_axis_tuser      (m_axis_2_tuser         ),
     .s_data_axis_tready     (m_axis_2_tready        ),
+
+    .i_forward_pkt_valid    (w_port0_forward_valid  ),
+    .s_forward_axis_tvalid  (w_port0_forward_axis_tvalid),
+    .s_forward_axis_tdata   (w_port0_forward_axis_tdata ),
+    .s_forward_axis_tlast   (w_port0_forward_axis_tlast ),
+    .s_forward_axis_tkeep   (w_port0_forward_axis_tkeep ),
+    .s_forward_axis_tuser   (w_port0_forward_axis_tuser ),
+    .s_forward_axis_tready  (w_port0_forward_axis_tready),
          
     .m_tx_axis_tvalid       (uplink0_tx_axis_tvalid ),
     .m_tx_axis_tdata        (uplink0_tx_axis_tdata  ),
@@ -571,6 +759,14 @@ eth_uplink_port eth_uplink_port_u1(
     .s_data_axis_tkeep      (m_axis_3_tkeep         ),
     .s_data_axis_tuser      (m_axis_3_tuser         ),
     .s_data_axis_tready     (m_axis_3_tready        ),
+
+    .i_forward_pkt_valid    (w_port1_forward_valid  ),
+    .s_forward_axis_tvalid  (w_port1_forward_axis_tvalid),
+    .s_forward_axis_tdata   (w_port1_forward_axis_tdata ),
+    .s_forward_axis_tlast   (w_port1_forward_axis_tlast ),
+    .s_forward_axis_tkeep   (w_port1_forward_axis_tkeep ),
+    .s_forward_axis_tuser   (w_port1_forward_axis_tuser ),
+    .s_forward_axis_tready  (w_port1_forward_axis_tready),
          
     .m_tx_axis_tvalid       (uplink1_tx_axis_tvalid ),
     .m_tx_axis_tdata        (uplink1_tx_axis_tdata  ),
@@ -579,99 +775,7 @@ eth_uplink_port eth_uplink_port_u1(
     .m_tx_axis_tuser        (uplink1_tx_axis_tuser  ),
     .m_tx_axis_tready       (tx3_axis_tready        ) 
 );
-/*  10G以太网高速接口处理模块，接收10G数据，并且完成查表等操作，
-    将数据按照本地、非本地、控制信息等不同种类进行分类*/
-VCU128_10g_eth_top#(
-    .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
-    .P_MIN_LENGTH           (8'd64              ),
-    .P_MAX_LENGTH           (15'd9600           ),
-    .P_MY_TOR_MAC           (P_MY_TOR_MAC       )
-)VCU128_10g_eth_top_data_link( 
-    .i_gt_refclk_p          (i_gt_refclk_p      ),
-    .i_gt_refclk_n          (i_gt_refclk_n      ),
-    .i_sys_clk_p            (i_sys_clk_p        ),
-    .i_sys_clk_n            (i_sys_clk_n        ),
-    .o_gt_txp               (o_gt_txp           ),
-    .o_gt_txn               (o_gt_txn           ),
-    .i_gt_rxp               (i_gt_rxp           ),
-    .i_gt_rxn               (i_gt_rxn           ),
-    .o_sfp_dis              (o_sfp_dis          ),
-    .o_dclk                 (w_dclk             ),
-    .o_sys_reset            (w_sys_reset        ),
-    .o_0_tx_clk_out         (w_0_tx_clk_out     ),
-    .o_0_rx_clk_out         (w_0_rx_clk_out     ),
-    .o_0_user_tx_reset      (w_0_user_tx_reset  ),
-    .o_0_user_rx_reset      (w_0_user_rx_reset  ),
-    .o_0_stat_rx_status     (w_0_stat_rx_status ),
-    .tx0_axis_tready        (tx0_axis_tready    ),
-    .tx0_axis_tvalid        (tx0_axis_tvalid    ),
-    .tx0_axis_tdata         (tx0_axis_tdata     ),
-    .tx0_axis_tlast         (tx0_axis_tlast     ),
-    .tx0_axis_tkeep         (tx0_axis_tkeep     ),
-    .tx0_axis_tuser         (tx0_axis_tuser     ),
-    .m_rx0_axis_tvalid      (m_rx0_axis_tvalid  ),
-    .m_rx0_axis_tdata       (m_rx0_axis_tdata   ),
-    .m_rx0_axis_tlast       (m_rx0_axis_tlast   ),
-    .m_rx0_axis_tkeep       (m_rx0_axis_tkeep   ),
-    .m_rx0_axis_tuser       (m_rx0_axis_tuser   ),
-    .m_rx0_axis_tdest       (m_rx0_axis_tdest   ),
 
-    .o_1_tx_clk_out         (w_1_tx_clk_out     ),
-    .o_1_rx_clk_out         (w_1_rx_clk_out     ),
-    .o_1_user_tx_reset      (w_1_user_tx_reset  ),
-    .o_1_user_rx_reset      (w_1_user_rx_reset  ),
-    .o_1_stat_rx_status     (w_1_stat_rx_status ),
-    .tx1_axis_tready        (tx1_axis_tready    ),
-    .tx1_axis_tvalid        (tx1_axis_tvalid    ),
-    .tx1_axis_tdata         (tx1_axis_tdata     ),
-    .tx1_axis_tlast         (tx1_axis_tlast     ),
-    .tx1_axis_tkeep         (tx1_axis_tkeep     ),
-    .tx1_axis_tuser         (tx1_axis_tuser     ),
-    .m_rx1_axis_tvalid      (m_rx1_axis_tvalid  ),
-    .m_rx1_axis_tdata       (m_rx1_axis_tdata   ),
-    .m_rx1_axis_tlast       (m_rx1_axis_tlast   ),
-    .m_rx1_axis_tkeep       (m_rx1_axis_tkeep   ),
-    .m_rx1_axis_tuser       (m_rx1_axis_tuser   ),
-    .m_rx1_axis_tdest       (m_rx1_axis_tdest   ),
-
-    .o_2_tx_clk_out         (w_2_tx_clk_out     ),
-    .o_2_rx_clk_out         (w_2_rx_clk_out     ),
-    .o_2_user_tx_reset      (w_2_user_tx_reset  ),
-    .o_2_user_rx_reset      (w_2_user_rx_reset  ),
-    .o_2_stat_rx_status     (w_2_stat_rx_status ),
-    .tx2_axis_tready        (tx2_axis_tready    ),
-    .tx2_axis_tvalid        (tx2_axis_tvalid    ),
-    .tx2_axis_tdata         (tx2_axis_tdata     ),
-    .tx2_axis_tlast         (tx2_axis_tlast     ),
-    .tx2_axis_tkeep         (tx2_axis_tkeep     ),
-    .tx2_axis_tuser         (tx2_axis_tuser     ),
-    .m_rx2_axis_tvalid      (m_rx2_axis_tvalid  ),
-    .m_rx2_axis_tdata       (m_rx2_axis_tdata   ),
-    .m_rx2_axis_tlast       (m_rx2_axis_tlast   ),
-    .m_rx2_axis_tkeep       (m_rx2_axis_tkeep   ),
-    .m_rx2_axis_tuser       (m_rx2_axis_tuser   ),
-    .m_rx2_axis_tdest       (m_rx2_axis_tdest   ),
-
-    .o_3_tx_clk_out         (w_3_tx_clk_out     ),
-    .o_3_rx_clk_out         (w_3_rx_clk_out     ),
-    .o_3_user_tx_reset      (w_3_user_tx_reset  ),
-    .o_3_user_rx_reset      (w_3_user_rx_reset  ),
-    .o_3_stat_rx_status     (w_3_stat_rx_status ),
-    .tx3_axis_tready        (tx3_axis_tready    ),
-    .tx3_axis_tvalid        (tx3_axis_tvalid    ),
-    .tx3_axis_tdata         (tx3_axis_tdata     ),
-    .tx3_axis_tlast         (tx3_axis_tlast     ),
-    .tx3_axis_tkeep         (tx3_axis_tkeep     ),
-    .tx3_axis_tuser         (tx3_axis_tuser     ),
-    .m_rx3_axis_tvalid      (m_rx3_axis_tvalid  ),
-    .m_rx3_axis_tdata       (m_rx3_axis_tdata   ),
-    .m_rx3_axis_tlast       (m_rx3_axis_tlast   ),
-    .m_rx3_axis_tkeep       (m_rx3_axis_tkeep   ),
-    .m_rx3_axis_tuser       (m_rx3_axis_tuser   ),
-    .m_rx3_axis_tdest       (m_rx3_axis_tdest   ),
-    .i_port0_connect_tor    (w_port0_cur_direct_tor),
-    .i_port1_connect_tor    (w_port1_cur_direct_tor)
-);
 /*  crossbar交换机模块，完成本地数据的转发，包括下行链路之间的转发
     以及上行链路接收的本地服务器数据*/
 crossbar#(
