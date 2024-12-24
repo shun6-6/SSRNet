@@ -125,7 +125,7 @@ ctrl_tx#(
     .P_SLOT_ID_TYPE     (P_SLOT_ID_TYPE     ),
     .P_MY_MAC           (P_MY_MAC           ),
     .P_DEST_TOR_MAC     (P_DEST_TOR_MAC     )
-)(
+)ctrl_tx_u0(
     .i_clk              (i_clk              ),
     .i_rst              (i_rst              ),
 

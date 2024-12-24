@@ -22,8 +22,8 @@
 状态稳定后，第一个时隙开始，下发一个仿真开始指令给所有ToR，
 所有ToR下行连接的server开始产生数据，等待一个完整的时隙后，开始切换
 ocs状态，等待切换时延结束后，下发一次时间同步，标志一次全新的时隙开始
-时隙一次最多传输2048byte数据，所需时间2048 x 6.4 = 13107ns
-仿真暂定配置时延1.5微妙（2343 clk），时隙持续15（23437 clk）微妙，具体修改需要控制VLB模块的
+时隙一次最多传输16KByte数据，所需时间2048 x 6.4 = 13us
+仿真暂定配置时延1.5微妙（234 clk），时隙持续15（2343 clk）微妙，具体修改需要控制VLB模块的
 P_SLOT_MAX_BYTE_NUM参数
 */
 
@@ -31,8 +31,8 @@ module OCS_controller#(
     parameter                   P_CHANNEL_NUM   = 8             ,
     parameter                   P_MIN_LENGTH    = 8'd64         ,
     parameter                   P_MAX_LENGTH    = 15'd9600      ,
-    parameter                   P_CONFIG_DELAY  = 32'h0000_0960 ,
-    parameter                   P_SLOT_LEN      = 32'h0000_5CD0  
+    parameter                   P_CONFIG_DELAY  = 32'h0000_00EA ,
+    parameter                   P_SLOT_LEN      = 32'h0000_0927  
 )(
     input                       i_gt_0_refclk_p     ,
     input                       i_gt_0_refclk_n     ,
@@ -222,7 +222,7 @@ rst_gen_module#(
 ocs_slot_ctrl#(
     .P_CONFIG_DELAY     (P_CONFIG_DELAY     ),
     .P_SLOT_LEN         (P_SLOT_LEN         ) 
-)(
+)ocs_slot_ctrl_u0(
     .i_clk              (o_0_tx_clk_out     ),
     .i_rst              (o_0_user_tx_reset  ),
 
@@ -472,13 +472,13 @@ ocs_ctrl_trx#(
 );
 
 ten_gig_ctrl_module#(
-    .P_CHANNEL_NUM          (P_CHANNEL_NUM >> 2 ),
+    .P_CHANNEL_NUM          (P_CHANNEL_NUM >> 1 ),
     .P_MIN_LENGTH           (P_MIN_LENGTH       ),
     .P_MAX_LENGTH           (P_MAX_LENGTH       )
 )ten_gig_ctrl_module_u0(
     .i_gt_refclk_p          (i_gt_0_refclk_p    ),
     .i_gt_refclk_n          (i_gt_0_refclk_n    ),
-    .i_dclk                 (i_dclk             ),
+    .i_dclk                 (w_dclk             ),
     .i_sys_reset            (w_sys_reset        ),
 
     .o_gt_txp               (o_gt_txp[3:0]),
@@ -557,13 +557,13 @@ ten_gig_ctrl_module#(
 
 
 ten_gig_ctrl_module#(
-    .P_CHANNEL_NUM          (P_CHANNEL_NUM >> 2 ),
+    .P_CHANNEL_NUM          (P_CHANNEL_NUM >> 1 ),
     .P_MIN_LENGTH           (P_MIN_LENGTH       ),
     .P_MAX_LENGTH           (P_MAX_LENGTH       )
 )ten_gig_ctrl_module_u1(
     .i_gt_refclk_p          (i_gt_1_refclk_p    ),
     .i_gt_refclk_n          (i_gt_1_refclk_n    ),
-    .i_dclk                 (i_dclk             ),
+    .i_dclk                 (w_dclk             ),
     .i_sys_reset            (w_sys_reset        ),
 
     .o_gt_txp               (o_gt_txp[P_CHANNEL_NUM-1:4]),

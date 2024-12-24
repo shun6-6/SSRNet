@@ -82,7 +82,7 @@ reg  [1 :0]     ri_seek_flag            ;
 reg             r_check_ready           ;
 reg  [47 :0]	r_recv_dst_mac		    ;
 reg  [47 :0]	r_recv_src_mac		    ;
-reg  [5 :0]		r_recv_cnt			    ;
+reg  [15:0]		r_recv_cnt			    ;
 
 reg  [47:0]     ro_check_mac            ;
 reg  [3 :0]     ro_check_id             ;
@@ -96,6 +96,7 @@ reg             r_fifo_data_rden_1d     ;
 reg  [15:0]     r_data_len              ;
 reg  [15:0]     r_fifo_rd_cnt           ;
 reg  [7 :0]     r_data_keep             ;
+reg             r_fifo_lock             ;
 /******************************wire*********************************/
 wire [63:0]     w_fifo_data_dout        ;
 wire [15:0]     w_fifo_len_dout         ;
@@ -179,16 +180,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_axis_rx_tvalid_1d <= 'd0;
         rs_axis_rx_tdata_1d  <= 'd0;
     end
-    else if(s_axis_rx_tvalid && r_recv_cnt == 0 && s_axis_rx_tdata[7:0] != 8'd0)begin
-        rs_axis_rx_tvalid <= s_axis_rx_tvalid   ;
-        rs_axis_rx_tdata  <= s_axis_rx_tdata    ;
-        rs_axis_rx_tlast  <= s_axis_rx_tlast    ;
-        rs_axis_rx_tkeep  <= s_axis_rx_tkeep    ;
-        rs_axis_rx_tuser  <= s_axis_rx_tuser    ;
-        rs_axis_rx_tvalid_1d <= rs_axis_rx_tvalid;
-        rs_axis_rx_tdata_1d  <= rs_axis_rx_tdata ;
-    end
-    else begin
+    else if(s_axis_rx_tvalid && r_recv_cnt == 0 && s_axis_rx_tdata[7:0] == 8'd0)begin
         rs_axis_rx_tvalid    <= 'd0 ;
         rs_axis_rx_tdata     <= 'd0 ;
         rs_axis_rx_tlast     <= 'd0 ;
@@ -196,6 +188,15 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_axis_rx_tuser     <= 'd0 ;
         rs_axis_rx_tvalid_1d <= 'd0 ;
         rs_axis_rx_tdata_1d  <= 'd0 ;
+    end
+    else begin
+        rs_axis_rx_tvalid <= s_axis_rx_tvalid   ;
+        rs_axis_rx_tdata  <= s_axis_rx_tdata    ;
+        rs_axis_rx_tlast  <= s_axis_rx_tlast    ;
+        rs_axis_rx_tkeep  <= s_axis_rx_tkeep    ;
+        rs_axis_rx_tuser  <= s_axis_rx_tuser    ;
+        rs_axis_rx_tvalid_1d <= rs_axis_rx_tvalid;
+        rs_axis_rx_tdata_1d  <= rs_axis_rx_tdata ;
     end
 end
 
@@ -299,10 +300,10 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_check_ready <= 'd0;
+    else if(w_check_active)
+        r_check_ready <= 'd0;
     else if(rs_axis_rx_tvalid && r_recv_cnt == 2)
 		r_check_ready <= 1'b1;
-    else if(!w_fifo_len_empty && w_check_active)
-        r_check_ready <= 'd0;
     else
         r_check_ready <= r_check_ready;
 end
@@ -311,10 +312,22 @@ end
 
 //read fifo
 
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_fifo_lock <= 'd0;
+    else if(ro_axis_tlast && ro_axis_tvalid)
+        r_fifo_lock <= 'd1;
+    else if(!w_fifo_len_empty && !r_fifo_lock)
+        r_fifo_lock <= 'd0;
+    else
+        r_fifo_lock <= 'd0;
+end
+
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_len_rden <= 'd0;
-    else if(!w_fifo_len_empty && w_check_active)
+    else if(!w_fifo_len_empty && !r_fifo_lock)
         r_fifo_len_rden <= 'd1;
     else
         r_fifo_len_rden <= 'd0;
@@ -348,7 +361,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len)
+    else if(r_fifo_rd_cnt == r_data_len - 1)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
@@ -361,7 +374,7 @@ always @(posedge i_clk or posedge i_rst) begin
         r_fifo_rd_cnt <= 'd0;
     else if(r_fifo_rd_cnt == r_data_len)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_data_rden_1d)
+    else if(r_fifo_data_rden)
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 'd1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt;
@@ -398,7 +411,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len)
+    else if(r_fifo_rd_cnt == r_data_len && r_data_len != 0)
         ro_axis_tlast <= 'd1;
     else
         ro_axis_tlast <= 'd0;
@@ -416,7 +429,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tdest <= 'd0;
-    else if(r_fifo_data_rden_1d)
+    else if(r_fifo_len_rden_1d)
         ro_axis_tdest <= w_fifo_dest_user_dout[4:2];
     else
         ro_axis_tdest <= ro_axis_tdest;
@@ -425,7 +438,7 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tuser <= 'd0;
-    else if(r_fifo_data_rden_1d)
+    else if(r_fifo_len_rden_1d)
         ro_axis_tuser <= w_fifo_dest_user_dout[1:0];
     else
         ro_axis_tuser <= ro_axis_tuser;

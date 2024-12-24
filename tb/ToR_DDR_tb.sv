@@ -28,7 +28,9 @@ endmodule
 
 module ToR_DDR_tb#(
     parameter                   P_CHANNEL_NUM   = 4 ,
-    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
+    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00,
+    parameter                   P_RANDOM_SEED   = 8'ha5,
+    parameter                   P_SLOT_MAX_BYTE_NUM = 32'h0000_8000
 )(
     input                       i_gt_refclk_p       ,
     input                       i_gt_refclk_n       ,
@@ -213,12 +215,16 @@ module ToR_DDR_tb#(
 
   SRRNet_Top#(
     .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
-    .P_MY_TOR_MAC           (P_MY_TOR_MAC       )
-)(
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC       ),
+    .P_RANDOM_SEED          (P_RANDOM_SEED      ),
+    .P_SLOT_MAX_BYTE_NUM    (P_SLOT_MAX_BYTE_NUM)
+)SRRNet_Top_u0(
     .i_gt_refclk_p          (i_gt_refclk_p      ),
     .i_gt_refclk_n          (i_gt_refclk_n      ),
     .i_sys_clk_p            (i_sys_clk_p        ),
     .i_sys_clk_n            (i_sys_clk_n        ),
+    .c0_sys_clk_n           (c0_sys_clk_n       ),
+    .c0_sys_clk_p           (c0_sys_clk_p       ),
     .o_gt_txp               (o_gt_txp           ),
     .o_gt_txn               (o_gt_txn           ),
     .i_gt_rxp               (i_gt_rxp           ),

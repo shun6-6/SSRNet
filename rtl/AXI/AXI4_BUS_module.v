@@ -102,7 +102,7 @@ module AXI4_BUS_module#
     input  [63 :0]                              s_axis_tdata        ,
     input                                       s_axis_tlast        ,
     input  [7  :0]                              s_axis_tkeep        ,
-    input                                       s_axis_tuser        ,
+    input  [1 : 0]                              s_axis_tuser        ,
     input  [2 : 0]                              s_axis_tdest        ,
     output                                      o_wr_ddr_valid      ,
     output [15 :0]                              o_wr_ddr_len        ,

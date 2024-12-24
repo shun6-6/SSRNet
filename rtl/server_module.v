@@ -75,8 +75,6 @@ reg             ri_sim_start        ;
 reg             r_tx_axis_tvalid    ;
 reg  [63:0]     r_tx_axis_tdata     ;
 reg             r_tx_axis_tlast     ;
-reg  [7 :0]     r_tx_axis_tkeep     ;
-reg             r_tx_axis_tuser     ;
 reg  [15:0]     r_tx_cnt            ;
 
 reg  [7 : 0]    r_random_dest       ;
@@ -133,7 +131,7 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_dest_tor <= 'd0;
     else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd1)
-        r_dest_tor <= r_random_dest[2:0];
+        r_dest_tor <= r_dest_tor + 1'b1;
     else
         r_dest_tor <= r_dest_tor;
 end
@@ -141,8 +139,10 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_dest_server <= 'd0;
-    else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd1)
-        r_dest_server <= r_random_dest[0] == 1'b1 ? 3'd1 : 3'd2;
+    else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd2 && (r_dest_tor) == P_MY_TOR_MAC[10:8])
+        r_dest_server <= P_MY_PORT_MAC[2:0] == 'd1 ? 3'd2 : 3'd1;
+    else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd2 && (r_dest_tor) != P_MY_TOR_MAC[10:8])
+        r_dest_server <= r_random_dest[0] == 'd1 ? 3'd1 : 3'd2;
     else
         r_dest_server <= r_dest_server;
 end
@@ -150,7 +150,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_dest_mac <= 'd0;
-    else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd2)
+    else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd3)
         r_dest_mac <= {P_MAC_HEAD,{5'd0,r_dest_tor},{5'd0,r_dest_server}};
     else
         r_dest_mac <= r_dest_mac;
@@ -175,7 +175,7 @@ end
 always @(*)begin
     case (r_cur_state)
         P_TX_IDLE   : r_nxt_state = !P_UPLINK_TRUE && ri_sim_start ? P_TX_RANDOM : P_TX_IDLE;
-        P_TX_RANDOM : r_nxt_state = r_st_cnt == 2 ? P_TX_DATA : P_TX_RANDOM;
+        P_TX_RANDOM : r_nxt_state = r_st_cnt == 3 ? P_TX_DATA : P_TX_RANDOM;
         P_TX_DATA   : r_nxt_state = r_tx_cnt == P_PKT_LEN - 2 ? P_TX_GAP : P_TX_DATA;
         P_TX_GAP    : r_nxt_state = r_st_cnt == P_GAP_CYCLE ? P_TX_IDLE : P_TX_GAP;
         default     : r_nxt_state = P_TX_IDLE;
@@ -233,7 +233,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ri_check_id    <= 'd0;
         ri_check_valid <= 'd0;
     end
-    else if(i_check_id)begin
+    else if(i_check_valid)begin
         ri_check_mac   <= i_check_mac  ;
         ri_check_id    <= i_check_id   ;
         ri_check_valid <= i_check_valid;
@@ -241,7 +241,7 @@ always @(posedge i_clk or posedge i_rst)begin
     else begin
         ri_check_mac   <= ri_check_mac  ;
         ri_check_id    <= ri_check_id   ;
-        ri_check_valid <= ri_check_valid;
+        ri_check_valid <= 'd0;
     end
 end
 
@@ -284,7 +284,7 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_outport <= 'd0;
     else if(ri_check_valid && ri_check_mac[47:8] == P_MY_TOR_MAC[47:8])
-        ro_outport <= ri_check_mac[2:0];
+        ro_outport <= ri_check_mac[2:0] - 1;//在crossbar里本地port编号是对应port0和1
     else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC[47:8])
         ro_outport <= ri_check_mac[10:8];
     else

@@ -35,11 +35,15 @@ module ocs_slot_ctrl#(
 reg             ro_slot_id      ;
 reg             ro_slot_start   ;
 reg             r_config_flag   ;
+reg             ri_chnl_ready = 0 ;
 
 reg  [15: 0]    r_slot_cnt  ;
 
 assign o_slot_id    = ro_slot_id   ;
 assign o_slot_start = ro_slot_start;
+
+always @(posedge i_clk)
+    ri_chnl_ready <= i_chnl_ready;
 
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
@@ -48,7 +52,7 @@ always @(posedge i_clk or posedge i_rst) begin
         r_slot_cnt <= 'd0;
     else if(r_slot_cnt == P_CONFIG_DELAY && r_config_flag)
         r_slot_cnt <= 'd0;
-    else if(i_chnl_ready)
+    else if(ri_chnl_ready)
         r_slot_cnt <= r_slot_cnt + 1'b1;
     else
         r_slot_cnt <= r_slot_cnt;

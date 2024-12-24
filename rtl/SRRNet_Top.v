@@ -21,13 +21,17 @@
 
 
 module SRRNet_Top#(
-    parameter                   P_CHANNEL_NUM   = 3 ,
-    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
-)(
+    parameter                   P_CHANNEL_NUM       = 3                     ,
+    parameter                   P_MY_TOR_MAC        = 48'h8D_BC_5C_4A_00_00 ,
+    parameter                   P_RANDOM_SEED       = 8'hA5                 ,
+    parameter                   P_SLOT_MAX_BYTE_NUM = 32'h0000_8000         
+    )(
     input                       i_gt_refclk_p       ,
     input                       i_gt_refclk_n       ,
     input                       i_sys_clk_p         ,
     input                       i_sys_clk_n         ,
+    input                       c0_sys_clk_n        ,
+    input                       c0_sys_clk_p        ,
     output [P_CHANNEL_NUM-1:0]  o_gt_txp            ,
     output [P_CHANNEL_NUM-1:0]  o_gt_txn            ,
     input  [P_CHANNEL_NUM-1:0]  i_gt_rxp            ,
@@ -59,7 +63,7 @@ module SRRNet_Top#(
 );
 
 localparam  P_CROSSBAR_N = 4;
-localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_4000;
+// localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_8000;
 
 wire    w_dclk              ;
 wire    w_sys_reset         ;
@@ -101,7 +105,7 @@ wire            m_rx0_axis_tvalid   ;
 wire [63 :0]    m_rx0_axis_tdata    ;
 wire            m_rx0_axis_tlast    ;
 wire [7  :0]    m_rx0_axis_tkeep    ;
-wire            m_rx0_axis_tuser    ;
+wire [1 : 0]    m_rx0_axis_tuser    ;
 wire [2 : 0]    m_rx0_axis_tdest    ;
 wire            tx1_axis_tready     ;
 wire            tx1_axis_tvalid     ;
@@ -113,7 +117,7 @@ wire            m_rx1_axis_tvalid   ;
 wire [63 :0]    m_rx1_axis_tdata    ;
 wire            m_rx1_axis_tlast    ;
 wire [7  :0]    m_rx1_axis_tkeep    ;
-wire            m_rx1_axis_tuser    ;
+wire [1 : 0]    m_rx1_axis_tuser    ;
 wire [2 : 0]    m_rx1_axis_tdest    ;
 wire            tx2_axis_tready     ;
 wire            tx2_axis_tvalid     ;
@@ -125,7 +129,7 @@ wire            m_rx2_axis_tvalid   ;
 wire [63 :0]    m_rx2_axis_tdata    ;
 wire            m_rx2_axis_tlast    ;
 wire [7  :0]    m_rx2_axis_tkeep    ;
-wire            m_rx2_axis_tuser    ;
+wire [1 : 0]    m_rx2_axis_tuser    ;
 wire [2 : 0]    m_rx2_axis_tdest    ;
 wire            tx3_axis_tready     ;
 wire            tx3_axis_tvalid     ;
@@ -137,7 +141,7 @@ wire            m_rx3_axis_tvalid   ;
 wire [63 :0]    m_rx3_axis_tdata    ;
 wire            m_rx3_axis_tlast    ;
 wire [7  :0]    m_rx3_axis_tkeep    ;
-wire            m_rx3_axis_tuser    ;
+wire [1 : 0]    m_rx3_axis_tuser    ;
 wire [2 : 0]    m_rx3_axis_tdest    ;
 //block design
 wire [31:0]                 w_rd_ddr_addr_0;
@@ -384,7 +388,8 @@ VCU128_10g_eth_top#(
     .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
     .P_MIN_LENGTH           (8'd64              ),
     .P_MAX_LENGTH           (15'd9600           ),
-    .P_MY_TOR_MAC           (P_MY_TOR_MAC       )
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC       ),
+    .P_RANDOM_SEED          (P_RANDOM_SEED      )
 )VCU128_10g_eth_data_ctrl_link( 
     .i_gt_refclk_p          (i_gt_refclk_p      ),
     .i_gt_refclk_n          (i_gt_refclk_n      ),
@@ -395,6 +400,7 @@ VCU128_10g_eth_top#(
     .i_gt_rxp               (i_gt_rxp           ),
     .i_gt_rxn               (i_gt_rxn           ),
     .o_sfp_dis              (o_sfp_dis          ),
+    .i_time_stamp           (w_local_time       ),
     .i_sim_start            (w_sim_start        ),
     .o_0_tx_clk_out         (w_0_tx_clk_out     ),
     .o_0_rx_clk_out         (w_0_rx_clk_out     ),
@@ -615,7 +621,7 @@ DDR_rd_ctrl#(
     .P_LOCAL_PORT_NUM        (2              ),
     .P_UNLOCAL_PORT_NUM      (2              ),
     .P_QUEUE_NUM             (8              )
-)(
+)DDR_rd_ctrl_u0(
     .i_clk                                  (w_2_tx_clk_out        ),
     .i_rst                                  (w_2_user_tx_reset     ),
 
@@ -786,8 +792,8 @@ eth_uplink_port eth_uplink_port_u1(
 crossbar#(
     .P_CROSSBAR_N               (P_CROSSBAR_N)        
 )crossbar_u0(
-    .i_clk                      (i_clk             ),
-    .i_rst                      (i_rst             ),
+    .i_clk                      (w_2_tx_clk_out     ),
+    .i_rst                      (w_2_user_tx_reset  ),
 
     .s0_axis_rx_tvalid          (m_rx0_axis_tvalid  ),
     .s0_axis_rx_tdata           (m_rx0_axis_tdata   ),
@@ -878,14 +884,14 @@ design_1_wrapper design_1_wrapper_u0(
     .c0_ddr4_ui_clk_0               (ddr4_ui_clk),
     .c0_ddr4_ui_clk_sync_rst_0      (ddr4_ui_rst),
     .c0_init_calib_complete_0       (c0_init_calib_complete_0),
-    .i_axis_clk_0                   (w_0_tx_clk_out     ),
-    .i_axis_rst_0                   (w_0_user_tx_reset  ),
-    .i_axis_clk_1                   (w_0_tx_clk_out     ),
-    .i_axis_rst_1                   (w_0_user_tx_reset  ),
-    .i_axis_clk_2                   (w_0_tx_clk_out     ),
-    .i_axis_rst_2                   (w_0_user_tx_reset  ),
-    .i_axis_clk_3                   (w_0_tx_clk_out     ),
-    .i_axis_rst_3                   (w_0_user_tx_reset  ),
+    .i_axis_clk_0                   (w_2_tx_clk_out     ),
+    .i_axis_rst_0                   (w_2_user_tx_reset  ),
+    .i_axis_clk_1                   (w_2_tx_clk_out     ),
+    .i_axis_rst_1                   (w_2_user_tx_reset  ),
+    .i_axis_clk_2                   (w_2_tx_clk_out     ),
+    .i_axis_rst_2                   (w_2_user_tx_reset  ),
+    .i_axis_clk_3                   (w_2_tx_clk_out     ),
+    .i_axis_rst_3                   (w_2_user_tx_reset  ),
      
     .i_rd_ddr_addr_0                (w_rd_ddr_addr_0     ),
     .i_rd_ddr_addr_1                (w_rd_ddr_addr_1     ),

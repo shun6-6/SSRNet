@@ -488,8 +488,8 @@ generate
                 end
                 2 : begin
                     if(r_wr_port_ready_id[2] == gen_local_o && w_wr_local_queue_ready[2])begin
-                        ro_wr_local_port_ready[gen_local_o] <= w_wr_local_queue_ready[3];
-                        ro_wr_local_port_addr[gen_local_o]  <= w_wr_local_queue_addr[3];
+                        ro_wr_local_port_ready[gen_local_o] <= w_wr_local_queue_ready[2];
+                        ro_wr_local_port_addr[gen_local_o]  <= w_wr_local_queue_addr[2];
                     end else begin
                         ro_wr_local_port_ready[gen_local_o] <= 'd0;
                         ro_wr_local_port_addr[gen_local_o]  <= 'd0;

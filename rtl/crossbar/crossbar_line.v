@@ -33,7 +33,7 @@ module crossbar_line#(
     input  [63 :0]                  s_axis_rx_tdata         ,
     input                           s_axis_rx_tlast         ,
     input  [7  :0]                  s_axis_rx_tkeep         ,
-    input                           s_axis_rx_tuser         ,
+    input  [1 : 0]                  s_axis_rx_tuser         ,
     input  [2 : 0]                  s_axis_rx_tdest         ,
 
     output                          m0_axis_tx_tvalid       ,

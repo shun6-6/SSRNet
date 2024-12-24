@@ -45,12 +45,11 @@ module ctrl_tx#(
 localparam      P_PKT_LEN = 8;
 
 reg             ri_chnl_ready = 0;
+reg             ri_chnl_ready_1d = 0;
 reg             r_slot_id;
 reg             ro_tx_axis_tvalid   ;
 reg  [63 :0]    ro_tx_axis_tdata    ;
 reg             ro_tx_axis_tlast    ;
-reg  [7  :0]    ro_tx_axis_tkeep    ;
-reg             ro_tx_axis_tuser    ;
 reg  [4:0]      r_tx_cnt;
 reg             r_sim_flag          ;
 
@@ -63,10 +62,13 @@ assign o_tx_axis_tdata  = ro_tx_axis_tdata  ;
 assign o_tx_axis_tlast  = ro_tx_axis_tlast  ;
 assign o_tx_axis_tkeep  = 8'hff  ;
 assign o_tx_axis_tuser  = 'd0  ;
-assign w_sim_start = i_chnl_ready && !ri_chnl_ready;
+assign w_sim_start = ri_chnl_ready && !ri_chnl_ready_1d;
 
-always @(posedge i_clk)
+always @(posedge i_clk)begin
     ri_chnl_ready <= i_chnl_ready;
+    ri_chnl_ready_1d <= ri_chnl_ready;
+end
+
 
 
 always @(posedge i_clk or posedge i_rst)begin
@@ -128,7 +130,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_tx_axis_tdata <= 'd0;
-    else if(i_new_slot_start)
+    else if(i_new_slot_start || w_sim_start)
         ro_tx_axis_tdata <= {P_MY_MAC,P_DEST_TOR_MAC[47:32]};
     else if(w_tx_en && r_sim_flag)
         case (r_tx_cnt)

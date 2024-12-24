@@ -24,7 +24,8 @@ module VCU128_10g_eth_top#(
     parameter                   P_CHANNEL_NUM   = 3                     ,
     parameter                   P_MIN_LENGTH    = 8'd64                 ,
     parameter                   P_MAX_LENGTH    = 15'd9600              ,
-    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00
+    parameter                   P_MY_TOR_MAC    = 48'h8D_BC_5C_4A_00_00 ,
+    parameter                   P_RANDOM_SEED   = 8'hA5
 )(
     input                       i_gt_refclk_p       ,
     input                       i_gt_refclk_n       ,
@@ -53,7 +54,7 @@ module VCU128_10g_eth_top#(
     output [63 :0]              m_rx0_axis_tdata    ,
     output                      m_rx0_axis_tlast    ,
     output [7  :0]              m_rx0_axis_tkeep    ,
-    output                      m_rx0_axis_tuser    ,
+    output [1 : 0]              m_rx0_axis_tuser    ,
     output [2 : 0]              m_rx0_axis_tdest    , 
 
     output                      o_1_tx_clk_out      ,
@@ -71,7 +72,7 @@ module VCU128_10g_eth_top#(
     output [63 :0]              m_rx1_axis_tdata    ,
     output                      m_rx1_axis_tlast    ,
     output [7  :0]              m_rx1_axis_tkeep    ,
-    output                      m_rx1_axis_tuser    ,
+    output [1 : 0]              m_rx1_axis_tuser    ,
     output [2 : 0]              m_rx1_axis_tdest    , 
   
 
@@ -90,7 +91,7 @@ module VCU128_10g_eth_top#(
     output [63 :0]              m_rx2_axis_tdata    ,
     output                      m_rx2_axis_tlast    ,
     output [7  :0]              m_rx2_axis_tkeep    ,
-    output                      m_rx2_axis_tuser    ,
+    output [1 : 0]              m_rx2_axis_tuser    ,
     output [2 : 0]              m_rx2_axis_tdest    , 
 
     output                      o_3_tx_clk_out      ,
@@ -108,7 +109,7 @@ module VCU128_10g_eth_top#(
     output [63 :0]              m_rx3_axis_tdata    ,
     output                      m_rx3_axis_tlast    ,
     output [7  :0]              m_rx3_axis_tkeep    ,
-    output                      m_rx3_axis_tuser    ,
+    output [1 : 0]              m_rx3_axis_tuser    ,
     output [2 : 0]              m_rx3_axis_tdest    ,
 
     input  [2 : 0]              i_port0_connect_tor ,
@@ -167,7 +168,7 @@ wire                    w0_check_valid      ;
 wire [3 :0]             w0_outport          ;
 wire                    w0_result_valid     ;
 wire [3 :0]             w0_check_resp_id    ;
-wire                    w0_seek_flag        ;
+wire [1 :0]             w0_seek_flag        ;
 
 wire [47:0]             w1_check_mac        ;
 wire [3 :0]             w1_check_req_id     ;
@@ -175,7 +176,7 @@ wire                    w1_check_valid      ;
 wire [3 :0]             w1_outport          ;
 wire                    w1_result_valid     ;
 wire [3 :0]             w1_check_resp_id    ;
-wire                    w1_seek_flag        ;
+wire [1 :0]             w1_seek_flag        ;
 
 wire [47:0]             w2_check_mac        ;
 wire [3 :0]             w2_check_req_id     ;
@@ -183,7 +184,7 @@ wire                    w2_check_valid      ;
 wire [3 :0]             w2_outport          ;
 wire                    w2_result_valid     ;
 wire [3 :0]             w2_check_resp_id    ;
-wire                    w2_seek_flag        ;
+wire [1 :0]             w2_seek_flag        ;
 
 wire [47:0]             w3_check_mac        ;
 wire [3 :0]             w3_check_req_id     ;
@@ -191,7 +192,7 @@ wire                    w3_check_valid      ;
 wire [3 :0]             w3_outport          ;
 wire                    w3_result_valid     ;
 wire [3 :0]             w3_check_resp_id    ;
-wire                    w3_seek_flag        ;
+wire [1 :0]             w3_seek_flag        ;
 
 wire                    server0_axis_tx_tvalid  ;
 wire [63 :0]            server0_axis_tx_tdata   ;
@@ -235,10 +236,11 @@ rst_gen_module#(
 );
 
 localparam            P_MY_PORT0_MAC = {P_MY_TOR_MAC[47:8],8'd1};
-localparam            P_MY_PORT1_MAC = {P_MY_TOR_MAC[47:8],8'd1};
+localparam            P_MY_PORT1_MAC = {P_MY_TOR_MAC[47:8],8'd2};
+
 server_module#(
     .P_UPLINK_TRUE      (0                  ) ,
-    .P_SEED             (8'hA5              ) ,
+    .P_SEED             (P_RANDOM_SEED      ) ,
     .P_MAC_HEAD         (32'h8D_BC_5C_4A    ) ,
     .P_MY_TOR_MAC       (P_MY_TOR_MAC       ) ,
     .P_MY_PORT_MAC      (P_MY_PORT0_MAC     ) 
@@ -274,7 +276,7 @@ server_module#(
 
 server_module#(
     .P_UPLINK_TRUE      (0                  ) ,
-    .P_SEED             (8'hA5              ) ,
+    .P_SEED             (P_RANDOM_SEED      ) ,
     .P_MAC_HEAD         (32'h8D_BC_5C_4A    ) ,
     .P_MY_TOR_MAC       (P_MY_TOR_MAC       ) ,
     .P_MY_PORT_MAC      (P_MY_PORT1_MAC     ) 
@@ -313,7 +315,7 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_MY_PORT_MAC          (P_MY_PORT0_MAC),
     .P_UPLINK_TRUE          (0)
 )ten_eth_rx_downlink_port0(
     .i_clk                  (o_0_tx_clk_out         ),
@@ -347,7 +349,7 @@ ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_MY_PORT_MAC          (P_MY_PORT1_MAC ),
     .P_UPLINK_TRUE           (0)
 )ten_eth_rx_downlink_port1(
     .i_clk                  (o_1_tx_clk_out         ),
@@ -383,7 +385,7 @@ ten_eth_rx#(
     .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
     .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
     .P_UPLINK_TRUE           (1)
-)ten_eth_rx_up_port0(
+)ten_eth_rx_uplink_port0(
     .i_clk                  (o_2_tx_clk_out         ),
     .i_rst                  (o_2_user_rx_reset      ),
     .i_stat_rx_status       (o_2_stat_rx_status     ),

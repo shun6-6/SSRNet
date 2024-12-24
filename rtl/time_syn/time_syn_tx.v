@@ -96,7 +96,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_send_cnt <= 'd0;
-    else if(r_send_cnt == P_FRAME_LEN - 1)
+    else if(r_send_cnt == P_FRAME_LEN - 1 && w_tx_en)
         r_send_cnt <= 'd0;
     else if(w_tx_en)
         r_send_cnt <= r_send_cnt + 'd1;
@@ -107,7 +107,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_tx_axis_tvalid <= 'd0;
-    else if(r_send_cnt == P_FRAME_LEN - 1)
+    else if(r_send_cnt == P_FRAME_LEN - 1 && w_tx_en)
         ro_tx_axis_tvalid <= 'd0;
     else if(ri_send_ts_valid || ri_send_std_valid || ri_return_valid)//三种情况下需要拉高valid
         ro_tx_axis_tvalid <= 'd1;
@@ -137,10 +137,12 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_tx_axis_tlast <= 'd0;
-    else if(r_send_cnt == P_FRAME_LEN - 2)
+    else if(r_send_cnt == P_FRAME_LEN - 2 && w_tx_en)
+        ro_tx_axis_tlast <= 'd0;
+    else if(r_send_cnt == P_FRAME_LEN - 1 && w_tx_en)
         ro_tx_axis_tlast <= 'd1;
     else
-        ro_tx_axis_tlast <= 'd0;
+        ro_tx_axis_tlast <= ro_tx_axis_tlast;
 end
 
 // always @(posedge i_clk or posedge i_rst)begin

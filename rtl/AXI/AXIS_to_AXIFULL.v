@@ -216,7 +216,7 @@ FIFO_IND_16X32 FIFO_IND_16X32_len (
     .wr_clk         (i_axis_clk         ),  // input wire wr_clk
     .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
     .din            (r_axis_data_len + 1'b1),  // input wire [15 : 0] din
-    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+    .wr_en          (rs_axis_tlast && rs_axis_tvalid),  // input wire wr_en
     .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
     .dout           (w_fifo_len_dout    ),  // output wire [15 : 0] dout
     .full           (w_fifo_len_full    ),  // output wire full
@@ -230,7 +230,7 @@ FIFO_IND_8X32 FIFO_IND_8X32_keep (
     .wr_clk         (i_axis_clk         ),  // input wire wr_clk
     .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
     .din            (rs_axis_tkeep      ),  // input wire [7 : 0] din
-    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+    .wr_en          (rs_axis_tlast && rs_axis_tvalid),  // input wire wr_en
     .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
     .dout           (w_fifo_keep_dout   ),  // output wire [7 : 0] dout
     .full           (                   ),  // output wire full
@@ -244,7 +244,7 @@ FIFO_IND_8X32 FIFO_IND_8X32_dest (
     .wr_clk         (i_axis_clk         ),  // input wire wr_clk
     .rd_clk         (M_AXI_ACLK         ),  // input wire rd_clk
     .din            ({5'd0,rs_axis_tdest}),  // input wire [7 : 0] din
-    .wr_en          (rs_axis_tlast      ),  // input wire wr_en
+    .wr_en          (rs_axis_tlast && rs_axis_tvalid),  // input wire wr_en
     .rd_en          (r_fifo_len_rden    ),  // input wire rd_en
     .dout           (w_fifo_dest_dout   ),  // output wire [7 : 0] dout
     .full           (                   ),  // output wire full
