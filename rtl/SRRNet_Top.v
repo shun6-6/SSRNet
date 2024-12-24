@@ -315,7 +315,12 @@ wire [63:0]                 w_local_time    ;
 wire                        w_cur_slot_id   ;
 wire                        w_slot_start    ;
 
-
+wire                        tx_ctrl_axis_tready ;
+wire                        tx_ctrl_axis_tvalid ;
+wire [63:0]                 tx_ctrl_axis_tdata  ;
+wire                        tx_ctrl_axis_tlast  ;
+wire [7 :0]                 tx_ctrl_axis_tkeep  ;
+wire                        tx_ctrl_axis_tuser  ;
 //uplink send data
 wire                        uplink0_tx_axis_tvalid          ;
 wire [63:0]                 uplink0_tx_axis_tdata           ;

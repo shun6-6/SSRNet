@@ -58,8 +58,6 @@ reg  [63:0]     ri_return_ts        ;
 reg             ro_tx_axis_tvalid   ;
 reg  [63:0]     ro_tx_axis_tdata    ;
 reg             ro_tx_axis_tlast    ;
-reg  [7 :0]     ro_tx_axis_tkeep    ;
-reg             ro_tx_axis_tuser    ;
 
 reg  [15:0]     r_send_cnt          ;
 //***********************************************wire****************************************************//
@@ -137,9 +135,9 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_tx_axis_tlast <= 'd0;
-    else if(r_send_cnt == P_FRAME_LEN - 2 && w_tx_en)
-        ro_tx_axis_tlast <= 'd0;
     else if(r_send_cnt == P_FRAME_LEN - 1 && w_tx_en)
+        ro_tx_axis_tlast <= 'd0;
+    else if(r_send_cnt == P_FRAME_LEN - 2 && w_tx_en)
         ro_tx_axis_tlast <= 'd1;
     else
         ro_tx_axis_tlast <= ro_tx_axis_tlast;

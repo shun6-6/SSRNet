@@ -243,7 +243,7 @@ ocs_ctrl_trx#(
 
     .i_chnl_ready       (w_chnl_ready       ),
     .i_stat_rx_status   (o_0_stat_rx_status ),
-    .i_select_std_port  ('d0),
+    .i_select_std_port  ('d1),
     .i_new_slot_start   (w_new_slot_start   ),
     .i_slot_id          (w_slot_id          ),
 
