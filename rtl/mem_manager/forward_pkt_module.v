@@ -79,7 +79,7 @@ wire            w_forward_en            ;
 wire            w_tx_en                 ;
 /******************************assign*******************************/
 assign m_axis_tvalid = rm_axis_tvalid;
-assign m_axis_tdata  = rm_axis_tdata ;
+assign m_axis_tdata  = w_fifo_data_dout ;
 assign m_axis_tlast  = rm_axis_tlast ;
 assign m_axis_tkeep  = rm_axis_tkeep ;
 assign m_axis_tuser  = 'd0 ;

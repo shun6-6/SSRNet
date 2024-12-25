@@ -219,6 +219,8 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         ro_rd_local_byte_ready <= 'd0;
     else if(w_rd_byte_en)
+        ro_rd_local_byte_ready <= 'd0;
+    else if(i_rd_local_byte_valid)
         ro_rd_local_byte_ready <= 'd1;
     else
         ro_rd_local_byte_ready <= 'd0;

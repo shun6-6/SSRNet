@@ -421,7 +421,7 @@ always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_axis_tkeep <= 8'hFF;
     else if(r_fifo_rd_cnt == r_data_len)
-        ro_axis_tkeep <= 8'h00;
+        ro_axis_tkeep <= 8'hFF;
     else
         ro_axis_tkeep <= 8'hFF;
 end

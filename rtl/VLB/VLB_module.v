@@ -41,13 +41,13 @@ module VLB_module#(
     input                                           i_rst                       ,  
     input  [63: 0]                                  i_syn_time_stamp            ,
     input                                           i_slot_start                ,
-    input                                           i_cur_slot_id               ,
+    input  [2:0]                                    i_cur_slot_id               ,
     //带内控制协议接口
     input                                           s_uplink0_rx_axis_tvalid    ,
     input  [63 :0]                                  s_uplink0_rx_axis_tdata     ,
     input                                           s_uplink0_rx_axis_tlast     ,
     input  [7  :0]                                  s_uplink0_rx_axis_tkeep     ,
-    input                                           s_uplink0_rx_axis_tuser     ,
+    input  [1 : 0]                                  s_uplink0_rx_axis_tuser     ,
 
     output                                          m_uplink0_tx_axis_tvalid    ,
     output [63 :0]                                  m_uplink0_tx_axis_tdata     ,
@@ -60,7 +60,7 @@ module VLB_module#(
     input  [63 :0]                                  s_uplink1_rx_axis_tdata     ,
     input                                           s_uplink1_rx_axis_tlast     ,
     input  [7  :0]                                  s_uplink1_rx_axis_tkeep     ,
-    input                                           s_uplink1_rx_axis_tuser     ,
+    input  [1 : 0]                                  s_uplink1_rx_axis_tuser     ,
 
     output                                          m_uplink1_tx_axis_tvalid    ,
     output [63 :0]                                  m_uplink1_tx_axis_tdata     ,
@@ -81,7 +81,7 @@ module VLB_module#(
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_local_direct_pkt_valid  ,
     output [2 : 0]                                  o_port0_cur_direct_tor          ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_unlocal_direct_pkt_size ,
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port0_unlocal_direct_pkt_valid,
+    output                                          o_port0_unlocal_direct_pkt_valid,
     output [2 : 0]                                  o_port0_unlocal_direct_pkt_queue,
     output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port0_tx_relay                ,
     output                                          o_port0_tx_relay_valid          ,
@@ -93,9 +93,9 @@ module VLB_module#(
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_local_direct_pkt_valid  ,
     output [2 : 0]                                  o_port1_cur_direct_tor          ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_unlocal_direct_pkt_size ,
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_port1_unlocal_direct_pkt_valid,
+    output                                          o_port1_unlocal_direct_pkt_valid,
     output [2 : 0]                                  o_port1_unlocal_direct_pkt_queue,
-    output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port1_tx_relay            ,
+    output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_port1_tx_relay                ,
     output                                          o_port1_tx_relay_valid      
 
 );
@@ -132,7 +132,7 @@ reg  [2:0]ri_check_queue_resp_ready;
 reg  r_slot_start_en = 0;
 //控制器接口AXIS
 reg                             r_slot_start        ;
-reg  [P_SLOT_NUM_WIDTH - 1 : 0] r_cur_slot_id       ;
+reg  [2 : 0]                    r_cur_slot_id       ;
 
 reg  [P_TOR_NUM_WIDTH - 1 : 0]  r_even_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
 reg  [P_TOR_NUM_WIDTH - 1 : 0]  r_odd_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
@@ -188,6 +188,8 @@ assign o_port0_tx_relay_valid = w_port1_rx_relay_valid  ;
 assign o_port1_tx_relay       = w_port0_rx_relay        ;
 assign o_port1_tx_relay_valid = w_port0_rx_relay_valid  ;
 
+assign w_port0_tx_relay_valid = r_tx_relay_valid[0];
+assign w_port1_tx_relay_valid = r_tx_relay_valid[1];
 /******************************component****************************/
 VLB_port_module#(
     .C_M_AXI_ADDR_WIDTH     (C_M_AXI_ADDR_WIDTH     ),
@@ -355,7 +357,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_uplink0_rx_axis_tkeep  <= 'd0;
         rs_uplink0_rx_axis_tuser  <= 'd0;
     end
-    else if(r_recv0_cnt == 0 && s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tuser == 'd3)begin
+    else if(s_uplink0_rx_axis_tvalid && s_uplink0_rx_axis_tuser == 'd3)begin
         rs_uplink0_rx_axis_tvalid <= s_uplink0_rx_axis_tvalid;
         rs_uplink0_rx_axis_tdata  <= s_uplink0_rx_axis_tdata ;
         rs_uplink0_rx_axis_tlast  <= s_uplink0_rx_axis_tlast ;
@@ -379,7 +381,7 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_uplink1_rx_axis_tkeep  <= 'd0;
         rs_uplink1_rx_axis_tuser  <= 'd0;
     end
-    else if(r_recv1_cnt == 0 && s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tuser == 'd3)begin
+    else if(s_uplink1_rx_axis_tvalid && s_uplink1_rx_axis_tuser == 'd3)begin
         rs_uplink1_rx_axis_tvalid <= s_uplink1_rx_axis_tvalid;
         rs_uplink1_rx_axis_tdata  <= s_uplink1_rx_axis_tdata ;
         rs_uplink1_rx_axis_tlast  <= s_uplink1_rx_axis_tlast ;
@@ -423,8 +425,16 @@ genvar tor_i;
 generate
     for(tor_i = 0; tor_i < P_TOR_NUM; tor_i = tor_i + 1)begin
 
+        initial begin
+            r_tx_relay[0][tor_i] = 'd0;
+            r_tx_relay[1][tor_i] = 'd0;
+        end
+
         assign w_local_queue_size  [tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_local_queue_size  [tor_i];
         assign w_unlocal_queue_size[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_unlocal_queue_size[tor_i];
+
+        assign w_port0_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_tx_relay_reg[0][tor_i];
+        assign w_port1_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_tx_relay_reg[1][tor_i];
 
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)begin
@@ -464,10 +474,10 @@ generate
                 r_my_avail[tor_i] <= 'd0;
             else if(r_slot_start_en)
                 r_my_avail[tor_i] <= P_SLOT_MAX_BYTE_NUM - r_local_queue_size[tor_i] - r_unlocal_queue_size[tor_i];
-            else if(r_compt_relay_en[0])//updata avail after every compute relay pkt
-                r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay[0][tor_i];
-            else if(r_compt_relay_en[1])
-                r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay[1][tor_i];
+            else if(r_tx_relay_valid[0])//updata avail after every compute relay pkt
+                r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay_reg[0][tor_i];
+            else if(r_tx_relay_valid[1])
+                r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay_reg[1][tor_i];
             else
                 r_my_avail[tor_i] <= r_my_avail[tor_i];
         end
@@ -508,59 +518,171 @@ endgenerate
     所以每一个OCS只有俩个时隙，因此暂时只需要考虑后续的一个时隙即可*/
 
 //同步更新带宽余量信息
+/*  w_capacity_remain[0][0]表示对端ToR上行链路port0在OCS0当中的带宽余量，
+    w_capacity_remain[0][1]表示本地根据自己在OCS0在下一跳的直连节点信息为对端分配一次中继流量后
+    对端ToR上行链路port0在OCS0当中的带宽余量，这是因为对端的port0是与OCS0相连的，所以尽可能
+    先分配可以通过OCS0跨时隙转发的数据，然后本地需要在w_capacity_remain[0][1]不为0的开启下
+    继续为对端节点分配中继流量，此时的依据是OCS1的下一跳直连节点，因为这样子可以使得对端发送
+    的中继流量在下一时隙就被发送，分别通过por0和port1。
+    同理：w_capacity_remain[1][1]表示对端ToR上行链路port1在OCS1当中的带宽余量，w_capacity_remain[1][0]
+    表示本地根据自己在OCS1在下一跳的直连节点信息为对端分配一次中继流量后对端ToR上行链路port1在OCS1当中的带宽余量*/
 assign w_capacity_remain[0][0] = w_port0_rx_offer_capacity;
 assign w_capacity_remain[0][1] = w_port0_rx_offer_capacity - r_tx_relay[0][r_my_next_slot[0][0]];
-assign w_capacity_remain[1][0] = w_port1_rx_offer_capacity;
-assign w_capacity_remain[1][1] = w_port1_rx_offer_capacity - r_tx_relay[1][r_my_next_slot[1][0]];
+assign w_capacity_remain[1][1] = w_port1_rx_offer_capacity;
+assign w_capacity_remain[1][0] = w_port1_rx_offer_capacity - r_tx_relay[1][r_my_next_slot[1][0]];
 
-genvar ocs_i;
-generate
-    for(ocs_i = 0; ocs_i < P_OCS_NUM; ocs_i = ocs_i + 1)begin
 
-        always @(*)begin
-            if(i_rst)begin
-                r_tx_relay[0][r_my_next_slot[ocs_i][0]] <= 'd0;
-            end
-            else if(r_compt_relay_en[0])begin//port0握手成功，开始分配relay
-                if(r_rx_offer[0][r_my_next_slot[ocs_i][0]] < w_capacity_remain[0][ocs_i])
-                    if(r_rx_offer[0][r_my_next_slot[ocs_i][0]] < r_my_avail[r_my_next_slot[ocs_i][0]])
-                        r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_rx_offer[0][r_my_next_slot[ocs_i][0]];
-                    else
-                        r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
-                else
-                    if(w_capacity_remain[ocs_i][0] < r_my_avail[r_my_next_slot[ocs_i][0]])
-                        r_tx_relay[0][r_my_next_slot[ocs_i][0]] = w_capacity_remain[ocs_i][0];
-                    else
-                        r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
-            end
+always @(*)begin
+    if(r_compt_relay_en[0])begin//port0握手成功，先针对OCS0下一时隙直连节点开始分配relay
+        if(r_rx_offer[0][r_my_next_slot[0][0]] < w_capacity_remain[0][0])
+            if(r_rx_offer[0][r_my_next_slot[0][0]] < r_my_avail[r_my_next_slot[0][0]])
+                r_tx_relay[0][r_my_next_slot[0][0]] = r_rx_offer[0][r_my_next_slot[0][0]];
             else
-                r_tx_relay[0][r_my_next_slot[ocs_i][0]] <= r_tx_relay[0][r_my_next_slot[ocs_i][0]];
-        end
-        
-        always @(*)begin
-            if(i_rst)begin
-                r_tx_relay[1][r_my_next_slot[ocs_i][0]] <= 'd0;
-            end
-            else if(r_compt_relay_en[1])begin//port0握手成功，开始分配relay
-                if(r_rx_offer[1][r_my_next_slot[ocs_i][0]] < w_capacity_remain[1][ocs_i])
-                    if(r_rx_offer[1][r_my_next_slot[ocs_i][0]] < r_my_avail[r_my_next_slot[ocs_i][0]])
-                        r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_rx_offer[1][r_my_next_slot[ocs_i][0]];
-                    else
-                        r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
-                else
-                    if(w_capacity_remain[ocs_i][0] < r_my_avail[r_my_next_slot[ocs_i][0]])
-                        r_tx_relay[1][r_my_next_slot[ocs_i][0]] = w_capacity_remain[ocs_i][0];
-                    else
-                        r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
-            end
+                r_tx_relay[0][r_my_next_slot[0][0]] = r_my_avail[r_my_next_slot[0][0]];
+        else
+            if(w_capacity_remain[0][0] < r_my_avail[r_my_next_slot[0][0]])
+                r_tx_relay[0][r_my_next_slot[0][0]] = w_capacity_remain[0][0];
             else
-                r_tx_relay[1][r_my_next_slot[ocs_i][0]] <= r_tx_relay[1][r_my_next_slot[ocs_i][0]];
-        end
-
-
+                r_tx_relay[0][r_my_next_slot[0][0]] = r_my_avail[r_my_next_slot[0][0]];
     end
+    else begin
+        r_tx_relay[0][r_my_next_slot[0][0]] = 'd0;
+    end   
+end
 
-endgenerate        
+always @(*)begin
+    if(r_compt_relay_en[0])begin//port0握手成功，后针对OCS1下一时隙直连节点开始分配relay
+        if(r_rx_offer[0][r_my_next_slot[1][0]] < w_capacity_remain[0][1])
+            if(r_rx_offer[0][r_my_next_slot[1][0]] < r_my_avail[r_my_next_slot[1][0]])
+                r_tx_relay[0][r_my_next_slot[1][0]] = r_rx_offer[0][r_my_next_slot[1][0]];
+            else
+                r_tx_relay[0][r_my_next_slot[1][0]] = r_my_avail[r_my_next_slot[1][0]];
+        else
+            if(w_capacity_remain[0][1] < r_my_avail[r_my_next_slot[1][0]])
+                r_tx_relay[0][r_my_next_slot[1][0]] = w_capacity_remain[0][1];
+            else
+                r_tx_relay[0][r_my_next_slot[1][0]] = r_my_avail[r_my_next_slot[1][0]];
+    end
+    else begin
+        r_tx_relay[0][r_my_next_slot[1][0]] = 'd0;
+    end   
+end
+
+always @(*)begin
+    if(r_compt_relay_en[1])begin//port1握手成功，先针对OCS1下一时隙直连节点开始分配relay
+        if(r_rx_offer[1][r_my_next_slot[1][0]] < w_capacity_remain[1][1])
+            if(r_rx_offer[1][r_my_next_slot[1][0]] < r_my_avail[r_my_next_slot[1][0]])
+                r_tx_relay[1][r_my_next_slot[1][0]] = r_rx_offer[1][r_my_next_slot[1][0]];
+            else
+                r_tx_relay[1][r_my_next_slot[1][0]] = r_my_avail[r_my_next_slot[1][0]];
+        else
+            if(w_capacity_remain[1][1] < r_my_avail[r_my_next_slot[1][0]])
+                r_tx_relay[1][r_my_next_slot[1][0]] = w_capacity_remain[1][1];
+            else
+                r_tx_relay[1][r_my_next_slot[1][0]] = r_my_avail[r_my_next_slot[1][0]];
+    end
+    else begin
+        r_tx_relay[1][r_my_next_slot[1][0]] = 'd0;
+    end   
+end
+
+always @(*)begin
+    if(r_compt_relay_en[1])begin//port1握手成功，后针对OCS0下一时隙直连节点开始分配relay
+        if(r_rx_offer[1][r_my_next_slot[0][0]] < w_capacity_remain[1][0])
+            if(r_rx_offer[1][r_my_next_slot[0][0]] < r_my_avail[r_my_next_slot[0][0]])
+                r_tx_relay[1][r_my_next_slot[0][0]] = r_rx_offer[1][r_my_next_slot[0][0]];
+            else
+                r_tx_relay[1][r_my_next_slot[0][0]] = r_my_avail[r_my_next_slot[0][0]];
+        else
+            if(w_capacity_remain[1][0] < r_my_avail[r_my_next_slot[0][0]])
+                r_tx_relay[1][r_my_next_slot[0][0]] = w_capacity_remain[1][0];
+            else
+                r_tx_relay[1][r_my_next_slot[0][0]] = r_my_avail[r_my_next_slot[0][0]];
+    end
+    else begin
+        r_tx_relay[1][r_my_next_slot[0][0]] = 'd0;
+    end   
+end
+
+// genvar ocs_i;
+// generate
+//     for(ocs_i = 0; ocs_i < P_OCS_NUM; ocs_i = ocs_i + 1)begin
+
+//         always @(*)begin
+//             if(i_rst)begin
+//                 r_tx_relay[0][0] = 'd0;
+//                 r_tx_relay[0][1] = 'd0;
+//                 r_tx_relay[0][2] = 'd0;
+//                 r_tx_relay[0][3] = 'd0;
+//                 r_tx_relay[0][4] = 'd0;
+//                 r_tx_relay[0][5] = 'd0;
+//                 r_tx_relay[0][6] = 'd0;
+//                 r_tx_relay[0][7] = 'd0;
+//             end
+//             else if(r_compt_relay_en[0])begin//port0握手成功，开始分配relay
+//                 if(r_rx_offer[0][r_my_next_slot[ocs_i][0]] < w_capacity_remain[0][ocs_i])
+//                     if(r_rx_offer[0][r_my_next_slot[ocs_i][0]] < r_my_avail[r_my_next_slot[ocs_i][0]])
+//                         r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_rx_offer[0][r_my_next_slot[ocs_i][0]];
+//                     else
+//                         r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
+//                 else
+//                     if(w_capacity_remain[0][ocs_i] < r_my_avail[r_my_next_slot[ocs_i][0]])
+//                         r_tx_relay[0][r_my_next_slot[ocs_i][0]] = w_capacity_remain[0][ocs_i];
+//                     else
+//                         r_tx_relay[0][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
+//             end
+//             else begin
+//                 r_tx_relay[0][0] = r_tx_relay_reg[0][0];
+//                 r_tx_relay[0][1] = r_tx_relay_reg[0][1];
+//                 r_tx_relay[0][2] = r_tx_relay_reg[0][2];
+//                 r_tx_relay[0][3] = r_tx_relay_reg[0][3];
+//                 r_tx_relay[0][4] = r_tx_relay_reg[0][4];
+//                 r_tx_relay[0][5] = r_tx_relay_reg[0][5];
+//                 r_tx_relay[0][6] = r_tx_relay_reg[0][6];
+//                 r_tx_relay[0][7] = r_tx_relay_reg[0][7];
+//             end
+                
+//         end
+        
+//         always @(*)begin
+//             if(i_rst)begin
+//                 r_tx_relay[1][0] = 'd0;
+//                 r_tx_relay[1][1] = 'd0;
+//                 r_tx_relay[1][2] = 'd0;
+//                 r_tx_relay[1][3] = 'd0;
+//                 r_tx_relay[1][4] = 'd0;
+//                 r_tx_relay[1][5] = 'd0;
+//                 r_tx_relay[1][6] = 'd0;
+//                 r_tx_relay[1][7] = 'd0;
+//             end
+//             else if(r_compt_relay_en[1])begin//port1握手成功，开始分配relay
+//                 if(r_rx_offer[1][r_my_next_slot[ocs_i][0]] < w_capacity_remain[1][ocs_i])
+//                     if(r_rx_offer[1][r_my_next_slot[ocs_i][0]] < r_my_avail[r_my_next_slot[ocs_i][0]])
+//                         r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_rx_offer[1][r_my_next_slot[ocs_i][0]];
+//                     else
+//                         r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
+//                 else
+//                     if(w_capacity_remain[1][ocs_i] < r_my_avail[r_my_next_slot[ocs_i][0]])
+//                         r_tx_relay[1][r_my_next_slot[ocs_i][0]] = w_capacity_remain[1][ocs_i];
+//                     else
+//                         r_tx_relay[1][r_my_next_slot[ocs_i][0]] = r_my_avail[r_my_next_slot[ocs_i][0]];
+//             end
+//             else begin
+//                 r_tx_relay[1][0] = r_tx_relay_reg[1][0];
+//                 r_tx_relay[1][1] = r_tx_relay_reg[1][1];
+//                 r_tx_relay[1][2] = r_tx_relay_reg[1][2];
+//                 r_tx_relay[1][3] = r_tx_relay_reg[1][3];
+//                 r_tx_relay[1][4] = r_tx_relay_reg[1][4];
+//                 r_tx_relay[1][5] = r_tx_relay_reg[1][5];
+//                 r_tx_relay[1][6] = r_tx_relay_reg[1][6];
+//                 r_tx_relay[1][7] = r_tx_relay_reg[1][7];
+//         end
+//         end
+
+
+//     end
+
+// endgenerate        
 
 
 
@@ -630,11 +752,15 @@ endgenerate
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rx_offer_valid <= 2'b00;
-    else if(|r_compt_relay_en)
-        r_rx_offer_valid <= 2'b00;
-    else if(w_port0_rx_offer_valid)
+    else if(r_compt_relay_en[0])
+        r_rx_offer_valid <= {r_rx_offer_valid[1],~r_rx_offer_valid[0]};
+    else if(r_compt_relay_en[1])
+        r_rx_offer_valid <= {~r_rx_offer_valid[1],r_rx_offer_valid[0]};
+    else if(w_port0_rx_offer_valid && w_port1_rx_offer_valid)
+        r_rx_offer_valid <= 2'b11;
+    else if(w_port0_rx_offer_valid && !w_port1_rx_offer_valid)
         r_rx_offer_valid <= 2'b01;
-    else if(w_port1_rx_offer_valid)
+    else if(!w_port0_rx_offer_valid && w_port1_rx_offer_valid)
         r_rx_offer_valid <= 2'b10;
     else
         r_rx_offer_valid <= r_rx_offer_valid;
@@ -645,9 +771,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_compt_relay_ready <= 'd1;
     else if(|r_tx_relay_valid)
         r_compt_relay_ready <= 'd1;
-    else if(r_compt_relay_ready && w_port0_rx_offer_valid)
-        r_compt_relay_ready <= 'd0;
-    else if(r_compt_relay_ready && w_port1_rx_offer_valid)
+    else if(r_compt_relay_ready && |r_rx_offer_valid)
         r_compt_relay_ready <= 'd0;
     else
         r_compt_relay_ready <= r_compt_relay_ready;
@@ -663,6 +787,14 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_compt_relay_en <= 2'b00;
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_tx_relay_valid <= 2'b00;
+    else
+        r_tx_relay_valid <= r_compt_relay_en;
+end
+
 
 //控制器接口
 

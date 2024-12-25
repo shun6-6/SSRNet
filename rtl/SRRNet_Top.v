@@ -264,14 +264,14 @@ wire  [255:0]               w_unlocal_queue_size    ;
 
 //ddr read ctrl
 wire                        w_rd_unlocal_port0_flag         ;
-wire [8 - 1 : 0]            w_rd_unlocal_port0_queue        ;
+wire [3 - 1 : 0]            w_rd_unlocal_port0_queue        ;
 wire [32-1 : 0]             w_rd_unlocal_port0_byte         ;
 wire                        w_rd_unlocal_port0_byte_valid   ;
 wire                        w_rd_unlocal_port0_finish       ;
 wire                        w_rd_unlocal_port0_byte_ready   ;
 
 wire                        w_rd_unlocal_port1_flag         ;
-wire [8 - 1 : 0]            w_rd_unlocal_port1_queue        ;
+wire [3 - 1 : 0]            w_rd_unlocal_port1_queue        ;
 wire [32-1 : 0]             w_rd_unlocal_port1_byte         ;
 wire                        w_rd_unlocal_port1_byte_valid   ;
 wire                        w_rd_unlocal_port1_finish       ;
@@ -281,10 +281,10 @@ wire [32-1 : 0]             w_port0_send_local2_pkt_size    ;
 wire                        w_port0_send_local2_valid       ;
 wire [2 : 0]                w_port0_send_local2_queue       ;
 wire [32-1 : 0]             w_port0_local_direct_pkt_size   ;
-wire [32-1 : 0]             w_port0_local_direct_pkt_valid  ;
+wire                        w_port0_local_direct_pkt_valid  ;
 wire [2 : 0]                w_port0_cur_direct_tor          ;
 wire [32-1 : 0]             w_port0_unlocal_direct_pkt_size ;
-wire [32-1 : 0]             w_port0_unlocal_direct_pkt_valid;
+wire                        w_port0_unlocal_direct_pkt_valid;
 wire [2 : 0]                w_port0_unlocal_direct_pkt_queue;
 wire [255 : 0]              w_port0_tx_relay                ;
 wire                        w_port0_tx_relay_valid          ;
@@ -293,10 +293,10 @@ wire [32-1 : 0]             w_port1_send_local2_pkt_size    ;
 wire                        w_port1_send_local2_valid       ;
 wire [2 : 0]                w_port1_send_local2_queue       ;
 wire [32-1 : 0]             w_port1_local_direct_pkt_size   ;
-wire [32-1 : 0]             w_port1_local_direct_pkt_valid  ;
+wire                        w_port1_local_direct_pkt_valid  ;
 wire [2 : 0]                w_port1_cur_direct_tor          ;
 wire [32-1 : 0]             w_port1_unlocal_direct_pkt_size ;
-wire [32-1 : 0]             w_port1_unlocal_direct_pkt_valid;
+wire                        w_port1_unlocal_direct_pkt_valid;
 wire [2 : 0]                w_port1_unlocal_direct_pkt_queue;
 wire [255 : 0]              w_port1_tx_relay                ;
 wire                        w_port1_tx_relay_valid          ;
@@ -312,7 +312,7 @@ wire                        w_port1_forward_valid           ;
 
 //ctrl
 wire [63:0]                 w_local_time    ;
-wire                        w_cur_slot_id   ;
+wire [2:0]                  w_cur_slot_id   ;
 wire                        w_slot_start    ;
 
 wire                        tx_ctrl_axis_tready ;
@@ -321,18 +321,6 @@ wire [63:0]                 tx_ctrl_axis_tdata  ;
 wire                        tx_ctrl_axis_tlast  ;
 wire [7 :0]                 tx_ctrl_axis_tkeep  ;
 wire                        tx_ctrl_axis_tuser  ;
-//uplink send data
-wire                        uplink0_tx_axis_tvalid          ;
-wire [63:0]                 uplink0_tx_axis_tdata           ;
-wire                        uplink0_tx_axis_tlast           ;
-wire [7 :0]                 uplink0_tx_axis_tkeep           ;
-wire                        uplink0_tx_axis_tuser           ;
-
-wire                        uplink1_tx_axis_tvalid          ;
-wire [63:0]                 uplink1_tx_axis_tdata           ;
-wire                        uplink1_tx_axis_tlast           ;
-wire [7 :0]                 uplink1_tx_axis_tkeep           ;
-wire                        uplink1_tx_axis_tuser           ;
 
 //forward pkt
 wire                        w_port0_forward_axis_tvalid     ;
@@ -620,7 +608,7 @@ VLB_module#(
 DDR_rd_ctrl#(
     .C_M_AXI_ADDR_WIDTH	     (32             ),
     .P_WRITE_DDR_PORT_NUM    (1              ),
-    .P_DDR_LOCAL_QUEUE       (4              ),
+    .P_DDR_LOCAL_QUEUE       (3              ),
     .P_P_WRITE_DDR_PORT      (0              ),
     .P_MAX_ADDR              (32'h0008_0000  ),
     .P_LOCAL_PORT_NUM        (2              ),
@@ -749,11 +737,11 @@ eth_uplink_port eth_uplink_port_u0(
     .s_forward_axis_tuser   (w_port0_forward_axis_tuser ),
     .s_forward_axis_tready  (w_port0_forward_axis_tready),
          
-    .m_tx_axis_tvalid       (uplink0_tx_axis_tvalid ),
-    .m_tx_axis_tdata        (uplink0_tx_axis_tdata  ),
-    .m_tx_axis_tlast        (uplink0_tx_axis_tlast  ),
-    .m_tx_axis_tkeep        (uplink0_tx_axis_tkeep  ),
-    .m_tx_axis_tuser        (uplink0_tx_axis_tuser  ),
+    .m_tx_axis_tvalid       (tx2_axis_tvalid        ),
+    .m_tx_axis_tdata        (tx2_axis_tdata         ),
+    .m_tx_axis_tlast        (tx2_axis_tlast         ),
+    .m_tx_axis_tkeep        (tx2_axis_tkeep         ),
+    .m_tx_axis_tuser        (tx2_axis_tuser         ),
     .m_tx_axis_tready       (tx2_axis_tready        ) 
 );
 
@@ -784,11 +772,11 @@ eth_uplink_port eth_uplink_port_u1(
     .s_forward_axis_tuser   (w_port1_forward_axis_tuser ),
     .s_forward_axis_tready  (w_port1_forward_axis_tready),
          
-    .m_tx_axis_tvalid       (uplink1_tx_axis_tvalid ),
-    .m_tx_axis_tdata        (uplink1_tx_axis_tdata  ),
-    .m_tx_axis_tlast        (uplink1_tx_axis_tlast  ),
-    .m_tx_axis_tkeep        (uplink1_tx_axis_tkeep  ),
-    .m_tx_axis_tuser        (uplink1_tx_axis_tuser  ),
+    .m_tx_axis_tvalid       (tx3_axis_tvalid        ),
+    .m_tx_axis_tdata        (tx3_axis_tdata         ),
+    .m_tx_axis_tlast        (tx3_axis_tlast         ),
+    .m_tx_axis_tkeep        (tx3_axis_tkeep         ),
+    .m_tx_axis_tuser        (tx3_axis_tuser         ),
     .m_tx_axis_tready       (tx3_axis_tready        ) 
 );
 
@@ -830,24 +818,24 @@ crossbar#(
     .s2_axis_rx_tkeep           (m_rx2_axis_tkeep   ),
     .s2_axis_rx_tuser           (m_rx2_axis_tuser   ),
     .s2_axis_rx_tdest           (m_rx2_axis_tdest   ),
-    .m2_axis_tx_tvalid          (tx2_axis_tvalid    ),
-    .m2_axis_tx_tdata           (tx2_axis_tdata     ),
-    .m2_axis_tx_tlast           (tx2_axis_tlast     ),
-    .m2_axis_tx_tkeep           (tx2_axis_tkeep     ),
-    .m2_axis_tx_tuser           (tx2_axis_tuser     ),
-    .m2_axis_tx_tready          (tx2_axis_tready    ),    
+    .m2_axis_tx_tvalid          (),
+    .m2_axis_tx_tdata           (),
+    .m2_axis_tx_tlast           (),
+    .m2_axis_tx_tkeep           (),
+    .m2_axis_tx_tuser           (),
+    .m2_axis_tx_tready          ('d1    ),    
     .s3_axis_rx_tvalid          (m_rx3_axis_tvalid  ),
     .s3_axis_rx_tdata           (m_rx3_axis_tdata   ),
     .s3_axis_rx_tlast           (m_rx3_axis_tlast   ),
     .s3_axis_rx_tkeep           (m_rx3_axis_tkeep   ),
     .s3_axis_rx_tuser           (m_rx3_axis_tuser   ),
     .s3_axis_rx_tdest           (m_rx3_axis_tdest   ),
-    .m3_axis_tx_tvalid          (tx3_axis_tvalid    ),
-    .m3_axis_tx_tdata           (tx3_axis_tdata     ),
-    .m3_axis_tx_tlast           (tx3_axis_tlast     ),
-    .m3_axis_tx_tkeep           (tx3_axis_tkeep     ),
-    .m3_axis_tx_tuser           (tx3_axis_tuser     ),
-    .m3_axis_tx_tready          (tx3_axis_tready    )
+    .m3_axis_tx_tvalid          (),
+    .m3_axis_tx_tdata           (),
+    .m3_axis_tx_tlast           (),
+    .m3_axis_tx_tkeep           (),
+    .m3_axis_tx_tuser           (),
+    .m3_axis_tx_tready          ('d1    )
 ); 
 
 /*  DDR读写模块，进行AXIS以及AXI直接的转换以及跨时钟处理，
@@ -929,13 +917,13 @@ design_1_wrapper design_1_wrapper_u0(
     .m_axis_0_tdata                 (m_axis_0_tdata     ),
     .m_axis_0_tkeep                 (m_axis_0_tkeep     ),
     .m_axis_0_tlast                 (m_axis_0_tlast     ),
-    .m_axis_0_tready                (m_axis_0_tready    ),
+    .m_axis_0_tready                ('d1    ),
     .m_axis_0_tuser                 (m_axis_0_tuser     ),
     .m_axis_0_tvalid                (m_axis_0_tvalid    ),
     .m_axis_1_tdata                 (m_axis_1_tdata     ),
     .m_axis_1_tkeep                 (m_axis_1_tkeep     ),
     .m_axis_1_tlast                 (m_axis_1_tlast     ),
-    .m_axis_1_tready                (m_axis_1_tready    ),
+    .m_axis_1_tready                ('d1    ),
     .m_axis_1_tuser                 (m_axis_1_tuser     ),
     .m_axis_1_tvalid                (m_axis_1_tvalid    ),
     .m_axis_2_tdata                 (m_axis_2_tdata     ),
@@ -1022,7 +1010,7 @@ design_1_wrapper design_1_wrapper_u0(
 mem_manager#(
     .C_M_AXI_ADDR_WIDTH	     (32            ),
     .P_WRITE_DDR_PORT_NUM    (1             ),
-    .P_DDR_LOCAL_QUEUE       (4             ),
+    .P_DDR_LOCAL_QUEUE       (3             ),
     .P_P_WRITE_DDR_PORT      (0             ),
     .P_MAX_ADDR              (32'h003F_FFFF ),
     .P_LOCAL_PORT_NUM        (2             ),

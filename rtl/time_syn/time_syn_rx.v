@@ -33,7 +33,7 @@ module time_syn_rx#(
     output          o_recv_std_valid        ,
     output [63:0]   o_recv_return_ts        ,
     output          o_recv_return_valid     ,
-    output          o_cur_slot_id           ,
+    output [2:0]    o_cur_slot_id           ,
     output          o_syn_start             ,
     output          o_sim_start             ,
     /*----axis port----*/
@@ -69,7 +69,7 @@ reg             ro_sim_start        ;
 reg  [15 :0]                    r_recv_ctrl_cnt     ;
 reg                             r_slot_start        ;
 
-reg  [0 : 0]                    r_cur_slot_id       ;
+reg  [2 : 0]                    r_cur_slot_id       ;
 reg  [47: 0]                    r_dest_tor_mac      ;
 reg  [63: 0]                    rs_ctrl_rx_axis_tdata = 'd0;
 //***********************************************wire****************************************************//
@@ -166,7 +166,7 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_cur_slot_id <= 'd0;
     else if(s_ctrl_rx_axis_tvalid && r_recv_ctrl_cnt == 1 && s_ctrl_rx_axis_tdata[31:16] == P_SLOT_ID_TYPE)
-        r_cur_slot_id <= s_ctrl_rx_axis_tdata[1 - 1 : 0];
+        r_cur_slot_id <= s_ctrl_rx_axis_tdata[2 : 0];
     else
         r_cur_slot_id <= r_cur_slot_id;
 end

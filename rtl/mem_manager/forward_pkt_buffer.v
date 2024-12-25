@@ -61,8 +61,8 @@ module forward_pkt_buffer(
 );
 
 forward_pkt_module forward_pkt_module_u0(
-    .i_clk                  (i_clk                  ),
-    .i_rst                  (i_rst                  ),
+    .i_clk                  (i_axi0_clk             ),
+    .i_rst                  (i_axi0_rst             ),
 
     .o_forward_req          (o_port0_forward_req    ),
     .i_forward_resp         (i_port0_forward_resp   ),
@@ -83,8 +83,8 @@ forward_pkt_module forward_pkt_module_u0(
 );
 
 forward_pkt_module forward_pkt_module_u1(
-    .i_clk                  (i_clk                  ),
-    .i_rst                  (i_rst                  ),
+    .i_clk                  (i_axi1_clk             ),
+    .i_rst                  (i_axi1_rst             ),
 
     .o_forward_req          (o_port1_forward_req    ),
     .i_forward_resp         (i_port1_forward_resp   ),

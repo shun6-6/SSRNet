@@ -23,7 +23,7 @@
 module DDR_rd_ctrl#(
     parameter integer   C_M_AXI_ADDR_WIDTH	    = 32,
     parameter integer   P_WRITE_DDR_PORT_NUM    = 1 ,
-    parameter integer   P_DDR_LOCAL_QUEUE       = 4 ,
+    parameter integer   P_DDR_LOCAL_QUEUE       = 3 ,
     parameter integer   P_P_WRITE_DDR_PORT      = 0 ,
     parameter           P_MAX_ADDR              = 32'h003F_FFFF,
     parameter           P_LOCAL_PORT_NUM        = 2 ,
@@ -38,10 +38,10 @@ module DDR_rd_ctrl#(
     input                                           i_port0_send_local2_valid       ,
     input  [2 : 0]                                  i_port0_send_local2_queue       ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_local_direct_pkt_size   ,
-    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_local_direct_pkt_valid  ,
+    input                                           i_port0_local_direct_pkt_valid  ,
     input  [2 : 0]                                  i_port0_cur_direct_tor          ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_unlocal_direct_pkt_size ,
-    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_unlocal_direct_pkt_valid,
+    input                                           i_port0_unlocal_direct_pkt_valid,
     input  [2 : 0]                                  i_port0_unlocal_direct_pkt_queue,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_port0_tx_relay                ,
     input                                           i_port0_tx_relay_valid          ,
@@ -50,10 +50,10 @@ module DDR_rd_ctrl#(
     input                                           i_port1_send_local2_valid       ,
     input  [2 : 0]                                  i_port1_send_local2_queue       ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_local_direct_pkt_size   ,
-    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_local_direct_pkt_valid  ,
+    input                                           i_port1_local_direct_pkt_valid  ,
     input  [2 : 0]                                  i_port1_cur_direct_tor          ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_unlocal_direct_pkt_size ,
-    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_unlocal_direct_pkt_valid,
+    input                                           i_port1_unlocal_direct_pkt_valid,
     input  [2 : 0]                                  i_port1_unlocal_direct_pkt_queue,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_port1_tx_relay                ,
     input                                           i_port1_tx_relay_valid          ,
@@ -80,7 +80,7 @@ module DDR_rd_ctrl#(
     input                                           i_port1_forward_req         ,
     output                                          o_port1_forward_resp        ,
     input                                           i_port1_forward_finish      ,
-    output                                          o_port1_forward_valid        
+    output                                          o_port1_forward_valid
 );
 
 rd_ddr_port_ctrl#(

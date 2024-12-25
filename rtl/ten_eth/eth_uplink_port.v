@@ -62,14 +62,14 @@ module eth_uplink_port(
 
 /******************************reg**********************************/
 reg             rm_tx_axis_tvalid       ;
-reg  [63 :0]    rm_tx_axis_tdata        ;
+// reg  [63 :0]    rm_tx_axis_tdata        ;
 reg             rm_tx_axis_tlast        ;
 reg  [7  :0]    rm_tx_axis_tkeep        ;
 reg             r_fifo_len_rden         ;
 reg             r_fifo_data_rden        ;
 reg             r_fifo_len_rden_1d      ;
 reg             r_fifo_len_rden_2d      ;
-reg             r_fifo_data_rden_1d     ;
+// reg             r_fifo_data_rden_1d     ;
 reg  [15:0]     r_wr_fifo_len           ;
 reg  [15:0]     r_data_len              ;
 reg  [15:0]     r_fifo_rd_cnt           ;
@@ -83,21 +83,22 @@ wire            w_fifo_len_full         ;
 wire            w_fifo_len_empty        ;
 wire [7 :0]     w_fifo_keep_dout        ;
 wire            w_fifo_data_rden        ;
-wire            w_wr_active             ;
+wire            w_tx_en             ;
 /******************************assign*******************************/
 assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready   : 'd0  ;
 assign s_forward_axis_tready = i_forward_pkt_valid;
-assign w_wr_active      = m_tx_axis_tvalid & m_tx_axis_tready;
-assign w_fifo_data_rden = (r_fifo_data_rden && w_wr_active) || r_fifo_len_rden_2d;
+assign w_tx_en      = m_tx_axis_tvalid & m_tx_axis_tready;
+assign w_fifo_data_rden = (r_fifo_data_rden && w_tx_en) || r_fifo_len_rden_2d;
 
 assign m_tx_axis_tvalid   = i_forward_pkt_valid ? s_forward_axis_tvalid :
                             r_fifo_arbiter == 2 ? s_data_axis_tvalid : rm_tx_axis_tvalid   ;
 assign m_tx_axis_tdata    = i_forward_pkt_valid ? s_forward_axis_tdata  :
-                            r_fifo_arbiter == 2 ? s_data_axis_tdata  : rm_tx_axis_tdata    ;
+                            r_fifo_arbiter == 2 ? s_data_axis_tdata  : w_fifo_data_dout    ;
 assign m_tx_axis_tlast    = i_forward_pkt_valid ? s_forward_axis_tlast  :
                             r_fifo_arbiter == 2 ? s_data_axis_tlast  : rm_tx_axis_tlast    ;
-assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
-                            r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep    ;
+// assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
+//                             r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep;
+                            assign m_tx_axis_tkeep    = 8'hff;
 assign m_tx_axis_tuser    = i_forward_pkt_valid ? s_forward_axis_tuser  :
                             r_fifo_arbiter == 2 ? s_data_axis_tuser  : 'd0   ;
 
@@ -123,7 +124,7 @@ FIFO_IND_OOC_16X16 FIFO_IND_OOC_16X16_len (
   .din          (r_wr_fifo_len + 1'b1), // input wire [15 : 0] din
   .wr_en        (s_ctrl_axis_tvalid && s_ctrl_axis_tlast), // input wire wr_en
   .rd_en        (r_fifo_len_rden    ), // input wire rd_en
-  .dout         (), // output wire [15 : 0] dout
+  .dout         (w_fifo_len_dout    ), // output wire [15 : 0] dout
   .full         (w_fifo_len_full    ), // output wire full
   .empty        (w_fifo_len_empty   ), // output wire empty
   .wr_rst_busy  (), // output wire wr_rst_busy
@@ -164,9 +165,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_arbiter <= 'd0;
-    else if(!w_fifo_len_empty && !m_tx_axis_tvalid)
+    else if(!w_fifo_len_empty && !r_fifo_lock)
         r_fifo_arbiter <= 'd1;
-    else if(w_fifo_len_empty && !m_tx_axis_tvalid)
+    else if(w_fifo_len_empty && !r_fifo_lock)
         r_fifo_arbiter <= 'd2;
     else
         r_fifo_arbiter <= r_fifo_arbiter;
@@ -225,9 +226,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
         r_fifo_rd_cnt <= 'd0;
-    else if(w_wr_active)
+    else if(w_tx_en)
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt; 
@@ -236,7 +237,7 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
@@ -247,7 +248,7 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tvalid <= 'd0;
-    else if(rm_tx_axis_tlast && w_wr_active)
+    else if(rm_tx_axis_tlast)
         rm_tx_axis_tvalid <= 'd0;
     else if(r_fifo_data_rden)
         rm_tx_axis_tvalid <= 'd1;
@@ -258,9 +259,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en)
         rm_tx_axis_tlast <= 'd1;
     else
         rm_tx_axis_tlast <= rm_tx_axis_tlast;
@@ -269,9 +270,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en)
         rm_tx_axis_tkeep <= r_data_keep;
     else
         rm_tx_axis_tkeep <= rm_tx_axis_tkeep;

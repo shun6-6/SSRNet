@@ -248,15 +248,21 @@ always @(*)begin
                 r_nxt_m_state = P_S_WAIT_S_TS;
         end
         P_S_RETURN_TS  : begin
+            // if(r_state_m_cnt >= P_TIME_OUT)
+            //     r_nxt_m_state = P_S_WAIT_S_TS;
+            // else if(r_state_m_cnt >= P_FRAME_LEN && ((r_cmpt_std_end && !ri_select_std_port) || ri_select_std_port))//发送8拍数据
+            //     r_nxt_m_state = P_S_SEND_M_STD;
+            // else
+            //     r_nxt_m_state = P_S_RETURN_TS;
             if(r_state_m_cnt >= P_TIME_OUT)
                 r_nxt_m_state = P_S_WAIT_S_TS;
-            else if(r_state_m_cnt >= P_FRAME_LEN && ((r_cmpt_std_end && !ri_select_std_port) || ri_select_std_port))//发送8拍数据
+            else if(o_tx_axis_tvalid && o_tx_axis_tlast)//发送8拍数据
                 r_nxt_m_state = P_S_SEND_M_STD;
             else
                 r_nxt_m_state = P_S_RETURN_TS;
         end
         P_S_SEND_M_STD : begin
-            if(r_state_m_cnt == P_FRAME_LEN)
+            if(o_tx_axis_tvalid && o_tx_axis_tlast)
                 r_nxt_m_state = P_S_WAIT_S_TS;
             else
                 r_nxt_m_state = P_S_SEND_M_STD;

@@ -45,7 +45,7 @@ module VLB_port_module#(
     input                                           i_rst                       ,  
     //控制器接口                    
     input                                           i_slot_start                ,
-    input  [P_SLOT_NUM_WIDTH - 1 : 0]               i_slot_id                   ,
+    input  [2 : 0]                                  i_slot_id                   ,
     //同步时间戳                    
     input  [63 :0]                                  i_syn_time_stamp            ,
     //带内控制协议                  
@@ -75,15 +75,15 @@ module VLB_port_module#(
     output                                          o_send_my_local2_valid      ,
     output [2 : 0]                                  o_send_my_local2_queue      ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_local_direct_pkt_size     ,
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_local_direct_pkt_valid    ,
+    output                                          o_local_direct_pkt_valid    ,
     output [2 : 0]                                  o_cur_direct_tor            ,
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_unlocal_direct_pkt_size   ,
-    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_unlocal_direct_pkt_valid  ,
+    output                                          o_unlocal_direct_pkt_valid  ,
     output [2 : 0]                                  o_unlocal_direct_pkt_queue  ,
 
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_local_queue_size          ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_unlocal_queue_size        ,
-    output                                          o_rx_offer_capacity         ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_rx_offer_capacity         ,
     output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_rx_offer                  ,
     output                                          o_rx_offer_valid            ,
     output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_rx_relay                  ,
@@ -94,7 +94,7 @@ module VLB_port_module#(
 /******************************function*****************************/
 
 /******************************parameter****************************/
-localparam      P_MY_TOR_ID = P_MY_TOR_MAC[2:0];
+localparam      P_MY_TOR_ID = P_MY_TOR_MAC[10:8];
 
 localparam      P_TX_IDLE           = 'd0,
                 P_COMPT_CAPACITY    = 'd1,
@@ -120,7 +120,7 @@ reg  [2 : 0]                                    r_direct_tor            ;
 reg  [31 :0]                                    r_local_pkt_num1        ;
 reg  [31 :0]                                    r_local_pkt_num2        ;
 reg  [31 :0]                                    r_my_relay_pkt_num      ;
-reg  [P_SLOT_NUM_WIDTH - 1 : 0]                 r_cur_slot_id           ;
+reg  [2 : 0]                                    r_cur_slot_id           ;
 
 reg  [47: 0]                                    r_dest_tor_mac          ;
 reg                                             rm_tx_axis_tvalid       ;
@@ -132,7 +132,6 @@ reg  [15 :0]                                    r_tx_cnt                ;
 reg  [15 :0]                                    r_rx_cnt                ;
 reg  [15: 0]                                    r_rx_type               ;
 
-reg                             ro_send_local2_valid    ;
 //控制器接口AXIS
 reg  [2 : 0]    r_route_table [P_TOR_NUM - 1 : 0][P_SLOT_NUM - 1 : 0];
 
@@ -142,9 +141,10 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_unlocal_queue_size    [P_QUEUE_NUM - 1 : 0]   
 
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_capacity  ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_offer     [P_QUEUE_NUM - 1 : 0]   ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_relay     [P_QUEUE_NUM - 1 : 0]   ;
+// reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_relay     [P_QUEUE_NUM - 1 : 0]   ;
 
 reg  [1 :0]                        r_updata_capacity   ;
+reg                                 r_updata_finish   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_tx_relay     [P_QUEUE_NUM - 1 : 0]   ;
 
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_rx_capacity   ;
@@ -160,8 +160,8 @@ reg     r_rx_offer_valid       ;
 reg     r_rx_relay_valid       ;
 
 reg  [2 : 0]                    ro_send_my_local2_queue     ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_size     ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_valid    ;
+// reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_size     ;
+// reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_valid    ;
 /******************************wire*********************************/
 wire            w_tx_en;
 wire            w_recv_capacity_flag    ;
@@ -182,10 +182,10 @@ assign o_rx_relay_valid = r_rx_relay_valid;
 assign o_my_rx_capacity = r_my_rx_capacity;
 assign o_my_capacity = r_my_capacity;
 assign o_my_rx_capacity_valid = r_rx_cur_state == P_RX_CAPACITY && s_rx_axis_tvalid && r_rx_cnt == 'd3;
-assign o_my_capacity_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd3;
+assign o_my_capacity_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd5;
 assign o_send_my_local2_queue  = ro_send_my_local2_queue ;
 assign o_send_my_local2_pkt_size = r_local_pkt_num2 ;
-assign o_send_my_local2_valid    = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd4  ;
+assign o_send_my_local2_valid    = r_updata_finish;//更新结束才可以发送俩跳数据
 assign o_local_direct_pkt_size    = r_local_pkt_num1;
 assign o_local_direct_pkt_valid   = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd3;
 assign o_cur_direct_tor           = r_direct_tor;
@@ -357,16 +357,16 @@ always @(*)begin
                 r_tx_nxt_state = P_TX_CAPACITY;
         end
         P_COMPT_OFFER : begin
-            if(r_updata_capacity)
+            if(r_updata_capacity == 'd2)
                 r_tx_nxt_state = P_TX_OFFER;
             else
                 r_tx_nxt_state = P_COMPT_OFFER;
         end
         P_TX_OFFER      : begin
             if(w_tx_en && rm_tx_axis_tlast)
-                r_tx_nxt_state = P_TX_RELAY;
-            else
                 r_tx_nxt_state = P_COMPT_RELAY;
+            else
+                r_tx_nxt_state = P_TX_OFFER;
         end 
         P_COMPT_RELAY   : begin
             if(i_tx_relay_valid)
@@ -472,7 +472,8 @@ always @(posedge i_clk)begin
     else
         ri_twin_own_capacity <= ri_twin_own_capacity;
 end
-
+//更新本地带宽余量需要俩个信息，本地端口收到的对端capacity包里面的俩跳流量信息，
+//双胞胎端口收到的对端ToR的端口带宽余量信息
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_updata_capacity <= 'd0;
@@ -488,6 +489,15 @@ always @(posedge i_clk or posedge i_rst)begin
         r_updata_capacity <= r_updata_capacity;
 end
 
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_updata_finish <= 'd0;
+    else if(r_updata_capacity == 'd2)
+        r_updata_finish <= 'd1;
+    else
+        r_updata_finish <= 'd0;
+end
+
 //接收到对端offer包后开始请求进行relay计算，因为俩个上行端口共用一个缓存区，所以需要申请对于缓存区的分配权
 
 
@@ -496,8 +506,8 @@ always @(posedge i_clk or posedge i_rst)begin
         rm_tx_axis_tdata <= 'd0;
     else if(r_tx_cur_state == P_TX_CAPACITY)//capacity pkt include capacity and loca2
         case (r_tx_cnt)
-            0         : rm_tx_axis_tdata <= {P_MY_TOR_MAC,r_dest_tor_mac[47:32]};
-            1         : rm_tx_axis_tdata <= {r_dest_tor_mac[31:0],P_CAPACITY_PKT_TYPE,16'd0};
+            0         : rm_tx_axis_tdata <= {r_dest_tor_mac,P_MY_TOR_MAC[47:32]};
+            1         : rm_tx_axis_tdata <= {P_MY_TOR_MAC[31:0],P_CAPACITY_PKT_TYPE,16'd0};
             2         : rm_tx_axis_tdata <= {ri_twin_own_capacity,r_local_pkt_num2};
             3,4,5,6,7 : rm_tx_axis_tdata <= i_syn_time_stamp;
             8         : rm_tx_axis_tdata <= 'd0;
@@ -505,8 +515,8 @@ always @(posedge i_clk or posedge i_rst)begin
         endcase       
     else if(r_tx_cur_state == P_TX_OFFER)
         case (r_tx_cnt)
-            0         : rm_tx_axis_tdata <= {P_MY_TOR_MAC,r_dest_tor_mac[47:32]};
-            1         : rm_tx_axis_tdata <= {r_dest_tor_mac[31:0],P_OFFER_PKT_TYPE,16'd0};
+            0         : rm_tx_axis_tdata <= {r_dest_tor_mac,P_MY_TOR_MAC[47:32]};
+            1         : rm_tx_axis_tdata <= {P_MY_TOR_MAC[31:0],P_OFFER_PKT_TYPE,16'd0};
             2         : rm_tx_axis_tdata <= {r_my_capacity,32'd0};
             3         : rm_tx_axis_tdata <= {r_my_offer[7],r_my_offer[6]};
             4         : rm_tx_axis_tdata <= {r_my_offer[5],r_my_offer[4]};
@@ -518,8 +528,8 @@ always @(posedge i_clk or posedge i_rst)begin
         endcase  
     else if(r_tx_cur_state == P_TX_RELAY)
         case (r_tx_cnt)
-            0         : rm_tx_axis_tdata <= {P_MY_TOR_MAC,r_dest_tor_mac[47:32]};
-            1         : rm_tx_axis_tdata <= {r_dest_tor_mac[31:0],P_OFFER_PKT_TYPE,16'd0};
+            0         : rm_tx_axis_tdata <= {r_dest_tor_mac,P_MY_TOR_MAC[47:32]};
+            1         : rm_tx_axis_tdata <= {P_MY_TOR_MAC[31:0],P_RELAY_PKT_TYPE,16'd0};
             2         : rm_tx_axis_tdata <= {r_tx_relay[7],r_tx_relay[6]};
             3         : rm_tx_axis_tdata <= {r_tx_relay[5],r_tx_relay[4]};
             4         : rm_tx_axis_tdata <= {r_tx_relay[3],r_tx_relay[2]};
@@ -554,6 +564,8 @@ always @(posedge i_clk or posedge i_rst)begin
     else if(r_tx_cur_state == P_TX_CAPACITY && r_tx_state_cnt == 'd0)
         rm_tx_axis_tvalid <= 'd1;
     else if(r_tx_cur_state == P_TX_OFFER && r_tx_state_cnt == 'd0)
+        rm_tx_axis_tvalid <= 'd1;
+    else if(r_tx_cur_state == P_TX_RELAY && r_tx_state_cnt == 'd0)
         rm_tx_axis_tvalid <= 'd1;
     else 
         rm_tx_axis_tvalid <= rm_tx_axis_tvalid;

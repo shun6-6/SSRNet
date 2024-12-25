@@ -268,13 +268,13 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_seek_flag <= 'd0;
     else if(ri_check_valid && ri_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ri_check_mac[7:0] != 0)
         ro_seek_flag <= 'd1;//crossbar转发
-    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC && !P_UPLINK_TRUE)
-        ro_seek_flag <= 'd0;//非本地数据
-    else if(ri_check_valid && ri_check_mac[47:8] == P_MY_TOR_MAC && ri_check_mac[7:0] == 0 && P_UPLINK_TRUE)
+    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC[47:8] && !P_UPLINK_TRUE)
+        ro_seek_flag <= 'd0;//下行链路接收的非本地数据
+    else if(ri_check_valid && ri_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ri_check_mac[7:0] == 0 && P_UPLINK_TRUE)
         ro_seek_flag <= 'd3;//VLB PKT
-    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC && ri_check_mac[15:8] != {5'd0,i_cur_connect_tor} && P_UPLINK_TRUE)
-        ro_seek_flag <= 'd0;//非本地数据
-    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC && ri_check_mac[15:8] == {5'd0,i_cur_connect_tor} && P_UPLINK_TRUE)
+    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC[47:8] && ri_check_mac[15:8] != {5'd0,i_cur_connect_tor} && P_UPLINK_TRUE)
+        ro_seek_flag <= 'd0;//上行链路接收的非本地数据
+    else if(ri_check_valid && ri_check_mac[47:8] != P_MY_TOR_MAC[47:8] && ri_check_mac[15:8] == {5'd0,i_cur_connect_tor} && P_UPLINK_TRUE)
         ro_seek_flag <= 'd2;//待转发的俩跳流量
     else
         ro_seek_flag <= ro_seek_flag;

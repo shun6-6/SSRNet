@@ -23,7 +23,7 @@
 module mem_manager#(
     parameter integer   C_M_AXI_ADDR_WIDTH	    = 32,
     parameter integer   P_WRITE_DDR_PORT_NUM    = 1 ,
-    parameter integer   P_DDR_LOCAL_QUEUE       = 4 ,
+    parameter integer   P_DDR_LOCAL_QUEUE       = 3 ,
     parameter integer   P_P_WRITE_DDR_PORT      = 0 ,
     parameter           P_MAX_ADDR              = 32'h003F_FFFF,
     parameter           P_LOCAL_PORT_NUM        = 2 ,

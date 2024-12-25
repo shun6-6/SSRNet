@@ -31,7 +31,7 @@ module Time_syn_module#(
     //input           i_time_syn_start    ,
     input           i_select_std_port   ,//选取该节点作为标准时间节点
     output [63:0]   o_local_time        ,
-    output          o_cur_slot_id       ,
+    output [2:0]    o_cur_slot_id       ,
     output          o_slot_start        ,
     output          o_sim_start         ,
     /*----axis port----*/
