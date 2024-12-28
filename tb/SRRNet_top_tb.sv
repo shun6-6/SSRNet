@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`timescale 1ps/1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -26,16 +26,16 @@ reg sys_clk,gt_clk;
 
 always begin
     gt_clk = 0;
-    #1.6;
+    #1600;
     gt_clk = 1;
-    #1.6;
+    #1600;
 end
 
 always begin
     sys_clk = 0;
-    #5;
+    #5000;
     sys_clk = 1;
-    #5;
+    #5000;
 end
 
 wire [7:0]  w_tor_ctrl_txp  ;
@@ -59,14 +59,14 @@ wire        w_slot_id       ;
 状态稳定后，第一个时隙开始，下发一个仿真开始指令给所有ToR，
 所有ToR下行连接的server开始产生数据，等待一个完整的时隙后，开始切换
 ocs状态，等待切换时延结束后，下发一次时间同步，标志一次全新的时隙开始
-时隙一次最多传输16KByte数据，所需时间2048 x 6.4 = 13us
-仿真暂定配置时延1.5微妙（234 clk），时隙持续15（2343 clk）微妙，具体修改需要控制VLB模块的
+时隙一次最多传输8KByte数据，所需时间1024 x 6.4 = 13us
+仿真暂定配置时延0.8微妙（234 clk），时隙持续8（1200 clk）微妙，具体修改需要控制VLB模块的
 P_SLOT_MAX_BYTE_NUM参数
 */
 
-localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_4000;//16KBytes
-localparam  P_CONFIG_DELAY      = 32'h0000_00EA;
-localparam  P_SLOT_LEN          = 32'h0000_0927;
+localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes
+localparam  P_CONFIG_DELAY      = 32'h0000_007D;
+localparam  P_SLOT_LEN          = 32'h0000_04E2;
 
 OCS_controller#(
     .P_CHANNEL_NUM      (8              ),

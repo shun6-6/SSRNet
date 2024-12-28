@@ -96,9 +96,9 @@ assign m_tx_axis_tdata    = i_forward_pkt_valid ? s_forward_axis_tdata  :
                             r_fifo_arbiter == 2 ? s_data_axis_tdata  : w_fifo_data_dout    ;
 assign m_tx_axis_tlast    = i_forward_pkt_valid ? s_forward_axis_tlast  :
                             r_fifo_arbiter == 2 ? s_data_axis_tlast  : rm_tx_axis_tlast    ;
-// assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
-//                             r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep;
-                            assign m_tx_axis_tkeep    = 8'hff;
+assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
+                            r_fifo_arbiter == 2 ? s_data_axis_tkeep  : rm_tx_axis_tkeep;
+
 assign m_tx_axis_tuser    = i_forward_pkt_valid ? s_forward_axis_tuser  :
                             r_fifo_arbiter == 2 ? s_data_axis_tuser  : 'd0   ;
 
@@ -226,9 +226,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         r_fifo_rd_cnt <= 'd0;
-    else if(w_tx_en)
+    else if(w_tx_en && r_fifo_arbiter == 1)
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt; 
@@ -237,7 +237,7 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
@@ -259,9 +259,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tlast <= 'd1;
     else
         rm_tx_axis_tlast <= rm_tx_axis_tlast;
@@ -270,9 +270,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en)
+    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tkeep <= r_data_keep;
     else
         rm_tx_axis_tkeep <= rm_tx_axis_tkeep;

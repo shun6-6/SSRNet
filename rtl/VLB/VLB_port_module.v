@@ -80,6 +80,8 @@ module VLB_port_module#(
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_unlocal_direct_pkt_size   ,
     output                                          o_unlocal_direct_pkt_valid  ,
     output [2 : 0]                                  o_unlocal_direct_pkt_queue  ,
+    output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_recv_local2_pkt_size      ,
+    output                                          o_recv_local2_pkt_valid     ,
 
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_local_queue_size          ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_unlocal_queue_size        ,
@@ -192,6 +194,8 @@ assign o_cur_direct_tor           = r_direct_tor;
 assign o_unlocal_direct_pkt_size  = r_my_relay_pkt_num;
 assign o_unlocal_direct_pkt_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_state_cnt == 'd2;
 assign o_unlocal_direct_pkt_queue = r_direct_tor;
+assign o_recv_local2_pkt_size = r_rx_local2;
+assign o_recv_local2_pkt_valid = r_updata_finish;
 /******************************component****************************/
 
 /******************************always*******************************/
@@ -672,11 +676,26 @@ always @(posedge i_clk or posedge i_rst)begin
         r_rx_offer_capacity <= r_rx_offer_capacity;
 end
 
+//计算可以通过本地帮对端转发的俩跳流量
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rx_local2 <= 'd0;
     else if(r_rx_cur_state == P_RX_CAPACITY && s_rx_axis_tvalid && r_rx_cnt == 2)
         r_rx_local2 <= s_rx_axis_tdata[31:0];
+    else if(r_updata_capacity == 'd2)begin
+        if(ri_twin_rx_capacity >= r_local_pkt_num2)begin
+            if(r_rx_local2 < r_my_capacity)
+                r_rx_local2 <= r_rx_local2;
+            else
+                r_rx_local2 <= r_my_capacity;
+        end
+        else begin
+            if(r_rx_local2 < (r_my_capacity + (r_local_pkt_num2 - ri_twin_rx_capacity)))
+                r_rx_local2 <= r_rx_local2;
+            else
+                r_rx_local2 <= r_my_capacity + (r_local_pkt_num2 - ri_twin_rx_capacity);
+        end
+    end
     else
         r_rx_local2 <= r_rx_local2;
 end

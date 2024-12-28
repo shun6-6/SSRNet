@@ -43,6 +43,8 @@ module DDR_rd_ctrl#(
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_unlocal_direct_pkt_size ,
     input                                           i_port0_unlocal_direct_pkt_valid,
     input  [2 : 0]                                  i_port0_unlocal_direct_pkt_queue,
+    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port0_recv_local2_pkt_size    ,
+    input                                           i_port0_recv_local2_pkt_valid   ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_port0_tx_relay                ,
     input                                           i_port0_tx_relay_valid          ,
     //uplink port1 send data
@@ -55,6 +57,8 @@ module DDR_rd_ctrl#(
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_unlocal_direct_pkt_size ,
     input                                           i_port1_unlocal_direct_pkt_valid,
     input  [2 : 0]                                  i_port1_unlocal_direct_pkt_queue,
+    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_port1_recv_local2_pkt_size    ,
+    input                                           i_port1_recv_local2_pkt_valid   ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_port1_tx_relay                ,
     input                                           i_port1_tx_relay_valid          ,
 
@@ -105,6 +109,8 @@ rd_ddr_port_ctrl#(
     .i_unlocal_direct_pkt_size      (i_port0_unlocal_direct_pkt_size ),
     .i_unlocal_direct_pkt_valid     (i_port0_unlocal_direct_pkt_valid),
     .i_unlocal_direct_pkt_queue     (i_port0_unlocal_direct_pkt_queue),
+    .i_recv_local2_pkt_size         (i_port0_recv_local2_pkt_size    ),
+    .i_recv_local2_pkt_valid        (i_port0_recv_local2_pkt_valid   ),
     .i_tx_relay                     (i_port0_tx_relay                ),
     .i_tx_relay_valid               (i_port0_tx_relay_valid          ),
 
@@ -143,6 +149,8 @@ rd_ddr_port_ctrl#(
     .i_unlocal_direct_pkt_size      (i_port1_unlocal_direct_pkt_size ),
     .i_unlocal_direct_pkt_valid     (i_port1_unlocal_direct_pkt_valid),
     .i_unlocal_direct_pkt_queue     (i_port1_unlocal_direct_pkt_queue),
+    .i_recv_local2_pkt_size         (i_port1_recv_local2_pkt_size    ),
+    .i_recv_local2_pkt_valid        (i_port1_recv_local2_pkt_valid   ),
     .i_tx_relay                     (i_port1_tx_relay                ),
     .i_tx_relay_valid               (i_port1_tx_relay_valid          ),
 

@@ -74,6 +74,7 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     r_wr_max_addr       ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     r_rd_comp_byte      ;
 reg                                 r_rd_ddr_complete   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ro_queue_size       ;
+reg  [2:0]                          ri_rd_local_byte_valid;
 /******************************wire*********************************/
 wire                                w_wr_en             ;
 wire                                w_rd_en             ;
@@ -142,6 +143,13 @@ FIFO_8X4096 FIFO_8X4096_strb (
   .rd_rst_busy  (                   )  // output wire rd_rst_busy
 );
 /******************************always*******************************/
+// always @(posedge i_clk or posedge i_rst)begin
+//     if(i_rst)
+//         ri_rd_local_byte_valid <= 'd0;
+//     else
+//         ri_rd_local_byte_valid <= {ri_rd_local_byte_valid[1],ri_rd_local_byte_valid[0],i_rd_local_byte_valid};
+// end
+
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ri_wr_ddr_valid  <= 'd0;

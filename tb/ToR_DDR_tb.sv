@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
 // Engineer: 
@@ -89,9 +89,9 @@ module ToR_DDR_tb#(
     //   $shm_probe("ACMTF");
     //end
   
-    reg                  sys_clk_i;
+     reg                  sys_clk_i;
+    // reg                   axis_clk;
     reg                  sys_rst;
-    reg axis_clk;
     wire                 c0_sys_clk_p;
     wire                 c0_sys_clk_n;
   
@@ -154,10 +154,10 @@ module ToR_DDR_tb#(
       sys_clk_i = #(10000/2.0) ~sys_clk_i;
   
   
-    initial
-      axis_clk = 1'b0;
-    always
-      axis_clk = #(6400/2.0) ~axis_clk;
+    // initial
+    //   axis_clk = 1'b0;
+    // always
+    //   axis_clk = #(6400/2.0) ~axis_clk;
   
     assign c0_sys_clk_p = sys_clk_i;
     assign c0_sys_clk_n = ~sys_clk_i;
@@ -190,21 +190,6 @@ module ToR_DDR_tb#(
     //                         FPGA Memory Controller instantiation
     //===========================================================================
   
-  // reg [39:0] r_st_monitor;
-  
-  // localparam      P_ST_IDLE   = 0 ,
-  //                 P_ST_WRITE  = 1 ,
-  //                 P_ST_READ   = 2 ;    
-  
-  // always@(*)begin
-  //   case(design_1_wrapper_u0.AXI_FULL_Master_modu_0.design_1_AXI_FULL_Master_modu_0_0.inst.r_cur_state)
-  //     P_ST_IDLE  : r_st_monitor = "IDLE ";
-  //     P_ST_WRITE : r_st_monitor = "WRITE";
-  //     P_ST_READ  : r_st_monitor = "READ ";
-  //     default : r_st_monitor = "IDLE ";
-  //   endcase
-  // end
-  
   
   reg clk_in1;
   
@@ -230,13 +215,6 @@ module ToR_DDR_tb#(
     .i_gt_rxp               (i_gt_rxp           ),
     .i_gt_rxn               (i_gt_rxn           ),
     .o_sfp_dis              (o_sfp_dis          ),
-    // .i_ctrl_gt_refclk_p     (i_ctrl_gt_refclk_p ),
-    // .i_ctrl_gt_refclk_n     (i_ctrl_gt_refclk_n ),
-    // .o_ctrl_gt_txp          (o_ctrl_gt_txp      ),
-    // .o_ctrl_gt_txn          (o_ctrl_gt_txn      ),
-    // .i_ctrl_gt_rxp          (i_ctrl_gt_rxp      ),
-    // .i_ctrl_gt_rxn          (i_ctrl_gt_rxn      ),
-    // .o_ctrl_sfp_dis         (o_ctrl_sfp_dis     ),
 
     .sys_rst                (sys_rst            ),
     .C0_DDR4_0_act_n        (c0_ddr4_act_n      ),

@@ -113,7 +113,7 @@ reg  [C_M_AXI_ARUSER_WIDTH-1 : 0]   rM_AXI_ARUSER       ;
 reg                                 rM_AXI_ARVALID      ;
 reg                                 rM_AXI_RREADY       ;
 reg                                 rm_axis_tvalid      ;
-reg  [63 :0]                        rm_axis_tdata       ;
+
 reg                                 rm_axis_tlast       ;
 reg  [7  :0]                        rm_axis_tkeep       ;
 reg                                 rm_axis_tuser       ;
@@ -169,7 +169,7 @@ assign o_rd_ddr_ready = ro_rd_ddr_ready ;
 assign w_fifo_data_rden = (r_fifo_data_rden && m_axis_tready) || r_fifo_len_rden_2d;
 /******************************component****************************/
 FIFO_IND_64X4096 FIFO_IND_64X4096_data (
-    .rst            (w_axi_rst          ), // input wire rst
+    .rst            (i_axis_rst          ), // input wire rst
     .wr_clk         (M_AXI_ACLK         ), // input wire wr_clk
     .rd_clk         (i_axis_clk         ), // input wire rd_clk
     .din            (M_AXI_RDATA        ), // input wire [63 : 0] din
@@ -183,7 +183,7 @@ FIFO_IND_64X4096 FIFO_IND_64X4096_data (
 );
 
 FIFO_IND_16X16 FIFO_IND_16X16_len (
-    .rst            (w_axi_rst          ),  // input wire rst
+    .rst            (i_axis_rst          ),  // input wire rst
     .wr_clk         (M_AXI_ACLK         ),  // input wire wr_clk
     .rd_clk         (i_axis_clk         ),  // input wire rd_clk
     .din            (ri_rd_ddr_len      ),  // input wire [15 : 0] din
@@ -197,7 +197,7 @@ FIFO_IND_16X16 FIFO_IND_16X16_len (
 );
 
 FIFO_IND_8X32 FIFO_IND_8X32_keep (
-    .rst            (w_axi_rst          ),  // input wire rst
+    .rst            (i_axis_rst          ),  // input wire rst
     .wr_clk         (M_AXI_ACLK         ),  // input wire wr_clk
     .rd_clk         (i_axis_clk         ),  // input wire rd_clk
     .din            (ri_rd_ddr_strb     ),  // input wire [7 : 0] din

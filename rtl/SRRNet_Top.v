@@ -286,6 +286,8 @@ wire [2 : 0]                w_port0_cur_direct_tor          ;
 wire [32-1 : 0]             w_port0_unlocal_direct_pkt_size ;
 wire                        w_port0_unlocal_direct_pkt_valid;
 wire [2 : 0]                w_port0_unlocal_direct_pkt_queue;
+wire [32-1 : 0]             w_port0_recv_local2_pkt_size    ;
+wire                        w_port0_recv_local2_pkt_valid   ;
 wire [255 : 0]              w_port0_tx_relay                ;
 wire                        w_port0_tx_relay_valid          ;
 
@@ -298,6 +300,8 @@ wire [2 : 0]                w_port1_cur_direct_tor          ;
 wire [32-1 : 0]             w_port1_unlocal_direct_pkt_size ;
 wire                        w_port1_unlocal_direct_pkt_valid;
 wire [2 : 0]                w_port1_unlocal_direct_pkt_queue;
+wire [32-1 : 0]             w_port1_recv_local2_pkt_size    ;
+wire                        w_port1_recv_local2_pkt_valid   ;
 wire [255 : 0]              w_port1_tx_relay                ;
 wire                        w_port1_tx_relay_valid          ;
 
@@ -584,6 +588,8 @@ VLB_module#(
     .o_port0_unlocal_direct_pkt_size    (w_port0_unlocal_direct_pkt_size ),
     .o_port0_unlocal_direct_pkt_valid   (w_port0_unlocal_direct_pkt_valid),
     .o_port0_unlocal_direct_pkt_queue   (w_port0_unlocal_direct_pkt_queue),
+    .o_port0_recv_local2_pkt_size       (w_port0_recv_local2_pkt_size    ),
+    .o_port0_recv_local2_pkt_valid      (w_port0_recv_local2_pkt_valid   ),
     .o_port0_tx_relay                   (w_port0_tx_relay                ),
     .o_port0_tx_relay_valid             (w_port0_tx_relay_valid          ),
 
@@ -596,6 +602,8 @@ VLB_module#(
     .o_port1_unlocal_direct_pkt_size    (w_port1_unlocal_direct_pkt_size ),
     .o_port1_unlocal_direct_pkt_valid   (w_port1_unlocal_direct_pkt_valid),
     .o_port1_unlocal_direct_pkt_queue   (w_port1_unlocal_direct_pkt_queue),
+    .o_port1_recv_local2_pkt_size       (w_port1_recv_local2_pkt_size    ),
+    .o_port1_recv_local2_pkt_valid      (w_port1_recv_local2_pkt_valid   ),
     .o_port1_tx_relay                   (w_port1_tx_relay                ),
     .o_port1_tx_relay_valid             (w_port1_tx_relay_valid          )
 );
@@ -627,6 +635,8 @@ DDR_rd_ctrl#(
     .i_port0_unlocal_direct_pkt_size        (w_port0_unlocal_direct_pkt_size ),
     .i_port0_unlocal_direct_pkt_valid       (w_port0_unlocal_direct_pkt_valid),
     .i_port0_unlocal_direct_pkt_queue       (w_port0_unlocal_direct_pkt_queue),
+    .i_port0_recv_local2_pkt_size           (w_port0_recv_local2_pkt_size    ),
+    .i_port0_recv_local2_pkt_valid          (w_port0_recv_local2_pkt_valid   ),
     .i_port0_tx_relay                       (w_port0_tx_relay                ),
     .i_port0_tx_relay_valid                 (w_port0_tx_relay_valid          ),
 
@@ -639,6 +649,8 @@ DDR_rd_ctrl#(
     .i_port1_unlocal_direct_pkt_size        (w_port1_unlocal_direct_pkt_size ),
     .i_port1_unlocal_direct_pkt_valid       (w_port1_unlocal_direct_pkt_valid),
     .i_port1_unlocal_direct_pkt_queue       (w_port1_unlocal_direct_pkt_queue),
+    .i_port1_recv_local2_pkt_size           (w_port1_recv_local2_pkt_size    ),
+    .i_port1_recv_local2_pkt_valid          (w_port1_recv_local2_pkt_valid   ),
     .i_port1_tx_relay                       (w_port1_tx_relay                ),
     .i_port1_tx_relay_valid                 (w_port1_tx_relay_valid          ),
 
@@ -842,20 +854,20 @@ crossbar#(
     相当于一个DMA，用户只需要发送读写描述符（数据地址、大小等）
     即可完成DDR的读写过程*/
 design_1_wrapper design_1_wrapper_u0(
-    .C0_DDR4_0_act_n                (c0_ddr4_act_n			),           
-    .C0_DDR4_0_adr                  (c0_ddr4_adr			),
-    .C0_DDR4_0_ba                   (c0_ddr4_ba				),
-    .C0_DDR4_0_bg                   (c0_ddr4_bg				),
-    .C0_DDR4_0_ck_c                 (c0_ddr4_ck_c_int       ),
-    .C0_DDR4_0_ck_t                 (c0_ddr4_ck_t_int       ),
-    .C0_DDR4_0_cke                  (c0_ddr4_cke			),
-    .C0_DDR4_0_cs_n                 (c0_ddr4_cs_n			),
-    .C0_DDR4_0_dm_n                 (c0_ddr4_dm_dbi_n       ),
-    .C0_DDR4_0_dq                   (c0_ddr4_dq				),
-    .C0_DDR4_0_dqs_c                (c0_ddr4_dqs_c			),
-    .C0_DDR4_0_dqs_t                (c0_ddr4_dqs_t			),
-    .C0_DDR4_0_odt                  (c0_ddr4_odt			),
-    .C0_DDR4_0_reset_n              (c0_ddr4_reset_n	    ),
+    .C0_DDR4_0_act_n                (C0_DDR4_0_act_n    ),           
+    .C0_DDR4_0_adr                  (C0_DDR4_0_adr      ),
+    .C0_DDR4_0_ba                   (C0_DDR4_0_ba       ),
+    .C0_DDR4_0_bg                   (C0_DDR4_0_bg       ),
+    .C0_DDR4_0_ck_c                 (C0_DDR4_0_ck_c     ),
+    .C0_DDR4_0_ck_t                 (C0_DDR4_0_ck_t     ),
+    .C0_DDR4_0_cke                  (C0_DDR4_0_cke      ),
+    .C0_DDR4_0_cs_n                 (C0_DDR4_0_cs_n     ),
+    .C0_DDR4_0_dm_n                 (C0_DDR4_0_dm_n     ),
+    .C0_DDR4_0_dq                   (C0_DDR4_0_dq       ),
+    .C0_DDR4_0_dqs_c                (C0_DDR4_0_dqs_c    ),
+    .C0_DDR4_0_dqs_t                (C0_DDR4_0_dqs_t    ),
+    .C0_DDR4_0_odt                  (C0_DDR4_0_odt      ),
+    .C0_DDR4_0_reset_n              (C0_DDR4_0_reset_n  ),
     .C0_DDR4_S_AXI_CTRL_0_araddr    (32'd0  ),
     .C0_DDR4_S_AXI_CTRL_0_arready   (       ),
     .C0_DDR4_S_AXI_CTRL_0_arvalid   (1'd0   ),
@@ -878,28 +890,28 @@ design_1_wrapper design_1_wrapper_u0(
     .c0_ddr4_ui_clk_sync_rst_0      (ddr4_ui_rst),
     .c0_init_calib_complete_0       (c0_init_calib_complete_0),
     .i_axis_clk_0                   (w_2_tx_clk_out     ),
-    .i_axis_rst_0                   (w_2_user_tx_reset  ),
+    .i_axis_rst_0                   (w_2_user_rx_reset  ),
     .i_axis_clk_1                   (w_2_tx_clk_out     ),
-    .i_axis_rst_1                   (w_2_user_tx_reset  ),
+    .i_axis_rst_1                   (w_2_user_rx_reset  ),
     .i_axis_clk_2                   (w_2_tx_clk_out     ),
-    .i_axis_rst_2                   (w_2_user_tx_reset  ),
+    .i_axis_rst_2                   (w_2_user_rx_reset  ),
     .i_axis_clk_3                   (w_2_tx_clk_out     ),
-    .i_axis_rst_3                   (w_2_user_tx_reset  ),
+    .i_axis_rst_3                   (w_2_user_rx_reset  ),
      
-    .i_rd_ddr_addr_0                (w_rd_ddr_addr_0     ),
-    .i_rd_ddr_addr_1                (w_rd_ddr_addr_1     ),
+    .i_rd_ddr_addr_0                ('d0     ),
+    .i_rd_ddr_addr_1                ('d0      ),
     .i_rd_ddr_addr_2                (w_rd_ddr_addr_2     ),
     .i_rd_ddr_addr_3                (w_rd_ddr_addr_3     ),
-    .i_rd_ddr_len_0                 (w_rd_ddr_len_0      ),
-    .i_rd_ddr_len_1                 (w_rd_ddr_len_1      ),
+    .i_rd_ddr_len_0                 ('d0       ),
+    .i_rd_ddr_len_1                 ('d0       ),
     .i_rd_ddr_len_2                 (w_rd_ddr_len_2      ),
     .i_rd_ddr_len_3                 (w_rd_ddr_len_3      ),
-    .i_rd_ddr_strb_0                (w_rd_ddr_strb_0     ),
-    .i_rd_ddr_strb_1                (w_rd_ddr_strb_1     ),
+    .i_rd_ddr_strb_0                ('d0      ),
+    .i_rd_ddr_strb_1                ('d0      ),
     .i_rd_ddr_strb_2                (w_rd_ddr_strb_2     ),
     .i_rd_ddr_strb_3                (w_rd_ddr_strb_3     ),
-    .i_rd_ddr_valid_0               (w_rd_ddr_valid_0    ),
-    .i_rd_ddr_valid_1               (w_rd_ddr_valid_1    ),
+    .i_rd_ddr_valid_0               ('d0     ),
+    .i_rd_ddr_valid_1               ('d0     ),
     .i_rd_ddr_valid_2               (w_rd_ddr_valid_2    ),
     .i_rd_ddr_valid_3               (w_rd_ddr_valid_3    ),
     .i_wr_ddr_addr_0                (w_wr_ddr_addr_0     ),

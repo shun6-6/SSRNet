@@ -42,6 +42,8 @@ module rd_ddr_port_ctrl#(
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_unlocal_direct_pkt_size   ,
     input                                           i_unlocal_direct_pkt_valid  ,
     input  [2 : 0]                                  i_unlocal_direct_pkt_queue  ,
+    input  [C_M_AXI_ADDR_WIDTH-1 : 0]               i_recv_local2_pkt_size      ,
+    input                                           i_recv_local2_pkt_valid     ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_tx_relay                  ,
     input                                           i_tx_relay_valid            ,
     //dispose direct local\unlocal\my two\relay
@@ -83,25 +85,49 @@ reg  [2 : 0]                                ri_cur_direct_tor           ;
 reg                                         ri_local_direct_pkt_valid   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_unlocal_direct_pkt_size  ;
 reg  [2 : 0]                                ri_unlocal_direct_pkt_queue ;
+reg                                         ri_unlocal_direct_pkt_valid ;
 //reg                                         ri_unlocal_direct_pkt_valid ;
-reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ri_tx_relay [P_QUEUE_NUM - 1 : 0]       ;   
-reg     r_rd_ddr_lock   ;     
-reg     r_forword_wait  ;
-reg     ri_tx_relay_valid = 0;
-reg  [P_QUEUE_NUM - 1 : 0]  r_relay_finish;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_tx_relay [P_QUEUE_NUM - 1 : 0]       ;   
+reg                                         r_rd_ddr_lock   ;     
+reg                                         r_forword_wait  ;
+reg                                         ri_tx_relay_valid = 0;
+reg  [P_QUEUE_NUM - 1 : 0]                  r_relay_finish;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_recv_local2_pkt_size ;
+reg                                         ri_recv_local2_pkt_valid;
+//跨时钟处理
+reg  [2 : 0]    ri_rd_byte_ready    ;
+reg  [2 : 0]    ri_rd_queue_finish  ;
+reg             ro_forward_resp;
 /******************************wire*********************************/
-wire  w_rd_byte_en;
+wire  w_rd_byte_en      ;
+wire  w_rd_byte_ready   ;
+wire  w_rd_queue_finish ;
+wire  w_forward_en      ;
 /******************************assign*******************************/
 assign o_rd_flag       = ro_rd_flag         ;
 assign o_rd_queue      = ro_rd_queue        ;
 assign o_rd_byte       = ro_rd_byte         ;
 assign o_rd_byte_valid = ro_rd_byte_valid   ;
-assign w_rd_byte_en = o_rd_byte_valid & i_rd_byte_ready;
+assign w_rd_byte_en = o_rd_byte_valid & w_rd_byte_ready;
 assign o_forward_valid = r_cur_state == P_TX_RECV_TWO_PTK;
-assign o_forward_resp = r_cur_state == P_TX_RECV_TWO_PTK && r_st_cnt == 0;
+assign w_rd_byte_ready = ri_rd_byte_ready[1] & !ri_rd_byte_ready[2];
+assign w_rd_queue_finish = ri_rd_queue_finish[1] & !ri_rd_queue_finish[2];
+assign w_forward_en = o_forward_resp & i_forward_req;
+assign o_forward_resp = ro_forward_resp;
 /******************************component****************************/
 
 /******************************always*******************************/
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        ri_rd_byte_ready   <= 'd0;
+        ri_rd_queue_finish <= 'd0;
+    end else begin
+        ri_rd_byte_ready   <= {ri_rd_byte_ready[1],ri_rd_byte_ready[0],i_rd_byte_ready};
+        ri_rd_queue_finish <= {ri_rd_queue_finish[1],ri_rd_queue_finish[0],i_rd_queue_finish};
+    end
+end
+
+
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ri_send_local2_pkt_size <= 'd0;
@@ -146,14 +172,38 @@ always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
         ri_unlocal_direct_pkt_size  <= 'd0;
         ri_unlocal_direct_pkt_queue <= 'd0;
+        ri_unlocal_direct_pkt_valid <= 'd0;
+    end else if(r_cur_state == P_TX_MY_TWO_PTK)begin
+        ri_unlocal_direct_pkt_size  <= 'd0;
+        ri_unlocal_direct_pkt_queue <= 'd0;
+        ri_unlocal_direct_pkt_valid <= 'd0;
     end else if(i_unlocal_direct_pkt_valid)begin
         ri_unlocal_direct_pkt_size  <= i_unlocal_direct_pkt_size ;
         ri_unlocal_direct_pkt_queue <= i_unlocal_direct_pkt_queue;
+        ri_unlocal_direct_pkt_valid <= i_unlocal_direct_pkt_valid;
     end else begin
         ri_unlocal_direct_pkt_size  <= ri_unlocal_direct_pkt_size ;
         ri_unlocal_direct_pkt_queue <= ri_unlocal_direct_pkt_queue;
+        ri_unlocal_direct_pkt_valid <= ri_unlocal_direct_pkt_valid;
     end
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        ri_recv_local2_pkt_size  <= 'd0;
+        ri_recv_local2_pkt_valid <= 'd0;
+    end else if(r_cur_state == P_TX_IDLE)begin
+        ri_recv_local2_pkt_size  <= 'd0;
+        ri_recv_local2_pkt_valid <= 'd0;
+    end else if(i_recv_local2_pkt_valid)begin
+        ri_recv_local2_pkt_size  <= i_recv_local2_pkt_size ;
+        ri_recv_local2_pkt_valid <= i_recv_local2_pkt_valid;
+    end else begin
+        ri_recv_local2_pkt_size  <= ri_recv_local2_pkt_size ;
+        ri_recv_local2_pkt_valid <= ri_recv_local2_pkt_valid;
+    end
+end
+
 
 always @(posedge i_clk)
     ri_tx_relay_valid <= i_tx_relay_valid;
@@ -176,9 +226,9 @@ generate
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)
                 r_relay_finish[i] <= 'd1;
-            else if(r_cur_state == P_TX_RELAY_PKT && i_rd_queue_finish && (r_relay_finish[i] == 0) && i == 0)
+            else if(r_cur_state == P_TX_RELAY_PKT && w_rd_queue_finish && (r_relay_finish[i] == 0) && i == 0)
                 r_relay_finish[i] <= 'd1;
-            else if(r_cur_state == P_TX_RELAY_PKT && i_rd_queue_finish && (&{{r_relay_finish[i:0] << 1},1'b1}) && i > 0)
+            else if(r_cur_state == P_TX_RELAY_PKT && w_rd_queue_finish && (&{{r_relay_finish[i:0] << 1},1'b1}) && i > 0)
                 r_relay_finish[i] <= 'd1;
             else if(ri_tx_relay_valid && ri_tx_relay[i] != 0)
                 r_relay_finish[i] <= 'd0;
@@ -216,34 +266,31 @@ always @(*)begin
                 r_nxt_state = P_TX_IDLE;
         end
         P_TX_UNLOCAL_PKT : begin
-            if(i_rd_queue_finish || (ri_unlocal_direct_pkt_size == 0))
-                r_nxt_state = P_TX_LOCAL_PKT;
+            if(w_rd_queue_finish || (ri_unlocal_direct_pkt_valid && ri_unlocal_direct_pkt_size == 0))
+                r_nxt_state = P_TX_MY_TWO_PTK;
             else
                 r_nxt_state = P_TX_UNLOCAL_PKT;
         end
         P_TX_MY_TWO_PTK   : begin
             if(ri_send_local2_valid && ri_send_local2_pkt_size == 0)
-                if(i_forward_req)
-                    r_nxt_state = P_TX_RECV_TWO_PTK;
-                else
-                    r_nxt_state = P_TX_LOCAL_PKT;
-            else if(i_rd_queue_finish && i_forward_req)
                 r_nxt_state = P_TX_RECV_TWO_PTK;
-            else if(i_rd_queue_finish && !i_forward_req)
-                r_nxt_state = P_TX_LOCAL_PKT;
+            else if(ri_send_local2_valid && w_rd_queue_finish)
+                r_nxt_state = P_TX_RECV_TWO_PTK;
             else
                 r_nxt_state = P_TX_MY_TWO_PTK;
         end
         P_TX_RECV_TWO_PTK  : begin
-            if(i_forward_finish)
+            if(ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size == 0)
+                r_nxt_state = P_TX_LOCAL_PKT;
+            else if(ri_recv_local2_pkt_valid && i_forward_finish)
                 r_nxt_state = P_TX_LOCAL_PKT;
             else
                 r_nxt_state = P_TX_RECV_TWO_PTK;
         end
         P_TX_LOCAL_PKT   : begin
-            if(i_rd_queue_finish && r_forword_wait)
-                r_nxt_state = P_TX_RECV_TWO_PTK;
-            else if(i_rd_queue_finish && !r_forword_wait)
+            if(ri_local_direct_pkt_valid && ri_local_direct_pkt_size == 0)
+                r_nxt_state = P_TX_RELAY_PKT;
+            else if(w_rd_queue_finish && ri_local_direct_pkt_valid)
                 r_nxt_state = P_TX_RELAY_PKT;
             else
                 r_nxt_state = P_TX_LOCAL_PKT;
@@ -254,7 +301,7 @@ always @(*)begin
             else
                 r_nxt_state = P_TX_RELAY_PKT;
         end
-        default          : r_nxt_state = P_TX_IDLE;
+        default : r_nxt_state = P_TX_IDLE;
     endcase
 end
        
@@ -349,7 +396,7 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rd_ddr_lock <= 'd0;
-    else if(i_rd_queue_finish)
+    else if(w_rd_queue_finish)
         r_rd_ddr_lock <= 'd0;
     else if(w_rd_byte_en)
         r_rd_ddr_lock <= 'd1;
@@ -364,21 +411,23 @@ always @(posedge i_clk or posedge i_rst)begin
         r_forword_wait <= 'd0;
     else if(r_cur_state == P_TX_MY_TWO_PTK && ri_send_local2_valid && ri_send_local2_pkt_size == 0 && !i_forward_req)
         r_forword_wait <= 'd1;
-    else if(r_cur_state == P_TX_MY_TWO_PTK && i_rd_queue_finish && !i_forward_req)
+    else if(r_cur_state == P_TX_MY_TWO_PTK && w_rd_queue_finish && !i_forward_req)
         r_forword_wait <= 'd1;
     else
         r_forword_wait <= r_forword_wait;
 end
 
 
-// always @(posedge i_clk or posedge i_rst)begin
-//     if(i_rst)
-
-//     else if()
-
-//     else
-        
-// end
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_forward_resp <= 'd0;
+    else if(w_forward_en)
+        ro_forward_resp <= 'd0;
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req)
+        ro_forward_resp <= 'd1;
+    else
+        ro_forward_resp <= ro_forward_resp;
+end
 
 // always @(posedge i_clk or posedge i_rst)begin
 //     if(i_rst)

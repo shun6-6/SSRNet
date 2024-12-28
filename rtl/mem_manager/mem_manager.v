@@ -117,6 +117,20 @@ module mem_manager#(
 //跨时钟处理
 reg  [2:0]  r_check_queue_req_valid     ;
 reg         ro_check_queue_resp_ready   ;
+reg         ro_rd_unlocal_port0_byte_ready;
+reg         ro_rd_unlocal_port1_byte_ready;
+
+reg                                 ri_rd_unlocal_port0_flag        ;
+reg  [P_DDR_LOCAL_QUEUE - 1 : 0]    ri_rd_unlocal_port0_queue       ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_unlocal_port0_byte        ;
+reg  [2:0]                          r_rd_unlocal_port0_byte_valid  ;
+reg                                 ri_rd_unlocal_port0_byte_valid   ;
+
+reg                                 ri_rd_unlocal_port1_flag      ;
+reg  [P_DDR_LOCAL_QUEUE - 1 : 0]    ri_rd_unlocal_port1_queue     ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_unlocal_port1_byte      ;
+reg  [2:0]                          r_rd_unlocal_port1_byte_valid;
+reg                                 ri_rd_unlocal_port1_byte_valid   ;
 //每个本地队列的写描述符信息
 reg  [P_QUEUE_NUM - 1 : 0]          r_wr_local_queue_valid      ;
 reg  [15 :0]                        r_wr_local_queue_len [P_QUEUE_NUM - 1 : 0]  ;
@@ -218,8 +232,8 @@ reg  [1 : 0] ro_rd_local_finish;
 reg  [1 : 0] ro_rd_unlocal_finish;
 wire [P_QUEUE_NUM - 1 : 0] w_rd_local_finish;
 wire [P_QUEUE_NUM - 1 : 0] w_rd_unlocal_finish;
-assign o_rd_unlocal_port0_finish = i_rd_unlocal_port0_flag ? ro_rd_unlocal_finish[0] : ro_rd_local_finish[0];
-assign o_rd_unlocal_port1_finish = i_rd_unlocal_port1_flag ? ro_rd_unlocal_finish[1] : ro_rd_local_finish[1];
+assign o_rd_unlocal_port0_finish = ri_rd_unlocal_port0_flag ? ro_rd_unlocal_finish[0] : ro_rd_local_finish[0];
+assign o_rd_unlocal_port1_finish = ri_rd_unlocal_port1_flag ? ro_rd_unlocal_finish[1] : ro_rd_local_finish[1];
 
 assign o_check_queue_resp_ready = ro_check_queue_resp_ready;
 //write single
@@ -256,29 +270,37 @@ assign o_wr_unlocal_port0_cpl_ready = ro_wr_unlocal_port_cpl_ready[0];
 assign o_wr_unlocal_port1_cpl_ready = ro_wr_unlocal_port_cpl_ready[1];
 
 //read single
-assign w_rd_local_queue_byte_valid[0] = i_rd_unlocal_port0_byte_valid && (~i_rd_unlocal_port0_flag);
-assign w_rd_local_queue_byte_valid[1] = i_rd_unlocal_port1_byte_valid && (~i_rd_unlocal_port1_flag);
-assign w_rd_unlocal_queue_byte_valid[0] = i_rd_unlocal_port0_byte_valid && (i_rd_unlocal_port0_flag);
-assign w_rd_unlocal_queue_byte_valid[1] = i_rd_unlocal_port1_byte_valid && (i_rd_unlocal_port1_flag);
+assign w_rd_local_queue_byte_valid[0] = ri_rd_unlocal_port0_byte_valid && (~ri_rd_unlocal_port0_flag);
+assign w_rd_local_queue_byte_valid[1] = ri_rd_unlocal_port1_byte_valid && (~ri_rd_unlocal_port1_flag);
+assign w_rd_unlocal_queue_byte_valid[0] = ri_rd_unlocal_port0_byte_valid && (ri_rd_unlocal_port0_flag);
+assign w_rd_unlocal_queue_byte_valid[1] = ri_rd_unlocal_port1_byte_valid && (ri_rd_unlocal_port1_flag);
 
-assign w_rd_unlocal_queue[0] = i_rd_unlocal_port0_queue;
-assign w_rd_unlocal_queue[1] = i_rd_unlocal_port1_queue;
-assign w_rd_local_queue[0] = i_rd_unlocal_port0_queue;
-assign w_rd_local_queue[1] = i_rd_unlocal_port1_queue;
+assign w_rd_unlocal_queue[0] = ri_rd_unlocal_port0_flag ? ri_rd_unlocal_port0_queue : 'd0;
+assign w_rd_unlocal_queue[1] = ri_rd_unlocal_port1_flag ? ri_rd_unlocal_port1_queue : 'd0;
+assign w_rd_local_queue[0] = ri_rd_unlocal_port0_flag ? 'd0 : ri_rd_unlocal_port0_queue;
+assign w_rd_local_queue[1] = ri_rd_unlocal_port1_flag ? 'd0 : ri_rd_unlocal_port1_queue;
 //i_rd_unlocal_port0_flag==0:read unlocal queue
-assign o_rd_unlocal_port0_addr  = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_addr [0] : r_rd_local_queue_addr [0];
-assign o_rd_unlocal_port0_len   = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_len  [0] : r_rd_local_queue_len  [0];
-assign o_rd_unlocal_port0_strb  = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_strb [0] : r_rd_local_queue_strb [0];
-assign o_rd_unlocal_port0_valid = i_rd_unlocal_port0_flag ? r_rd_unlocal_queue_valid[0] : r_rd_local_queue_valid[0];
+assign o_rd_unlocal_port0_addr  = ri_rd_unlocal_port0_flag ? r_rd_unlocal_queue_addr [0] : r_rd_local_queue_addr [0];
+assign o_rd_unlocal_port0_len   = ri_rd_unlocal_port0_flag ? r_rd_unlocal_queue_len  [0] : r_rd_local_queue_len  [0];
+assign o_rd_unlocal_port0_strb  = ri_rd_unlocal_port0_flag ? r_rd_unlocal_queue_strb [0] : r_rd_local_queue_strb [0];
+assign o_rd_unlocal_port0_valid = ri_rd_unlocal_port0_flag ? r_rd_unlocal_queue_valid[0] : r_rd_local_queue_valid[0];
 
-assign o_rd_unlocal_port1_addr  = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_addr [1] : r_rd_local_queue_addr [1];
-assign o_rd_unlocal_port1_len   = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_len  [1] : r_rd_local_queue_len  [1];
-assign o_rd_unlocal_port1_strb  = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_strb [1] : r_rd_local_queue_strb [1];
-assign o_rd_unlocal_port1_valid = i_rd_unlocal_port1_flag ? r_rd_unlocal_queue_valid[1] : r_rd_local_queue_valid[1];
+assign o_rd_unlocal_port1_addr  = ri_rd_unlocal_port1_flag ? r_rd_unlocal_queue_addr [1] : r_rd_local_queue_addr [1];
+assign o_rd_unlocal_port1_len   = ri_rd_unlocal_port1_flag ? r_rd_unlocal_queue_len  [1] : r_rd_local_queue_len  [1];
+assign o_rd_unlocal_port1_strb  = ri_rd_unlocal_port1_flag ? r_rd_unlocal_queue_strb [1] : r_rd_local_queue_strb [1];
+assign o_rd_unlocal_port1_valid = ri_rd_unlocal_port1_flag ? r_rd_unlocal_queue_valid[1] : r_rd_local_queue_valid[1];
 
-assign o_rd_unlocal_port0_byte_ready = i_rd_unlocal_port0_flag ? ro_rd_unlocal_byte_ready[0] : ro_rd_local_byte_ready[0];
-assign o_rd_unlocal_port1_byte_ready = i_rd_unlocal_port1_flag ? ro_rd_unlocal_byte_ready[1] : ro_rd_local_byte_ready[1];
+assign w_rd_unlocal_port0_byte_ready = ri_rd_unlocal_port0_flag ? ro_rd_unlocal_byte_ready[0] : ro_rd_local_byte_ready[0];
+assign w_rd_unlocal_port1_byte_ready = ri_rd_unlocal_port1_flag ? ro_rd_unlocal_byte_ready[1] : ro_rd_local_byte_ready[1];
 
+assign o_rd_unlocal_port0_byte_ready = ro_rd_unlocal_port0_byte_ready;
+assign o_rd_unlocal_port1_byte_ready = ro_rd_unlocal_port1_byte_ready;
+//跨时钟处理
+wire    w_port0_rd_en;
+wire    w_port1_rd_en;
+
+assign w_port0_rd_en = r_rd_unlocal_port0_byte_valid[1] & !r_rd_unlocal_port0_byte_valid[2];
+assign w_port1_rd_en = r_rd_unlocal_port1_byte_valid[1] & !r_rd_unlocal_port1_byte_valid[2];
 
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
@@ -297,6 +319,100 @@ always @(posedge i_clk or posedge i_rst) begin
     else
         ro_check_queue_resp_ready <= ro_check_queue_resp_ready;
 end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        ro_rd_unlocal_port0_byte_ready <= 'd0;
+    else if(w_port0_rd_en)
+        ro_rd_unlocal_port0_byte_ready <= 'd1;
+    else if(!r_rd_unlocal_port0_byte_valid[1] & r_rd_unlocal_port0_byte_valid[2])
+        ro_rd_unlocal_port0_byte_ready <= 'd0;
+    else
+        ro_rd_unlocal_port0_byte_ready <= ro_rd_unlocal_port0_byte_ready;
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        ro_rd_unlocal_port1_byte_ready <= 'd0;
+    else if(w_port1_rd_en)
+        ro_rd_unlocal_port1_byte_ready <= 'd1;
+    else if(!r_rd_unlocal_port1_byte_valid[1] & r_rd_unlocal_port1_byte_valid[2])
+        ro_rd_unlocal_port1_byte_ready <= 'd0;
+    else
+        ro_rd_unlocal_port1_byte_ready <= ro_rd_unlocal_port1_byte_ready;
+end
+
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_rd_unlocal_port0_byte_valid <= 'd0;
+    else
+        r_rd_unlocal_port0_byte_valid <= {r_rd_unlocal_port0_byte_valid[1],r_rd_unlocal_port0_byte_valid[0],i_rd_unlocal_port0_byte_valid};
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)begin
+        ri_rd_unlocal_port0_flag  <= 'd0;    
+        ri_rd_unlocal_port0_queue <= 'd0;    
+        ri_rd_unlocal_port0_byte  <= 'd0;
+        ri_rd_unlocal_port0_byte_valid <= 'd0;
+    end
+    else if(w_rd_unlocal_port0_byte_ready)begin
+        ri_rd_unlocal_port0_flag  <= i_rd_unlocal_port0_flag ;    
+        ri_rd_unlocal_port0_queue <= i_rd_unlocal_port0_queue;    
+        ri_rd_unlocal_port0_byte  <= i_rd_unlocal_port0_byte ;
+        ri_rd_unlocal_port0_byte_valid <= 'd0;
+    end
+    else if(w_port0_rd_en)begin
+        ri_rd_unlocal_port0_flag  <= i_rd_unlocal_port0_flag ;    
+        ri_rd_unlocal_port0_queue <= i_rd_unlocal_port0_queue;    
+        ri_rd_unlocal_port0_byte  <= i_rd_unlocal_port0_byte ;
+        ri_rd_unlocal_port0_byte_valid <= w_port0_rd_en;
+    end
+    else begin
+        ri_rd_unlocal_port0_flag  <= ri_rd_unlocal_port0_flag ;
+        ri_rd_unlocal_port0_queue <= ri_rd_unlocal_port0_queue;
+        ri_rd_unlocal_port0_byte  <= ri_rd_unlocal_port0_byte ;
+        ri_rd_unlocal_port0_byte_valid <= ri_rd_unlocal_port0_byte_valid;
+    end
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_rd_unlocal_port1_byte_valid <= 'd0;
+    else
+        r_rd_unlocal_port1_byte_valid <= {r_rd_unlocal_port1_byte_valid[1],r_rd_unlocal_port1_byte_valid[0],i_rd_unlocal_port1_byte_valid};
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)begin
+        ri_rd_unlocal_port1_flag  <= 'd0;    
+        ri_rd_unlocal_port1_queue <= 'd0;    
+        ri_rd_unlocal_port1_byte  <= 'd0;
+        ri_rd_unlocal_port1_byte_valid <= 'd0;
+    end
+    else if(w_rd_unlocal_port1_byte_ready)begin
+        ri_rd_unlocal_port1_flag  <= i_rd_unlocal_port1_flag ;    
+        ri_rd_unlocal_port1_queue <= i_rd_unlocal_port1_queue;    
+        ri_rd_unlocal_port1_byte  <= i_rd_unlocal_port1_byte ;
+        ri_rd_unlocal_port1_byte_valid <= 'd0;
+    end
+    else if(w_port0_rd_en)begin
+        ri_rd_unlocal_port1_flag  <= i_rd_unlocal_port1_flag ;    
+        ri_rd_unlocal_port1_queue <= i_rd_unlocal_port1_queue;    
+        ri_rd_unlocal_port1_byte  <= i_rd_unlocal_port1_byte ;
+        ri_rd_unlocal_port1_byte_valid <= w_port0_rd_en;
+    end
+    else begin
+        ri_rd_unlocal_port1_flag  <= ri_rd_unlocal_port1_flag ;
+        ri_rd_unlocal_port1_queue <= ri_rd_unlocal_port1_queue;
+        ri_rd_unlocal_port1_byte  <= ri_rd_unlocal_port1_byte ;
+        ri_rd_unlocal_port1_byte_valid <= ri_rd_unlocal_port1_byte_valid;
+    end
+end
+
+
+
 
 genvar gen_local_i;
 generate
@@ -380,16 +496,16 @@ generate
             else if(r_rd_local_byte_valid[gen_local_i] && w_rd_local_byte_ready[gen_local_i])begin
                 r_rd_local_byte_valid [gen_local_i] <= 'd0;
                 r_rd_local_byte       [gen_local_i] <= 'd0;
+                r_rd_local_port_id    [gen_local_i] <= r_rd_local_port_id[gen_local_i];
+            end
+            else if(w_rd_local_queue_byte_valid[0] && ri_rd_unlocal_port0_queue == gen_local_i && !w_rd_unlocal_port0_byte_ready)begin
+                r_rd_local_byte_valid [gen_local_i] <= 'd1;
+                r_rd_local_byte       [gen_local_i] <= ri_rd_unlocal_port0_byte;
                 r_rd_local_port_id    [gen_local_i] <= 'd0;  
             end
-            else if(w_rd_local_queue_byte_valid[0] && i_rd_unlocal_port0_queue == gen_local_i && !o_rd_unlocal_port0_byte_ready)begin
+            else if(w_rd_local_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_local_i && !w_rd_unlocal_port1_byte_ready)begin
                 r_rd_local_byte_valid [gen_local_i] <= 'd1;
-                r_rd_local_byte       [gen_local_i] <= i_rd_unlocal_port0_byte;
-                r_rd_local_port_id    [gen_local_i] <= 'd0;  
-            end
-            else if(w_rd_local_queue_byte_valid[1] && i_rd_unlocal_port1_queue == gen_local_i && !o_rd_unlocal_port1_byte_ready)begin
-                r_rd_local_byte_valid [gen_local_i] <= 'd1;
-                r_rd_local_byte       [gen_local_i] <= i_rd_unlocal_port1_byte;
+                r_rd_local_byte       [gen_local_i] <= ri_rd_unlocal_port1_byte;
                 r_rd_local_port_id    [gen_local_i] <= 'd1;  
             end
             else begin
@@ -404,11 +520,11 @@ generate
                 r_rd_local_queue_cpl  [gen_local_i] <= 'd0;
                 r_rd_local_queue_ready[gen_local_i] <= 'd0;
             end
-            else if(r_rd_local_port_id[gen_local_i] == 0 && i_rd_unlocal_port0_queue == gen_local_i && i_rd_unlocal_port0_flag == 0)begin
+            else if(r_rd_local_port_id[gen_local_i] == 0 && ri_rd_unlocal_port0_queue == gen_local_i && ri_rd_unlocal_port0_flag == 0)begin
                 r_rd_local_queue_cpl  [gen_local_i] <= i_rd_unlocal_port0_cpl;
                 r_rd_local_queue_ready[gen_local_i] <= i_rd_unlocal_port0_ready;
             end
-            else if(r_rd_local_port_id[gen_local_i] == 1 && i_rd_unlocal_port1_queue == gen_local_i && i_rd_unlocal_port1_flag == 0)begin  
+            else if(r_rd_local_port_id[gen_local_i] == 1 && ri_rd_unlocal_port1_queue == gen_local_i && ri_rd_unlocal_port1_flag == 0)begin  
                 r_rd_local_queue_cpl  [gen_local_i] <= i_rd_unlocal_port1_cpl;
                 r_rd_local_queue_ready[gen_local_i] <= i_rd_unlocal_port1_ready;
             end
@@ -695,7 +811,7 @@ generate
                 r_rd_local_queue_valid[gen_local_o] <= 'd0;
             end
             else begin
-                case(w_rd_unlocal_queue[gen_local_o])
+                case(w_rd_local_queue[gen_local_o])
                 0 : begin
                     if(r_rd_local_port_id[0] == gen_local_o && w_rd_local_queue_valid[0])begin
                         r_rd_local_queue_addr [gen_local_o] <= w_rd_local_queue_addr [0];
@@ -962,14 +1078,14 @@ generate
                 r_rd_unlocal_byte       [gen_unlocal_i] <= 'd0;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;  
             end
-            else if(w_rd_unlocal_queue_byte_valid[0] && i_rd_unlocal_port0_queue == gen_unlocal_i)begin
+            else if(w_rd_unlocal_queue_byte_valid[0] && ri_rd_unlocal_port0_queue == gen_unlocal_i)begin
                 r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd1;
-                r_rd_unlocal_byte       [gen_unlocal_i] <= i_rd_unlocal_port0_byte;
-                r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;  
+                r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port0_byte;
+                r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;
             end
-            else if(w_rd_unlocal_queue_byte_valid[1] && i_rd_unlocal_port1_queue == gen_unlocal_i)begin
+            else if(w_rd_unlocal_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_unlocal_i)begin
                 r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd1;
-                r_rd_unlocal_byte       [gen_unlocal_i] <= i_rd_unlocal_port1_byte;
+                r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port1_byte;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd1;  
             end
             else begin
@@ -984,11 +1100,11 @@ generate
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= 'd0;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= 'd0;
             end
-            else if(r_rd_local_port_id[gen_unlocal_i] == 0 && i_rd_unlocal_port0_queue == gen_unlocal_i && i_rd_unlocal_port0_flag == 1)begin
+            else if(r_rd_local_port_id[gen_unlocal_i] == 0 && ri_rd_unlocal_port0_queue == gen_unlocal_i && ri_rd_unlocal_port0_flag == 1)begin
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= i_rd_unlocal_port0_cpl;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= i_rd_unlocal_port0_ready;
             end
-            else if(r_rd_local_port_id[gen_unlocal_i] == 1 && i_rd_unlocal_port1_queue == gen_unlocal_i && i_rd_unlocal_port1_flag == 1)begin  
+            else if(r_rd_local_port_id[gen_unlocal_i] == 1 && ri_rd_unlocal_port1_queue == gen_unlocal_i && ri_rd_unlocal_port1_flag == 1)begin  
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= i_rd_unlocal_port1_cpl;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= i_rd_unlocal_port1_ready;
             end
