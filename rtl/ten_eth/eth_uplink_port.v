@@ -85,7 +85,7 @@ wire [7 :0]     w_fifo_keep_dout        ;
 wire            w_fifo_data_rden        ;
 wire            w_tx_en             ;
 /******************************assign*******************************/
-assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready   : 'd0  ;
+assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready : 'd0  ;
 assign s_forward_axis_tready = i_forward_pkt_valid;
 assign w_tx_en      = m_tx_axis_tvalid & m_tx_axis_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_tx_en) || r_fifo_len_rden_2d;
@@ -165,7 +165,7 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_arbiter <= 'd0;
-    else if(!w_fifo_len_empty && !r_fifo_lock)
+    else if(!w_fifo_len_empty && !r_fifo_lock && !s_data_axis_tvalid)
         r_fifo_arbiter <= 'd1;
     else if(w_fifo_len_empty && !r_fifo_lock)
         r_fifo_arbiter <= 'd2;

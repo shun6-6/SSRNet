@@ -556,6 +556,8 @@ always @(posedge i_clk or posedge i_rst)begin
         r_tx_cnt <= r_tx_cnt + 'd1;
     else if(w_tx_en || (r_tx_cur_state == P_TX_OFFER && r_tx_state_cnt == 'd0))
         r_tx_cnt <= r_tx_cnt + 'd1;
+    else if(w_tx_en || (r_tx_cur_state == P_TX_RELAY && r_tx_state_cnt == 'd0))
+        r_tx_cnt <= r_tx_cnt + 'd1;
     else
         r_tx_cnt <= r_tx_cnt;
 end

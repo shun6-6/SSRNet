@@ -86,7 +86,6 @@ reg                                         ri_local_direct_pkt_valid   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_unlocal_direct_pkt_size  ;
 reg  [2 : 0]                                ri_unlocal_direct_pkt_queue ;
 reg                                         ri_unlocal_direct_pkt_valid ;
-//reg                                         ri_unlocal_direct_pkt_valid ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_tx_relay [P_QUEUE_NUM - 1 : 0]       ;   
 reg                                         r_rd_ddr_lock   ;     
 reg                                         r_forword_wait  ;
@@ -94,10 +93,11 @@ reg                                         ri_tx_relay_valid = 0;
 reg  [P_QUEUE_NUM - 1 : 0]                  r_relay_finish;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_recv_local2_pkt_size ;
 reg                                         ri_recv_local2_pkt_valid;
+
 //跨时钟处理
 reg  [2 : 0]    ri_rd_byte_ready    ;
-reg  [2 : 0]    ri_rd_queue_finish  ;
-reg             ro_forward_resp;
+reg  [1 : 0]    ri_rd_queue_finish  ;
+reg             ro_forward_resp     ;
 /******************************wire*********************************/
 wire  w_rd_byte_en      ;
 wire  w_rd_byte_ready   ;
@@ -111,7 +111,7 @@ assign o_rd_byte_valid = ro_rd_byte_valid   ;
 assign w_rd_byte_en = o_rd_byte_valid & w_rd_byte_ready;
 assign o_forward_valid = r_cur_state == P_TX_RECV_TWO_PTK;
 assign w_rd_byte_ready = ri_rd_byte_ready[1] & !ri_rd_byte_ready[2];
-assign w_rd_queue_finish = ri_rd_queue_finish[1] & !ri_rd_queue_finish[2];
+assign w_rd_queue_finish = ri_rd_queue_finish[0] && !ri_rd_queue_finish[1];
 assign w_forward_en = o_forward_resp & i_forward_req;
 assign o_forward_resp = ro_forward_resp;
 /******************************component****************************/
@@ -123,7 +123,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ri_rd_queue_finish <= 'd0;
     end else begin
         ri_rd_byte_ready   <= {ri_rd_byte_ready[1],ri_rd_byte_ready[0],i_rd_byte_ready};
-        ri_rd_queue_finish <= {ri_rd_queue_finish[1],ri_rd_queue_finish[0],i_rd_queue_finish};
+        ri_rd_queue_finish <= {ri_rd_queue_finish[0],i_rd_queue_finish};
     end
 end
 

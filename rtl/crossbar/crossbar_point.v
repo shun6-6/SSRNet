@@ -207,7 +207,7 @@ always @(posedge i_clk or posedge i_rst) begin
         r_fifo_len_rden_2d <= 'd0;
     end else begin
         r_fifo_len_rden_1d <= r_fifo_len_rden;
-        r_fifo_len_rden_2d = r_fifo_len_rden_1d;
+        r_fifo_len_rden_2d <= r_fifo_len_rden_1d;
     end
 end
 
@@ -232,9 +232,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_wr_active && r_fifo_rd_cnt != 0)
         r_fifo_rd_cnt <= 'd0;
-    else if(w_wr_active)
+    else if(w_fifo_data_rden || (r_fifo_rd_cnt == r_data_len - 1 && w_wr_active))
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt;
@@ -272,9 +272,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         rm_axis_tx_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_wr_active)
         rm_axis_tx_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
         rm_axis_tx_tlast <= 'd1;
     else
         rm_axis_tx_tlast <= rm_axis_tx_tlast;
@@ -286,9 +286,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         rm_axis_tx_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_wr_active)
         rm_axis_tx_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_wr_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_wr_active)
         rm_axis_tx_tkeep <= r_data_keep;
     else
         rm_axis_tx_tkeep <= rm_axis_tx_tkeep;

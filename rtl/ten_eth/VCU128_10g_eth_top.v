@@ -390,7 +390,7 @@ server_module#(
     .i_rst              (o_2_user_rx_reset  ),
     .i_stat_rx_status   (o_2_stat_rx_status ),
     .i_time_stamp       ('d0),
-    .i_cur_connect_tor  ('d0),
+    .i_cur_connect_tor  (i_port0_connect_tor),
     .i_sim_start        ('d0),
 
     .i_check_mac        (w2_check_mac       ),
@@ -461,7 +461,7 @@ server_module#(
     .i_rst              (o_3_user_rx_reset  ),
     .i_stat_rx_status   (o_3_stat_rx_status ),
     .i_time_stamp       ('d0),
-    .i_cur_connect_tor  ('d0),
+    .i_cur_connect_tor  (i_port1_connect_tor),
     .i_sim_start        ('d0),
 
     .i_check_mac        (w3_check_mac       ),

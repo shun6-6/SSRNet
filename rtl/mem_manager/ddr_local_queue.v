@@ -75,6 +75,8 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     r_rd_comp_byte      ;
 reg                                 r_rd_ddr_complete   ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ro_queue_size       ;
 reg  [2:0]                          ri_rd_local_byte_valid;
+// reg  [2:0]                          ri_rd_last_byte     ;
+// reg                                 ri_rd_last_byte_valid ;
 /******************************wire*********************************/
 wire                                w_wr_en             ;
 wire                                w_rd_en             ;
@@ -145,9 +147,9 @@ FIFO_8X4096 FIFO_8X4096_strb (
 /******************************always*******************************/
 // always @(posedge i_clk or posedge i_rst)begin
 //     if(i_rst)
-//         ri_rd_local_byte_valid <= 'd0;
+//         ri_rd_last_byte <= 'd0;
 //     else
-//         ri_rd_local_byte_valid <= {ri_rd_local_byte_valid[1],ri_rd_local_byte_valid[0],i_rd_local_byte_valid};
+//         ri_rd_last_byte <= {ri_rd_last_byte[1],ri_rd_last_byte[0],i_rd_last_byte};
 // end
 
 always @(posedge i_clk or posedge i_rst)begin
@@ -279,11 +281,24 @@ always @(posedge i_clk or posedge i_rst)begin
         r_rd_ddr_complete <= 'd0;
     else if(w_rd_byte_en)
         r_rd_ddr_complete <= 'd0;
-    else if(w_rd_en && (w_max_next_pkt < 1518))
+    else if(w_max_next_pkt < 1518)
         r_rd_ddr_complete <= 'd1;
     else
         r_rd_ddr_complete <= r_rd_ddr_complete;
 end
+
+// always @(posedge i_clk or posedge i_rst)begin
+//     if(i_rst)
+//         ri_rd_last_byte_valid <= 'd0;
+//     else if(w_rd_byte_en)
+//         ri_rd_last_byte_valid <= 'd0;
+//     else if(ri_rd_last_byte[1] && !ri_rd_last_byte[2] && r_rd_ddr_complete)
+//         ri_rd_last_byte_valid <= 'd1;
+//     else
+//         ri_rd_last_byte_valid <= ri_rd_last_byte_valid;
+// end
+
+
 
 //VLB check queue size
 always @(posedge i_clk or posedge i_rst)begin

@@ -29,15 +29,19 @@ module forward_pkt_buffer(
     output          o_port0_forward_req     ,
     input           i_port0_forward_resp    ,
     output          o_port0_forward_finish  ,
+    input  [31:0]   i_port0_forward_byte        ,
+    input           i_port0_forward_byte_valid  ,
     output          o_port1_forward_req     ,
     input           i_port1_forward_resp    ,
     output          o_port1_forward_finish  ,
+    input  [31:0]   i_port1_forward_byte        ,
+    input           i_port1_forward_byte_valid  ,
 
     input           s_axis_rx0_tvalid       ,
     input  [63 :0]  s_axis_rx0_tdata        ,
     input           s_axis_rx0_tlast        ,
     input  [7  :0]  s_axis_rx0_tkeep        ,
-    input           s_axis_rx0_tuser        ,
+    input  [1 : 0]  s_axis_rx0_tuser        ,
 
     output          m_axis_tx0_tvalid       ,
     output [63 :0]  m_axis_tx0_tdata        ,
@@ -50,7 +54,7 @@ module forward_pkt_buffer(
     input  [63 :0]  s_axis_rx1_tdata        ,
     input           s_axis_rx1_tlast        ,
     input  [7  :0]  s_axis_rx1_tkeep        ,
-    input           s_axis_rx1_tuser        ,
+    input  [1 : 0]  s_axis_rx1_tuser        ,
 
     output          m_axis_tx1_tvalid       ,
     output [63 :0]  m_axis_tx1_tdata        ,
@@ -67,6 +71,8 @@ forward_pkt_module forward_pkt_module_u0(
     .o_forward_req          (o_port0_forward_req    ),
     .i_forward_resp         (i_port0_forward_resp   ),
     .o_forward_finish       (o_port0_forward_finish ),
+    .i_forward_byte         (i_port0_forward_byte      ),
+    .i_forward_byte_valid   (i_port0_forward_byte_valid),
 
     .s_axis_tvalid          (s_axis_rx0_tvalid      ),
     .s_axis_tdata           (s_axis_rx0_tdata       ),
@@ -89,6 +95,8 @@ forward_pkt_module forward_pkt_module_u1(
     .o_forward_req          (o_port1_forward_req    ),
     .i_forward_resp         (i_port1_forward_resp   ),
     .o_forward_finish       (o_port1_forward_finish ),
+    .i_forward_byte         (i_port1_forward_byte      ),
+    .i_forward_byte_valid   (i_port1_forward_byte_valid),
 
     .s_axis_tvalid          (s_axis_rx1_tvalid      ),
     .s_axis_tdata           (s_axis_rx1_tdata       ),

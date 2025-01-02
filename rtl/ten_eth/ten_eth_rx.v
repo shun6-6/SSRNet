@@ -317,11 +317,11 @@ always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         r_fifo_lock <= 'd0;
     else if(ro_axis_tlast && ro_axis_tvalid)
-        r_fifo_lock <= 'd1;
+        r_fifo_lock <= 'd0;
     else if(!w_fifo_len_empty && !r_fifo_lock)
-        r_fifo_lock <= 'd0;
+        r_fifo_lock <= 'd1;
     else
-        r_fifo_lock <= 'd0;
+        r_fifo_lock <= r_fifo_lock;
 end
 
 always @(posedge i_clk or posedge i_rst) begin

@@ -181,6 +181,10 @@ wire                        w_rd_ddr_ready_0        ;
 wire                        w_rd_ddr_ready_1        ;
 wire                        w_rd_ddr_ready_2        ;
 wire                        w_rd_ddr_ready_3        ;
+wire                        w_rd_last_byte_0        ;
+wire                        w_rd_last_byte_1        ;
+wire                        w_rd_last_byte_2        ;
+wire                        w_rd_last_byte_3        ;
 wire [31:0]                 w_wr_ddr_cpl_addr_0     ;
 wire [31:0]                 w_wr_ddr_cpl_addr_1     ;
 wire [31:0]                 w_wr_ddr_cpl_addr_2     ;
@@ -688,9 +692,13 @@ forward_pkt_buffer forward_pkt_buffer_u0(
     .o_port0_forward_req        (w_port0_forward_req    ),
     .i_port0_forward_resp       (w_port0_forward_resp   ),
     .o_port0_forward_finish     (w_port0_forward_finish ),
+    .i_port0_forward_byte       (w_port0_recv_local2_pkt_size ),
+    .i_port0_forward_byte_valid (w_port0_recv_local2_pkt_valid),
     .o_port1_forward_req        (w_port1_forward_req    ),
     .i_port1_forward_resp       (w_port1_forward_resp   ),
     .o_port1_forward_finish     (w_port1_forward_finish ),
+    .i_port1_forward_byte       (w_port1_recv_local2_pkt_size ),
+    .i_port1_forward_byte_valid (w_port1_recv_local2_pkt_valid),
  
     .s_axis_rx0_tvalid          (m_rx2_axis_tvalid      ),
     .s_axis_rx0_tdata           (m_rx2_axis_tdata       ),
@@ -897,7 +905,18 @@ design_1_wrapper design_1_wrapper_u0(
     .i_axis_rst_2                   (w_2_user_rx_reset  ),
     .i_axis_clk_3                   (w_2_tx_clk_out     ),
     .i_axis_rst_3                   (w_2_user_rx_reset  ),
-     
+    .i_rd_ddr_byte_0                ('d0),
+    .i_rd_ddr_byte_valid_0          ('d0),
+    .i_rd_ddr_byte_1                ('d0),
+    .i_rd_ddr_byte_valid_1          ('d0),
+    .i_rd_ddr_byte_2                (w_rd_unlocal_port0_byte      ),
+    .i_rd_ddr_byte_valid_2          (w_rd_unlocal_port0_byte_valid),
+    .i_rd_ddr_byte_3                (w_rd_unlocal_port1_byte      ),
+    .i_rd_ddr_byte_valid_3          (w_rd_unlocal_port1_byte_valid),
+    .o_rd_queue_finish_0            (),
+    .o_rd_queue_finish_1            (),
+    .o_rd_queue_finish_2            (w_rd_unlocal_port0_finish),
+    .o_rd_queue_finish_3            (w_rd_unlocal_port1_finish),
     .i_rd_ddr_addr_0                ('d0     ),
     .i_rd_ddr_addr_1                ('d0      ),
     .i_rd_ddr_addr_2                (w_rd_ddr_addr_2     ),
@@ -958,6 +977,10 @@ design_1_wrapper design_1_wrapper_u0(
     .o_rd_ddr_ready_1               (w_rd_ddr_ready_1       ),
     .o_rd_ddr_ready_2               (w_rd_ddr_ready_2       ),
     .o_rd_ddr_ready_3               (w_rd_ddr_ready_3       ),
+    // .o_rd_last_byte_0               (w_rd_last_byte_0       ),
+    // .o_rd_last_byte_1               (w_rd_last_byte_1       ),
+    // .o_rd_last_byte_2               (w_rd_last_byte_2       ),
+    // .o_rd_last_byte_3               (w_rd_last_byte_3       ),
     .o_wr_ddr_cpl_addr_0            (w_wr_ddr_cpl_addr_0    ),
     .o_wr_ddr_cpl_addr_1            (w_wr_ddr_cpl_addr_1    ),
     .o_wr_ddr_cpl_addr_2            (w_wr_ddr_cpl_addr_2    ),
@@ -1072,7 +1095,7 @@ mem_manager#(
     .i_rd_unlocal_port0_queue        (w_rd_unlocal_port0_queue     ),
     .i_rd_unlocal_port0_byte         (w_rd_unlocal_port0_byte      ),
     .i_rd_unlocal_port0_byte_valid   (w_rd_unlocal_port0_byte_valid),
-    .o_rd_unlocal_port0_finish       (w_rd_unlocal_port0_finish    ),
+    .o_rd_unlocal_port0_finish       (    ),
     .o_rd_unlocal_port0_byte_ready   (w_rd_unlocal_port0_byte_ready),
     .o_rd_unlocal_port0_addr         (w_rd_ddr_addr_2       ),
     .o_rd_unlocal_port0_len          (w_rd_ddr_len_2        ),
@@ -1097,7 +1120,7 @@ mem_manager#(
     .i_rd_unlocal_port1_queue        (w_rd_unlocal_port1_queue     ),
     .i_rd_unlocal_port1_byte         (w_rd_unlocal_port1_byte      ),
     .i_rd_unlocal_port1_byte_valid   (w_rd_unlocal_port1_byte_valid),
-    .o_rd_unlocal_port1_finish       (w_rd_unlocal_port1_finish    ),
+    .o_rd_unlocal_port1_finish       (    ),
     .o_rd_unlocal_port1_byte_ready   (w_rd_unlocal_port1_byte_ready),
     .o_rd_unlocal_port1_addr         (w_rd_ddr_addr_3       ),
     .o_rd_unlocal_port1_len          (w_rd_ddr_len_3        ),

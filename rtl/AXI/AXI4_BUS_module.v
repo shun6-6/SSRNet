@@ -122,12 +122,15 @@ module AXI4_BUS_module#
     output [7  :0]                              m_axis_tkeep        ,
     output                                      m_axis_tuser        ,
     input                                       m_axis_tready       ,
+    input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_byte       ,
+    input                                       i_rd_ddr_byte_valid ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_addr       ,
     input  [15 :0]                              i_rd_ddr_len        ,
     input  [7 : 0]                              i_rd_ddr_strb       ,
     input                                       i_rd_ddr_valid      ,
     output                                      o_rd_ddr_cpl        ,
-    output                                      o_rd_ddr_ready      
+    output                                      o_rd_ddr_ready      ,
+    output                                      o_rd_queue_finish   
 );
 
 
@@ -244,12 +247,15 @@ AXIFULL_to_AXIS#
     .m_axis_tuser               (m_axis_tuser   ),
     .m_axis_tready              (m_axis_tready  ),
 
+    .i_rd_ddr_byte              (i_rd_ddr_byte      ),
+    .i_rd_ddr_byte_valid        (i_rd_ddr_byte_valid),
     .i_rd_ddr_addr              (i_rd_ddr_addr  ),
     .i_rd_ddr_len               (i_rd_ddr_len   ),
     .i_rd_ddr_strb              (i_rd_ddr_strb  ),
     .i_rd_ddr_valid             (i_rd_ddr_valid ),
     .o_rd_ddr_cpl               (o_rd_ddr_cpl   ),
-    .o_rd_ddr_ready             (o_rd_ddr_ready ) 
+    .o_rd_ddr_ready             (o_rd_ddr_ready ),
+    .o_rd_queue_finish          (o_rd_queue_finish)
 );
 
 endmodule

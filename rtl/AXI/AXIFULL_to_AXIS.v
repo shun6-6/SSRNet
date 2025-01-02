@@ -79,12 +79,15 @@ module AXIFULL_to_AXIS#
     output                                      m_axis_tuser        ,
     input                                       m_axis_tready       ,
     
+    input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_byte       ,
+    input                                       i_rd_ddr_byte_valid ,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]           i_rd_ddr_addr       ,
     input  [15 :0]                              i_rd_ddr_len        ,
     input  [7 : 0]                              i_rd_ddr_strb       ,
     input                                       i_rd_ddr_valid      ,
     output                                      o_rd_ddr_cpl        ,
-    output                                      o_rd_ddr_ready      
+    output                                      o_rd_ddr_ready      ,
+    output                                      o_rd_queue_finish   
 );
 /******************************function*****************************/
 function integer clogb2 (input integer bit_depth);
@@ -131,6 +134,9 @@ reg  [15:0]                         r_fifo_rd_cnt       ;
 reg                                 r_fifo_lock         ;
 reg  [15:0]                         r_data_len          ;
 reg  [7 :0]                         r_data_strb         ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_ddr_byte      ;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     r_rd_complete_byte  ;
+reg                                 ro_rd_queue_finish  ;
 /******************************wire*********************************/
 wire                                w_axi_ar_active     ;
 wire                                w_axi_rd_active     ;
@@ -142,6 +148,8 @@ wire [7 :0]                         w_fifo_strb_dout    ;
 wire                                w_fifo_len_full     ;
 wire                                w_fifo_len_empty    ;
 wire                                w_fifo_data_rden    ;
+wire                                w_rd_last_byte      ;
+wire [31:0]                         w_max_next_pkt      ;
 /******************************assign*******************************/
 assign w_axi_rst = !M_AXI_ARESETN  ;
 assign w_axi_ar_active = M_AXI_ARVALID & M_AXI_ARREADY;
@@ -166,7 +174,10 @@ assign m_axis_tkeep  = rm_axis_tkeep    ;
 assign m_axis_tuser  = 'd0    ;
 assign o_rd_ddr_cpl  = ro_rd_ddr_cpl    ;
 assign o_rd_ddr_ready = ro_rd_ddr_ready ;
-assign w_fifo_data_rden = (r_fifo_data_rden && m_axis_tready) || r_fifo_len_rden_2d;
+assign w_fifo_data_rden = (r_fifo_data_rden && w_axis_tx_active) || r_fifo_len_rden_2d;
+assign w_rd_last_byte = w_axis_tx_active && rm_axis_tlast;
+assign w_max_next_pkt = ri_rd_ddr_byte - r_rd_complete_byte;
+assign o_rd_queue_finish = ro_rd_queue_finish;
 /******************************component****************************/
 FIFO_IND_64X4096 FIFO_IND_64X4096_data (
     .rst            (i_axis_rst          ), // input wire rst
@@ -315,6 +326,7 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     else
         rM_AXI_RREADY <= rM_AXI_RREADY;
 end
+
 //================ AXIS CLOCK REGION ==================//
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
@@ -361,7 +373,7 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         r_fifo_data_rden <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
         r_fifo_data_rden <= 'd0;
     else if(r_fifo_len_rden_1d)
         r_fifo_data_rden <= 'd1;
@@ -372,9 +384,9 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_axis_tx_active && r_fifo_rd_cnt != 0)
         r_fifo_rd_cnt <= 'd0;
-    else if(w_axis_tx_active)
+    else if(w_fifo_data_rden || (r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active))
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt;
@@ -394,9 +406,9 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         rm_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_axis_tx_active)
         rm_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
         rm_axis_tlast <= 'd1;
     else
         rm_axis_tlast <= rm_axis_tlast;
@@ -405,13 +417,54 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         rm_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len && w_axis_tx_active)
         rm_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_axis_tx_active)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_axis_tx_active)
         rm_axis_tkeep <= r_data_strb;
     else
         rm_axis_tkeep <= rm_axis_tkeep;
 end
+
+//读DDR结束指示信号
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        ri_rd_ddr_byte <= 'd0;
+    else if(i_rd_ddr_byte_valid)
+        ri_rd_ddr_byte <= i_rd_ddr_byte;
+    else
+        ri_rd_ddr_byte <= ri_rd_ddr_byte;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        r_rd_complete_byte <= 'd0;
+    else if(i_rd_ddr_byte_valid)
+        r_rd_complete_byte <= 'd0;
+    else if(w_axis_tx_active && rm_axis_tlast)
+        r_rd_complete_byte <= r_rd_complete_byte + (r_data_len << 3);
+    else
+        r_rd_complete_byte <= r_rd_complete_byte;
+end
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        ro_rd_queue_finish <= 'd0;
+    else if(i_rd_ddr_byte_valid)
+        ro_rd_queue_finish <= 'd0;
+    else if(w_max_next_pkt < 1518)
+        ro_rd_queue_finish <= 'd1;
+    else
+        ro_rd_queue_finish <= ro_rd_queue_finish;
+end
+
+// always @(posedge i_axis_clk or posedge i_axis_rst)begin
+//     if(i_axis_rst)
+//          <= 'd0;
+//     else if()
+        
+//     else
+        
+// end
 
 
 endmodule
