@@ -268,7 +268,7 @@ generate
                 r_my_offer[tor_i] <= 'd0;
             else if(r_tx_cur_state == P_TX_IDLE)
                 r_my_offer[tor_i] <= 'd0;
-            else if(w_recv_capacity_flag)
+            else if(w_recv_capacity_flag && r_direct_tor != tor_i)
                 r_my_offer[tor_i] <= r_local_queue_size[tor_i];
             else
                 r_my_offer[tor_i] <= r_my_offer[tor_i];
@@ -762,19 +762,19 @@ always @(posedge i_clk or posedge i_rst)begin
         r_rx_relay[6] <= 'd0;
         r_rx_relay[7] <= 'd0;
     end
-    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 3)begin
+    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 2)begin
         r_rx_relay[7] <= s_rx_axis_tdata[63:32];
         r_rx_relay[6] <= s_rx_axis_tdata[31: 0];
     end
-    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 4)begin
+    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 3)begin
         r_rx_relay[5] <= s_rx_axis_tdata[63:32];
         r_rx_relay[4] <= s_rx_axis_tdata[31: 0];
     end
-    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 5)begin
+    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 4)begin
         r_rx_relay[3] <= s_rx_axis_tdata[63:32];
         r_rx_relay[2] <= s_rx_axis_tdata[31: 0];
     end
-    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 6)begin
+    else if(r_rx_cur_state == P_RX_RELAY && s_rx_axis_tvalid && r_rx_cnt == 5)begin
         r_rx_relay[1] <= s_rx_axis_tdata[63:32];
         r_rx_relay[0] <= s_rx_axis_tdata[31: 0];
     end      

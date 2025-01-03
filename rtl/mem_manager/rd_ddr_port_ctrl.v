@@ -343,42 +343,42 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_rd_byte_valid <= 'd1;
     end
     else if(r_cur_state == P_TX_RELAY_PKT && !r_rd_ddr_lock)begin
-        if(r_relay_finish[0] != 0)begin
+        if(r_relay_finish[0] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 0        ;
             ro_rd_byte  <= ri_tx_relay[0] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[1] != 0)begin
+        end else if(r_relay_finish[1] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 1        ;
             ro_rd_byte  <= ri_tx_relay[1] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[2] != 0)begin
+        end else if(r_relay_finish[2] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 2        ;
             ro_rd_byte  <= ri_tx_relay[2] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[3] != 0)begin
+        end else if(r_relay_finish[3] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 3        ;
             ro_rd_byte  <= ri_tx_relay[3] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[4] != 0)begin
+        end else if(r_relay_finish[4] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 4        ;
             ro_rd_byte  <= ri_tx_relay[4] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[5] != 0)begin
+        end else if(r_relay_finish[5] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 5        ;
             ro_rd_byte  <= ri_tx_relay[5] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[6] != 0)begin
+        end else if(r_relay_finish[6] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 6        ;
             ro_rd_byte  <= ri_tx_relay[6] ;
             ro_rd_byte_valid <= 'd1;
-        end else if(r_relay_finish[7] != 0)begin
+        end else if(r_relay_finish[7] == 0)begin
             ro_rd_flag  <= 'd0;
             ro_rd_queue <= 7 ;
             ro_rd_byte  <= ri_tx_relay[7] ;
@@ -386,10 +386,10 @@ always @(posedge i_clk or posedge i_rst)begin
         end
     end
     else begin
-        ro_rd_flag  <= 'd0;
-        ro_rd_queue <= 'd0;
-        ro_rd_byte  <= 'd0;
-        ro_rd_byte_valid <= 'd0;
+        ro_rd_flag          <= ro_rd_flag      ;
+        ro_rd_queue         <= ro_rd_queue     ;
+        ro_rd_byte          <= ro_rd_byte      ;
+        ro_rd_byte_valid    <= ro_rd_byte_valid;
     end 
 end
 
@@ -398,7 +398,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_rd_ddr_lock <= 'd0;
     else if(w_rd_queue_finish)
         r_rd_ddr_lock <= 'd0;
-    else if(w_rd_byte_en)
+    else if(ro_rd_byte_valid)
         r_rd_ddr_lock <= 'd1;
     else
         r_rd_ddr_lock <= r_rd_ddr_lock;
