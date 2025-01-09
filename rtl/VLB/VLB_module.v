@@ -152,6 +152,14 @@ reg             r_compt_relay_ready     ;
 reg  [1 : 0]    r_compt_relay_en        ;
 reg  [1 : 0]    r_rx_offer_valid        ;
 reg  [1 : 0]    r_tx_relay_valid        ;
+
+//relay pkt
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_port0_tx_relay[P_QUEUE_NUM - 1 : 0];
+reg                             ro_port0_tx_relay_valid;
+reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_port1_tx_relay[P_QUEUE_NUM - 1 : 0];
+reg                             ro_port1_tx_relay_valid;
+reg  [1:0]  r_recv_relay_valid;
+reg         r_alloc_finish;
 /******************************wire*********************************/
 wire  w_slot_start_en;
 wire [C_M_AXI_ADDR_WIDTH-1 : 0]               w_port0_my_capacity               ;
@@ -187,10 +195,9 @@ wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] w_unlocal_queue_size;
 /******************************assign*******************************/
 assign w_slot_start_en = ri_check_queue_resp_ready[1] && !ri_check_queue_resp_ready[2];
 assign o_check_queue_req_valid = ro_check_queue_req_valid;
-assign o_port0_tx_relay       = w_port1_rx_relay        ;
-assign o_port0_tx_relay_valid = w_port1_rx_relay_valid  ;
-assign o_port1_tx_relay       = w_port0_rx_relay        ;
-assign o_port1_tx_relay_valid = w_port0_rx_relay_valid  ;
+
+assign o_port0_tx_relay_valid = r_alloc_finish  ;
+assign o_port1_tx_relay_valid = r_alloc_finish  ;
 
 assign w_port0_tx_relay_valid = r_tx_relay_valid[0];
 assign w_port1_tx_relay_valid = r_tx_relay_valid[1];
@@ -444,6 +451,10 @@ generate
         assign w_port0_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_tx_relay_reg[0][tor_i];
         assign w_port1_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_tx_relay_reg[1][tor_i];
 
+
+        assign o_port0_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = ro_port0_tx_relay[tor_i];
+        assign o_port1_tx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = ro_port1_tx_relay[tor_i];
+
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)begin
                 r_even_route_table[tor_i][0] <= 'd0;
@@ -516,10 +527,96 @@ generate
             else
                 r_rx_offer[1][tor_i] <= w_port1_rx_offer[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
         end
-        
+
+        //俩个上行端口全部收到relay数据包，但会存在俩个包都分配了同一个地址的中继数据，此时需要进行平均分配一下
+        always @(posedge i_clk or posedge i_rst)begin
+            if(i_rst)
+                ro_port0_tx_relay[tor_i] <= 'd0;
+            else if(w_port0_rx_relay_valid)
+                ro_port0_tx_relay[tor_i] <= w_port0_rx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
+            else if(r_recv_relay_valid == 2'b11 && ro_port0_tx_relay[tor_i] != 0 && ro_port1_tx_relay[tor_i] != 0)
+                if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 0)
+                    ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+                else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
+                    ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i] - ro_port1_tx_relay[tor_i];
+                else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
+                    ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+                else
+                    ro_port0_tx_relay[tor_i] <= 'd0;
+            else
+                ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+        end
+
+        always @(posedge i_clk or posedge i_rst)begin
+            if(i_rst)
+                ro_port1_tx_relay[tor_i] <= 'd0;
+            else if(w_port1_rx_relay_valid)
+                ro_port1_tx_relay[tor_i] <= w_port1_rx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
+            else if(r_recv_relay_valid == 2'b11 && ro_port0_tx_relay[tor_i] != 0 && ro_port1_tx_relay[tor_i] != 0)
+                if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 1)
+                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+                else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
+                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+                else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
+                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i] - ro_port0_tx_relay[tor_i];
+                else
+                    ro_port1_tx_relay[tor_i] <= 'd0;
+            else
+                ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+        end
+         
     end
 
 endgenerate
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_port0_tx_relay_valid <= 'd0;
+    else if(r_recv_relay_valid == 2'b11)
+        ro_port0_tx_relay_valid <= 'd0;
+    else if(w_port0_rx_relay_valid)
+        ro_port0_tx_relay_valid <= w_port0_rx_relay_valid;
+    else
+        ro_port0_tx_relay_valid <= ro_port0_tx_relay_valid;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_port1_tx_relay_valid <= 'd0;
+    else if(r_recv_relay_valid == 2'b11)
+        ro_port1_tx_relay_valid <= 'd0;
+    else if(w_port1_rx_relay_valid)
+        ro_port1_tx_relay_valid <= w_port1_rx_relay_valid;
+    else
+        ro_port1_tx_relay_valid <= ro_port1_tx_relay_valid;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_recv_relay_valid <= 'd0;
+    else if(r_recv_relay_valid == 2'b11)
+        r_recv_relay_valid <= 2'b00;
+    else if(ro_port0_tx_relay_valid && ro_port1_tx_relay_valid)
+        r_recv_relay_valid <= 2'b11;
+    else if(ro_port0_tx_relay_valid && !ro_port1_tx_relay_valid)
+        r_recv_relay_valid <= 2'b01;
+    else if(!ro_port0_tx_relay_valid && ro_port1_tx_relay_valid)
+        r_recv_relay_valid <= 2'b10;
+    else
+        r_recv_relay_valid <= r_recv_relay_valid;
+end
+
+always @(posedge i_clk or posedge i_rst) begin
+    if(i_rst)
+        r_alloc_finish <= 'd0;
+    else if(r_recv_relay_valid == 2'b11)
+        r_alloc_finish <= 'd1;
+    else
+        r_alloc_finish <= 'd0;
+end
+
+
+
 /*  上行端口0的直连ToR在下一个时隙会通过OCS0、OCS1有俩个直连节点，要空间角度上考虑中继优先级
     这里的r_tx_relay[0][0]指的是上行port0的直连节点通过OCS0在下一时隙的直连节点,实际应该是
     r_tx_relay[0][0][0]，最后的表示[0]表示后续时隙编号，但是由于这里的OCS度那口规模是8，

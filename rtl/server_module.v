@@ -60,8 +60,8 @@ module server_module#(
 /******************************function*****************************/
 
 /******************************parameter****************************/
-localparam      P_PKT_LEN   = 64;
-localparam      P_GAP_CYCLE = 16;
+localparam      P_PKT_LEN   = 128;
+localparam      P_GAP_CYCLE = 64;
 localparam      P_TX_IDLE   = 'd0,
                 P_TX_RANDOM = 'd1,
                 P_TX_DATA   = 'd2,

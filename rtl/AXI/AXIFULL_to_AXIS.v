@@ -177,7 +177,8 @@ assign o_rd_ddr_ready = ro_rd_ddr_ready ;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_axis_tx_active) || r_fifo_len_rden_2d;
 assign w_rd_last_byte = w_axis_tx_active && rm_axis_tlast;
 assign w_max_next_pkt = ri_rd_ddr_byte - r_rd_complete_byte;
-assign o_rd_queue_finish = ro_rd_queue_finish;
+// assign o_rd_queue_finish = ro_rd_queue_finish;
+assign o_rd_queue_finish = ri_rd_ddr_byte == r_rd_complete_byte;
 /******************************component****************************/
 FIFO_IND_64X4096 FIFO_IND_64X4096_data (
     .rst            (i_axis_rst          ), // input wire rst

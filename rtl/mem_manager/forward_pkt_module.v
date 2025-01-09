@@ -92,12 +92,14 @@ assign m_axis_tlast  = rm_axis_tlast ;
 assign m_axis_tkeep  = rm_axis_tkeep ;
 assign m_axis_tuser  = 'd0 ;
 assign o_forward_req    = ro_forward_req   ;
-assign o_forward_finish = ro_forward_finish;
+
 assign w_forward_en = ro_forward_req & i_forward_resp;
 assign w_tx_en = rm_axis_tvalid & m_axis_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_tx_en) || r_fifo_len_rden_2d;
 assign w_next_max_pkt_byte = ri_forward_byte - r_tx_finish_byte;
 assign w_forward_pkt_valid = s_axis_tvalid && s_axis_tuser == 'd2;
+// assign o_forward_finish = ro_forward_finish;
+assign o_forward_finish = ri_forward_byte == r_tx_finish_byte;
 /******************************component****************************/
 FIFO_FORWARD_BUF FIFO_FORWARD_BUF_data (//64x16384
     .clk            (i_clk              ), // input wire clk

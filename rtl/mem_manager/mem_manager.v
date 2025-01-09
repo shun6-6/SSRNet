@@ -397,11 +397,11 @@ always @(posedge i_clk or posedge i_rst) begin
         ri_rd_unlocal_port1_byte  <= i_rd_unlocal_port1_byte ;
         ri_rd_unlocal_port1_byte_valid <= 'd0;
     end
-    else if(w_port0_rd_en)begin
+    else if(w_port1_rd_en)begin
         ri_rd_unlocal_port1_flag  <= i_rd_unlocal_port1_flag ;    
         ri_rd_unlocal_port1_queue <= i_rd_unlocal_port1_queue;    
         ri_rd_unlocal_port1_byte  <= i_rd_unlocal_port1_byte ;
-        ri_rd_unlocal_port1_byte_valid <= w_port0_rd_en;
+        ri_rd_unlocal_port1_byte_valid <= w_port1_rd_en;
     end
     else begin
         ri_rd_unlocal_port1_flag  <= ri_rd_unlocal_port1_flag ;
@@ -1078,12 +1078,17 @@ generate
                 r_rd_unlocal_byte       [gen_unlocal_i] <= 'd0;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;  
             end
-            else if(w_rd_unlocal_queue_byte_valid[0] && ri_rd_unlocal_port0_queue == gen_unlocal_i)begin
+            else if(r_rd_unlocal_byte_valid[gen_unlocal_i] && w_rd_unlocal_byte_ready[gen_unlocal_i])begin
+                r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd0;
+                r_rd_unlocal_byte       [gen_unlocal_i] <= 'd0;
+                r_rd_unlocal_port_id    [gen_unlocal_i] <= r_rd_unlocal_port_id[gen_unlocal_i];
+            end
+            else if(w_rd_unlocal_queue_byte_valid[0] && ri_rd_unlocal_port0_queue == gen_unlocal_i && !w_rd_unlocal_port0_byte_ready)begin
                 r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd1;
                 r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port0_byte;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;
             end
-            else if(w_rd_unlocal_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_unlocal_i)begin
+            else if(w_rd_unlocal_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_unlocal_i && !w_rd_unlocal_port0_byte_ready)begin
                 r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd1;
                 r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port1_byte;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd1;  
@@ -1100,11 +1105,11 @@ generate
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= 'd0;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= 'd0;
             end
-            else if(r_rd_local_port_id[gen_unlocal_i] == 0 && ri_rd_unlocal_port0_queue == gen_unlocal_i && ri_rd_unlocal_port0_flag == 1)begin
+            else if(r_rd_unlocal_port_id[gen_unlocal_i] == 0 && ri_rd_unlocal_port0_queue == gen_unlocal_i && ri_rd_unlocal_port0_flag == 1)begin
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= i_rd_unlocal_port0_cpl;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= i_rd_unlocal_port0_ready;
             end
-            else if(r_rd_local_port_id[gen_unlocal_i] == 1 && ri_rd_unlocal_port1_queue == gen_unlocal_i && ri_rd_unlocal_port1_flag == 1)begin  
+            else if(r_rd_unlocal_port_id[gen_unlocal_i] == 1 && ri_rd_unlocal_port1_queue == gen_unlocal_i && ri_rd_unlocal_port1_flag == 1)begin  
                 r_rd_unlocal_queue_cpl  [gen_unlocal_i] <= i_rd_unlocal_port1_cpl;
                 r_rd_unlocal_queue_ready[gen_unlocal_i] <= i_rd_unlocal_port1_ready;
             end
@@ -1164,7 +1169,7 @@ generate
             else if(w_wr_unlocal_port_valid[gen_unlocal_o])begin
                 case(w_wr_unlocal_port_queue[gen_unlocal_o])
                 0 : begin
-                    if(r_wr_port_ready_id[0] == gen_unlocal_o && w_wr_unlocal_queue_ready[0])begin
+                    if(r_wr_unlocal_port_ready_id[0] == gen_unlocal_o && w_wr_unlocal_queue_ready[0])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[0];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[0];
                     end else begin
@@ -1173,7 +1178,7 @@ generate
                     end
                 end
                 1 : begin
-                    if(r_wr_port_ready_id[1] == gen_unlocal_o && w_wr_unlocal_queue_ready[1])begin
+                    if(r_wr_unlocal_port_ready_id[1] == gen_unlocal_o && w_wr_unlocal_queue_ready[1])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[1];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[1];
                     end else begin
@@ -1182,16 +1187,16 @@ generate
                     end
                 end
                 2 : begin
-                    if(r_wr_port_ready_id[2] == gen_unlocal_o && w_wr_unlocal_queue_ready[2])begin
-                        ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[3];
-                        ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[3];
+                    if(r_wr_unlocal_port_ready_id[2] == gen_unlocal_o && w_wr_unlocal_queue_ready[2])begin
+                        ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[2];
+                        ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[2];
                     end else begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= 'd0;
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= 'd0;
                     end
                 end
                 3 : begin
-                    if(r_wr_port_ready_id[3] == gen_unlocal_o && w_wr_unlocal_queue_ready[3])begin
+                    if(r_wr_unlocal_port_ready_id[3] == gen_unlocal_o && w_wr_unlocal_queue_ready[3])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[3];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[3];
                     end else begin
@@ -1200,7 +1205,7 @@ generate
                     end
                 end
                 4 : begin
-                    if(r_wr_port_ready_id[4] == gen_unlocal_o && w_wr_unlocal_queue_ready[4])begin
+                    if(r_wr_unlocal_port_ready_id[4] == gen_unlocal_o && w_wr_unlocal_queue_ready[4])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[4];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[4];
                     end else begin
@@ -1209,7 +1214,7 @@ generate
                     end
                 end
                 5 : begin
-                    if(r_wr_port_ready_id[5] == gen_unlocal_o && w_wr_unlocal_queue_ready[5])begin
+                    if(r_wr_unlocal_port_ready_id[5] == gen_unlocal_o && w_wr_unlocal_queue_ready[5])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[5];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[5];
                     end else begin
@@ -1218,7 +1223,7 @@ generate
                     end
                 end
                 6 : begin
-                    if(r_wr_port_ready_id[6] == gen_unlocal_o && w_wr_unlocal_queue_ready[6])begin
+                    if(r_wr_unlocal_port_ready_id[6] == gen_unlocal_o && w_wr_unlocal_queue_ready[6])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[6];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[6];
                     end else begin
@@ -1227,7 +1232,7 @@ generate
                     end
                 end
                 7 : begin
-                    if(r_wr_port_ready_id[7] == gen_unlocal_o && w_wr_unlocal_queue_ready[7])begin
+                    if(r_wr_unlocal_port_ready_id[7] == gen_unlocal_o && w_wr_unlocal_queue_ready[7])begin
                         ro_wr_unlocal_port_ready[gen_unlocal_o] <= w_wr_unlocal_queue_ready[7];
                         ro_wr_unlocal_port_addr[gen_unlocal_o]  <= w_wr_unlocal_queue_addr[7];
                     end else begin

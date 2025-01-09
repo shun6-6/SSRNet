@@ -161,7 +161,7 @@ FIFO_5X16 FIFO_5X16_dest_user (
     .clk            (i_clk              ), // input wire clk
     .srst           (i_rst              ), // input wire srst
     .din            ({ri_outport,ri_seek_flag}), // input wire [4 : 0] din
-    .wr_en          (ri_result_valid    ), // input wire wr_en
+    .wr_en          (w_check_active    ), // input wire wr_en
     .rd_en          (r_fifo_len_rden    ), // input wire rd_en
     .dout           (w_fifo_dest_user_dout), // output wire [4 : 0] dout
     .full           (                   ), // output wire full
@@ -180,15 +180,15 @@ always @(posedge i_clk or posedge i_rst)begin
         rs_axis_rx_tvalid_1d <= 'd0;
         rs_axis_rx_tdata_1d  <= 'd0;
     end
-    else if(s_axis_rx_tvalid && r_recv_cnt == 0 && s_axis_rx_tdata[7:0] == 8'd0)begin
-        rs_axis_rx_tvalid    <= 'd0 ;
-        rs_axis_rx_tdata     <= 'd0 ;
-        rs_axis_rx_tlast     <= 'd0 ;
-        rs_axis_rx_tkeep     <= 'd0 ;
-        rs_axis_rx_tuser     <= 'd0 ;
-        rs_axis_rx_tvalid_1d <= 'd0 ;
-        rs_axis_rx_tdata_1d  <= 'd0 ;
-    end
+    // else if(s_axis_rx_tvalid && r_recv_cnt == 0 && s_axis_rx_tdata[7:0] == 8'd0)begin
+    //     rs_axis_rx_tvalid    <= 'd0 ;
+    //     rs_axis_rx_tdata     <= 'd0 ;
+    //     rs_axis_rx_tlast     <= 'd0 ;
+    //     rs_axis_rx_tkeep     <= 'd0 ;
+    //     rs_axis_rx_tuser     <= 'd0 ;
+    //     rs_axis_rx_tvalid_1d <= 'd0 ;
+    //     rs_axis_rx_tdata_1d  <= 'd0 ;
+    // end
     else begin
         rs_axis_rx_tvalid <= s_axis_rx_tvalid   ;
         rs_axis_rx_tdata  <= s_axis_rx_tdata    ;

@@ -104,7 +104,8 @@ assign o_rd_ddr_strb = w_fifo_dout_strb ;
 assign o_rd_ddr_valid = ro_rd_ddr_valid ;
 assign w_max_next_pkt = ri_rd_local_byte - r_rd_comp_byte;
 assign o_queue_size        = ro_queue_size       ;
-assign o_rd_queue_finish = r_rd_ddr_complete;
+// assign o_rd_queue_finish = r_rd_ddr_complete;
+assign o_rd_queue_finish = r_rd_comp_byte == ri_rd_local_byte;
 /******************************component****************************/
 FIFO_32X4096 FIFO_32X4096_ADDR (
   .clk          (i_clk              ), // input wire clk
@@ -250,7 +251,7 @@ always @(posedge i_clk or posedge i_rst)begin
         r_fifo_rden <= 'd0;
     else if(w_rd_byte_en)
         r_fifo_rden <= 'd1;
-    else if(i_rd_ddr_cpl && i_rd_ddr_ready && !r_rd_ddr_complete)
+    else if(i_rd_ddr_cpl && i_rd_ddr_ready && !o_rd_queue_finish)
         r_fifo_rden <= 'd1;
     else
         r_fifo_rden <= 'd0;
@@ -286,19 +287,6 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_rd_ddr_complete <= r_rd_ddr_complete;
 end
-
-// always @(posedge i_clk or posedge i_rst)begin
-//     if(i_rst)
-//         ri_rd_last_byte_valid <= 'd0;
-//     else if(w_rd_byte_en)
-//         ri_rd_last_byte_valid <= 'd0;
-//     else if(ri_rd_last_byte[1] && !ri_rd_last_byte[2] && r_rd_ddr_complete)
-//         ri_rd_last_byte_valid <= 'd1;
-//     else
-//         ri_rd_last_byte_valid <= ri_rd_last_byte_valid;
-// end
-
-
 
 //VLB check queue size
 always @(posedge i_clk or posedge i_rst)begin
