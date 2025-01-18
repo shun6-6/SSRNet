@@ -87,6 +87,7 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_unlocal_direct_pkt_size  ;
 reg  [2 : 0]                                ri_unlocal_direct_pkt_queue ;
 reg                                         ri_unlocal_direct_pkt_valid ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]             ri_tx_relay [P_QUEUE_NUM - 1 : 0]       ;   
+reg  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] ri_tx_relay_vector;
 reg                                         r_rd_ddr_lock   ;     
 reg                                         r_forword_wait  ;
 reg                                         ri_tx_relay_valid;
@@ -99,6 +100,7 @@ reg                                         ri_recv_local2_pkt_valid;
 reg  [2 : 0]    ri_rd_byte_ready    ;
 reg  [1 : 0]    ri_rd_queue_finish  ;
 reg             ro_forward_resp     ;
+reg             ro_forward_valid    ;
 /******************************wire*********************************/
 wire  w_rd_byte_en      ;
 wire  w_rd_byte_ready   ;
@@ -110,7 +112,7 @@ assign o_rd_queue      = ro_rd_queue        ;
 assign o_rd_byte       = ro_rd_byte         ;
 assign o_rd_byte_valid = ro_rd_byte_valid   ;
 assign w_rd_byte_en = o_rd_byte_valid & w_rd_byte_ready;
-assign o_forward_valid = r_cur_state == P_TX_RECV_TWO_PTK;
+assign o_forward_valid = ro_forward_valid;
 assign w_rd_byte_ready = ri_rd_byte_ready[1] & !ri_rd_byte_ready[2];
 assign w_rd_queue_finish = ri_rd_queue_finish[0] && !ri_rd_queue_finish[1];
 assign w_forward_en = o_forward_resp & i_forward_req;
@@ -219,6 +221,17 @@ end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
+        ri_tx_relay_vector <= 'd0;
+    else if(r_cur_state == P_TX_RELAY_PKT && ri_tx_relay_valid_1d && (&r_relay_finish))
+        ri_tx_relay_vector <= 'd0;
+    else if(i_tx_relay_valid)
+        ri_tx_relay_vector <= i_tx_relay;
+    else
+        ri_tx_relay_vector <= ri_tx_relay_vector;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
         ri_tx_relay_valid_1d <= 'd0;
     else if(r_cur_state == P_TX_RELAY_PKT && ri_tx_relay_valid_1d && (&r_relay_finish))
         ri_tx_relay_valid_1d <= 'd0;
@@ -248,7 +261,7 @@ generate
                     r_relay_finish[i] <= 'd1;
                 else if(r_cur_state == P_TX_RELAY_PKT && w_rd_queue_finish && (r_relay_finish[i] == 0) && i == 0)
                     r_relay_finish[i] <= 'd1;
-                else if(ri_tx_relay_valid && ri_tx_relay[i] != 0)
+                else if(ri_tx_relay_valid && ri_tx_relay[i] != 0 && !ri_tx_relay_valid_1d)
                     r_relay_finish[i] <= 'd0;
                 else
                     r_relay_finish[i] <= r_relay_finish[i];
@@ -259,7 +272,7 @@ generate
                     r_relay_finish[i] <= 'd1;
                 else if(r_cur_state == P_TX_RELAY_PKT && w_rd_queue_finish && (r_relay_finish[i] == 0) && (&r_relay_finish[i-1:0]))
                     r_relay_finish[i] <= 'd1;
-                else if(ri_tx_relay_valid && ri_tx_relay[i] != 0)
+                else if(ri_tx_relay_valid && ri_tx_relay[i] != 0 && !ri_tx_relay_valid_1d)
                     r_relay_finish[i] <= 'd0;
                 else
                     r_relay_finish[i] <= r_relay_finish[i];
@@ -303,30 +316,32 @@ always @(*)begin
         end
         P_TX_MY_TWO_PTK   : begin
             if(ri_send_local2_valid && ri_send_local2_pkt_size == 0)
-                r_nxt_state = P_TX_RECV_TWO_PTK;
+                r_nxt_state = P_TX_LOCAL_PKT;
             else if(ri_send_local2_valid && w_rd_queue_finish)
-                r_nxt_state = P_TX_RECV_TWO_PTK;
+                r_nxt_state = P_TX_LOCAL_PKT;
             else
                 r_nxt_state = P_TX_MY_TWO_PTK;
         end
         P_TX_RECV_TWO_PTK  : begin
             if(ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size == 0)
-                r_nxt_state = P_TX_LOCAL_PKT;
+                r_nxt_state = P_TX_RELAY_PKT;
             else if(ri_recv_local2_pkt_valid && i_forward_finish)
-                r_nxt_state = P_TX_LOCAL_PKT;
+                r_nxt_state = P_TX_RELAY_PKT;
             else
                 r_nxt_state = P_TX_RECV_TWO_PTK;
         end
         P_TX_LOCAL_PKT   : begin
             if(ri_local_direct_pkt_valid && ri_local_direct_pkt_size == 0)
-                r_nxt_state = P_TX_RELAY_PKT;
+                r_nxt_state = P_TX_RECV_TWO_PTK;
             else if(w_rd_queue_finish && ri_local_direct_pkt_valid)
-                r_nxt_state = P_TX_RELAY_PKT;
+                r_nxt_state = P_TX_RECV_TWO_PTK;
             else
                 r_nxt_state = P_TX_LOCAL_PKT;
         end
         P_TX_RELAY_PKT   : begin
-            if(ri_tx_relay_valid_1d && (&r_relay_finish))
+            if(ri_tx_relay_valid && ri_tx_relay_vector == 0)
+                r_nxt_state = P_TX_IDLE;
+            else if(ri_tx_relay_valid_1d && (&r_relay_finish))
                 r_nxt_state = P_TX_IDLE;
             else
                 r_nxt_state = P_TX_RELAY_PKT;
@@ -334,6 +349,19 @@ always @(*)begin
         default : r_nxt_state = P_TX_IDLE;
     endcase
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ro_forward_valid <= 'd0;
+    else if(r_cur_state != P_TX_RECV_TWO_PTK)
+        ro_forward_valid <= 'd0;
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req)
+        ro_forward_valid <= 'd1;
+    else
+        ro_forward_valid <= ro_forward_valid;
+end
+
+
        
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin

@@ -66,7 +66,7 @@ P_SLOT_MAX_BYTE_NUM参数
 
 localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes
 localparam  P_CONFIG_DELAY      = 32'h0000_007D;
-localparam  P_SLOT_LEN          = 32'h0000_0708;
+localparam  P_SLOT_LEN          = 32'h0000_0832;
 
 OCS_controller#(
     .P_CHANNEL_NUM      (8              ),

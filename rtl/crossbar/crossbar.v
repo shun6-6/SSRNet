@@ -113,6 +113,8 @@ wire [P_CROSSBAR_N - 1 : 0] w_trans1_req        ;
 wire [P_CROSSBAR_N - 1 : 0] w_trans2_req        ;
 wire [P_CROSSBAR_N - 1 : 0] w_trans3_req        ;
 
+
+
 wire                        m0_axis_tx0_tvalid  ;
 wire [63 :0]                m0_axis_tx0_tdata   ;
 wire                        m0_axis_tx0_tlast   ;
@@ -212,6 +214,42 @@ wire                        m3_axis_tx3_tlast   ;
 wire [7  :0]                m3_axis_tx3_tkeep   ;
 wire                        m3_axis_tx3_tuser   ;
 wire                        m3_axis_tx3_tready  ;
+
+
+wire [P_CROSSBAR_N - 1 : 0] w_crossbar_trans_req [3:0];
+wire [P_CROSSBAR_N - 1 : 0] w_crossbar_trans_grant [3:0];
+wire [P_CROSSBAR_N - 1 : 0] w_arbite_grant_valid;
+wire [P_CROSSBAR_N - 1 : 0] w_arbiter_trans_req[3:0];
+wire [P_CROSSBAR_N - 1 : 0] w_arbiter_trans_grant[3:0];
+
+wire [3:0]  r_req_valid;
+wire [3:0]  r_req_lock;
+wire [3:0]  w_next_arbit;
+
+assign r_req_valid = {r_req3_valid,r_req2_valid,r_req1_valid,r_req0_valid};
+assign r_req_lock = {r_req3_lock,r_req2_lock,r_req1_lock,r_req0_lock};
+assign w_next_arbit = {w_next_arbit3,w_next_arbit2,w_next_arbit1,w_next_arbit0};
+
+ assign w_crossbar_trans_req  [0] = w_trans_0_req   ;
+ assign w_crossbar_trans_grant[0] = w_trans_0_grant ;
+ assign w_crossbar_trans_req  [1] = w_trans_1_req   ;
+ assign w_crossbar_trans_grant[1] = w_trans_1_grant ;
+ assign w_crossbar_trans_req  [2] = w_trans_2_req   ;
+ assign w_crossbar_trans_grant[2] = w_trans_2_grant ;
+ assign w_crossbar_trans_req  [3] = w_trans_3_req   ;
+ assign w_crossbar_trans_grant[3] = w_trans_3_grant ;
+
+ assign w_arbite_grant_valid = {w_grant3_valid,w_grant2_valid,w_grant1_valid,w_grant0_valid};
+
+ assign w_arbiter_trans_req  [0] = w_trans0_req   ;
+ assign w_arbiter_trans_grant[0] = w_trans0_grant ;
+ assign w_arbiter_trans_req  [1] = w_trans1_req   ;
+ assign w_arbiter_trans_grant[1] = w_trans1_grant ;
+ assign w_arbiter_trans_req  [2] = w_trans2_req   ;
+ assign w_arbiter_trans_grant[2] = w_trans2_grant ;
+ assign w_arbiter_trans_req  [3] = w_trans3_req   ;
+ assign w_arbiter_trans_grant[3] = w_trans3_grant ;
+
 
 assign w_trans0_req = {w_trans_3_req[0],w_trans_2_req[0],w_trans_1_req[0],w_trans_0_req[0]};
 assign w_trans1_req = {w_trans_3_req[1],w_trans_2_req[1],w_trans_1_req[1],w_trans_0_req[1]};

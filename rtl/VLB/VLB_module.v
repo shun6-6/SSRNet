@@ -266,8 +266,8 @@ VLB_port_module#(
     .o_rx_offer_capacity            (w_port0_rx_offer_capacity  ),
     .o_rx_offer                     (w_port0_rx_offer           ),
     .o_rx_offer_valid               (w_port0_rx_offer_valid     ),
-    .o_rx_relay                     (w_port0_rx_relay           ),
-    .o_rx_relay_valid               (w_port0_rx_relay_valid     ),
+    .o_rx_relay                     (w_port1_rx_relay           ),//port0收到的relay是port1需要发送的
+    .o_rx_relay_valid               (w_port1_rx_relay_valid     ),
     .i_tx_relay                     (w_port1_tx_relay           ),
     .i_tx_relay_valid               (w_port1_tx_relay_valid     )
 );
@@ -336,8 +336,8 @@ VLB_port_module#(
     .o_rx_offer_capacity            (w_port1_rx_offer_capacity  ),
     .o_rx_offer                     (w_port1_rx_offer           ),
     .o_rx_offer_valid               (w_port1_rx_offer_valid     ),
-    .o_rx_relay                     (w_port1_rx_relay           ),
-    .o_rx_relay_valid               (w_port1_rx_relay_valid     ),
+    .o_rx_relay                     (w_port0_rx_relay           ),
+    .o_rx_relay_valid               (w_port0_rx_relay_valid     ),
     .i_tx_relay                     (w_port0_tx_relay           ),
     .i_tx_relay_valid               (w_port0_tx_relay_valid     )
 );

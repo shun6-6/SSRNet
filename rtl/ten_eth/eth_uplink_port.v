@@ -86,7 +86,7 @@ wire            w_fifo_data_rden        ;
 wire            w_tx_en             ;
 /******************************assign*******************************/
 assign s_data_axis_tready = r_fifo_arbiter == 2 ? m_tx_axis_tready : 'd0  ;
-assign s_forward_axis_tready = i_forward_pkt_valid;
+assign s_forward_axis_tready = i_forward_pkt_valid && m_tx_axis_tready;
 assign w_tx_en      = m_tx_axis_tvalid & m_tx_axis_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_tx_en) || r_fifo_len_rden_2d;
 
@@ -226,9 +226,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_fifo_rd_cnt <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
+    else if(r_fifo_rd_cnt == r_data_len && w_tx_en && r_fifo_rd_cnt != 0 && r_fifo_arbiter == 1)
         r_fifo_rd_cnt <= 'd0;
-    else if(w_tx_en && r_fifo_arbiter == 1)
+    else if(w_fifo_data_rden || (r_fifo_rd_cnt == r_data_len - 1 && w_tx_en) && r_fifo_arbiter == 1)
         r_fifo_rd_cnt <= r_fifo_rd_cnt + 1'b1;
     else
         r_fifo_rd_cnt <= r_fifo_rd_cnt; 
@@ -259,9 +259,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
+    else if(r_fifo_rd_cnt == r_data_len && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tlast <= 'd0;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en && r_fifo_arbiter == 1)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tlast <= 'd1;
     else
         rm_tx_axis_tlast <= rm_tx_axis_tlast;
@@ -270,9 +270,9 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
+    else if(r_fifo_rd_cnt == r_data_len && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tkeep <= 8'hff;
-    else if(r_fifo_rd_cnt == r_data_len - 2 && w_tx_en && r_fifo_arbiter == 1)
+    else if(r_fifo_rd_cnt == r_data_len - 1 && w_tx_en && r_fifo_arbiter == 1)
         rm_tx_axis_tkeep <= r_data_keep;
     else
         rm_tx_axis_tkeep <= rm_tx_axis_tkeep;
