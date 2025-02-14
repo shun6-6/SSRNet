@@ -345,6 +345,9 @@ wire [7 :0]                 w_port1_forward_axis_tkeep      ;
 wire                        w_port1_forward_axis_tuser      ;
 wire                        w_port1_forward_axis_tready     ;
 
+wire w_port0_forward_ready;
+wire w_port1_forward_ready;
+
 wire w_sim_start;
 
 /*  控制器接口，接收来自控制器的消息，控制器消息包括时隙指示数据包
@@ -676,10 +679,13 @@ DDR_rd_ctrl#(
     .o_port0_forward_resp                   (w_port0_forward_resp           ),
     .i_port0_forward_finish                 (w_port0_forward_finish         ),
     .o_port0_forward_valid                  (w_port0_forward_valid          ),
+    .i_port0_forward_ready                  (w_port0_forward_ready          ),
+
     .i_port1_forward_req                    (w_port1_forward_req            ),
     .o_port1_forward_resp                   (w_port1_forward_resp           ),
     .i_port1_forward_finish                 (w_port1_forward_finish         ),
-    .o_port1_forward_valid                  (w_port1_forward_valid          )
+    .o_port1_forward_valid                  (w_port1_forward_valid          ),
+    .i_port1_forward_ready                  (w_port1_forward_ready          )
 );
 
 
@@ -750,6 +756,7 @@ eth_uplink_port eth_uplink_port_u0(
     .s_data_axis_tready     (m_axis_2_tready        ),
 
     .i_forward_pkt_valid    (w_port0_forward_valid  ),
+    .o_forward_pkt_ready    (w_port0_forward_ready  ),
     .s_forward_axis_tvalid  (w_port0_forward_axis_tvalid),
     .s_forward_axis_tdata   (w_port0_forward_axis_tdata ),
     .s_forward_axis_tlast   (w_port0_forward_axis_tlast ),
@@ -785,6 +792,7 @@ eth_uplink_port eth_uplink_port_u1(
     .s_data_axis_tready     (m_axis_3_tready        ),
 
     .i_forward_pkt_valid    (w_port1_forward_valid  ),
+    .o_forward_pkt_ready    (w_port1_forward_ready  ),
     .s_forward_axis_tvalid  (w_port1_forward_axis_tvalid),
     .s_forward_axis_tdata   (w_port1_forward_axis_tdata ),
     .s_forward_axis_tlast   (w_port1_forward_axis_tlast ),

@@ -59,14 +59,34 @@ wire        w_slot_id       ;
 状态稳定后，第一个时隙开始，下发一个仿真开始指令给所有ToR，
 所有ToR下行连接的server开始产生数据，等待一个完整的时隙后，开始切换
 ocs状态，等待切换时延结束后，下发一次时间同步，标志一次全新的时隙开始
-时隙一次最多传输8KByte数据，所需时间1024 x 6.4 = 13us
+时隙一次最多传输8KByte数据，所需时间1024 x 6.4 = 6us
 仿真暂定配置时延0.8微妙（234 clk），时隙持续8（1200 clk）微妙，具体修改需要控制VLB模块的
 P_SLOT_MAX_BYTE_NUM参数
 */
 
-localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes
-localparam  P_CONFIG_DELAY      = 32'h0000_007D;
-localparam  P_SLOT_LEN          = 32'h0000_0832;
+//9:1
+// localparam  P_CONFIG_DELAY      = 32'h0000_00AA;//1us
+// localparam  P_SLOT_LEN          = 32'h0000_0680;//10us
+// localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes //time + 4.5us(700 clk)
+
+localparam  P_CONFIG_DELAY      = 32'h0000_00AA;//1us
+localparam  P_SLOT_LEN          = 32'h0000_0680;//10us
+localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes //time + 4.5us(700 clk)
+
+
+reg [127:0] r_state_monitor;
+localparam  P_S_IDLE = 0;
+localparam  P_S_WAIT_S_TS   =   1;
+localparam  P_S_RETURN_TS   =   2;
+localparam  P_S_SEND_M_STD  =   3;
+always@(*)begin
+  case(OCS_controller_u0.ocs_ctrl_trx_port_0.r_cur_m_state)
+        P_S_WAIT_S_TS  : r_state_monitor = "WAIT_S_TS";
+        P_S_RETURN_TS  : r_state_monitor = "RETURN_TS";
+        P_S_SEND_M_STD : r_state_monitor = "SEND_M_STD";
+    default         : r_state_monitor = "IDLE";
+  endcase
+end
 
 OCS_controller#(
     .P_CHANNEL_NUM      (8              ),
@@ -127,35 +147,5 @@ generate
     end
 endgenerate
 
-
-// ToR_DDR_tb#(
-//     .P_CHANNEL_NUM      (3                    )  ,
-//     .P_MY_TOR_MAC       (48'h8D_BC_5C_4A_00_00)
-// )ToR_DDR_tb_u0(
-//     .i_gt_refclk_p          (gt_clk         ),
-//     .i_gt_refclk_n          (~gt_clk        ),
-//     .i_sys_clk_p            (sys_clk        ),
-//     .i_sys_clk_n            (~sys_clk       ),
-//     .o_gt_txp               ({w_tor_ctrl_txp[0],w_tor_up1_txp[0],w_tor_up0_txp[0]}),
-//     .o_gt_txn               ({w_tor_ctrl_txn[0],w_tor_up1_txn[0],w_tor_up0_txn[0]}),
-//     .i_gt_rxp               ({w_tor_ctrl_rxp[0],w_tor_up1_rxp[0],w_tor_up0_rxp[0]}),
-//     .i_gt_rxn               ({w_tor_ctrl_rxn[0],w_tor_up1_rxn[0],w_tor_up0_rxn[0]}),
-//     .o_sfp_dis              ()
-// );
-
-// ToR_DDR_tb#(
-//     .P_CHANNEL_NUM      (3                    )  ,
-//     .P_MY_TOR_MAC       (48'h8D_BC_5C_4A_01_00)
-// )ToR_DDR_tb_u1(
-//     .i_gt_refclk_p          (gt_clk         ),
-//     .i_gt_refclk_n          (~gt_clk        ),
-//     .i_sys_clk_p            (sys_clk        ),
-//     .i_sys_clk_n            (~sys_clk       ),
-//     .o_gt_txp               ({w_tor_ctrl_txp[1],w_tor_up1_txp[1],w_tor_up0_txp[1]}),
-//     .o_gt_txn               ({w_tor_ctrl_txn[1],w_tor_up1_txn[1],w_tor_up0_txn[1]}),
-//     .i_gt_rxp               ({w_tor_ctrl_rxp[1],w_tor_up1_rxp[1],w_tor_up0_rxp[1]}),
-//     .i_gt_rxn               ({w_tor_ctrl_rxn[1],w_tor_up1_rxn[1],w_tor_up0_rxn[1]}),
-//     .o_sfp_dis              ()
-// );
 
 endmodule

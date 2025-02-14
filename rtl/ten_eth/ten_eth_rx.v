@@ -46,6 +46,7 @@ module ten_eth_rx#(
     input  [3 :0]   i_check_id              ,
     input  [1 :0]   i_seek_flag             ,
     input  [2 :0]   i_cur_connect_tor       ,
+    input  [63:0]   i_time_stamp            ,
     //output AXIS
     output          m_axis_tvalid           ,
     output [63 :0]  m_axis_tdata            ,
@@ -97,6 +98,12 @@ reg  [15:0]     r_data_len              ;
 reg  [15:0]     r_fifo_rd_cnt           ;
 reg  [7 :0]     r_data_keep             ;
 reg             r_fifo_lock             ;
+
+reg  [63:0]     r_dealy;
+reg  [15:0]     r_dealy_cnt;
+reg             r_dealy_valid;
+wire [63:0]     w_dealy;
+reg  [15:0]     r_pkt_cnt;
 /******************************wire*********************************/
 wire [63:0]     w_fifo_data_dout        ;
 wire [15:0]     w_fifo_len_dout         ;
@@ -444,5 +451,52 @@ always @(posedge i_clk or posedge i_rst) begin
         ro_axis_tuser <= ro_axis_tuser;
 end
 
+
+
+assign w_dealy = i_time_stamp - rs_axis_rx_tdata;
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_dealy <= 'd0;
+    else if(r_dealy_cnt == 32)
+        r_dealy <= r_dealy >> 5;
+    else if(ro_check_valid && ro_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ro_check_mac[7:0] != 0)
+        r_dealy <= r_dealy + w_dealy;
+    else
+        r_dealy <= r_dealy;
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_dealy_cnt <= 'd0;
+    else if(r_dealy_cnt == 32)
+        r_dealy_cnt <= 'd0;
+    else if(ro_check_valid && ro_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ro_check_mac[7:0] != 0)
+        r_dealy_cnt <= r_dealy_cnt + 1;
+    else
+        r_dealy_cnt <= r_dealy_cnt;
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_dealy_valid <= 'd0;
+    else if(r_dealy_cnt == 32)
+        r_dealy_valid <= 'd1;
+    else
+        r_dealy_valid <= 'd0;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_pkt_cnt <= 'd0;
+    else if(ro_check_valid && ro_check_mac[7:0] != 0)
+        r_pkt_cnt <= r_pkt_cnt + 1;
+    else
+        r_pkt_cnt <= r_pkt_cnt;
+end
+
+    
 
 endmodule

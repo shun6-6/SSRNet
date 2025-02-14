@@ -61,7 +61,7 @@ module server_module#(
 
 /******************************parameter****************************/
 localparam      P_PKT_LEN   = 128;
-localparam      P_GAP_CYCLE = 64;
+localparam      P_GAP_CYCLE = 294;
 localparam      P_TX_IDLE   = 'd0,
                 P_TX_RANDOM = 'd1,
                 P_TX_DATA   = 'd2,
@@ -70,6 +70,7 @@ localparam      P_TX_IDLE   = 'd0,
 reg  [5 : 0]    r_cur_state ;
 reg  [5 : 0]    r_nxt_state ;
 reg  [15: 0]    r_st_cnt    ;
+reg  [63:0]     r_dealy;
 /******************************reg**********************************/
 reg             ri_sim_start        ;
 reg             r_tx_axis_tvalid    ;
@@ -299,6 +300,19 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         ro_result_valid <= 'd0;
 end
+
+
+//delay compute
+
+
+// always @(posedge i_clk or posedge i_rst)begin
+//     if(i_rst)
+//         r_dealy <= 'd0;
+//     else if(ri_check_valid)
+//         r_dealy <= 'd1;
+//     else
+//         r_dealy <= 'd0;
+// end
 
 
 endmodule

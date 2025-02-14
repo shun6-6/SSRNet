@@ -198,6 +198,93 @@ module ToR_DDR_tb#(
   always
   clk_in1 = #(6400/2.0) ~clk_in1;
 
+
+  reg [127:0] r_state_monitor_0;
+  reg [127:0] r_state_monitor_1;
+
+  //从机时间同步
+  localparam  P_S_IDLE        =   0;
+  localparam  P_S_SEND_S_TS   =   4;
+  localparam  P_S_WAIT_M_TS   =   5;
+  localparam  P_S_CMPT_OFFEST =   6;
+  localparam  P_S_WAIT_STD    =   7;
+  localparam  P_S_CMPT_STD    =   8;
+  localparam  P_S_SYN_END     =   9; 
+  
+  always@(*)begin
+    case(SRRNet_Top_u0.Time_syn_module_u0.r_cur_s_state)
+      P_S_SEND_S_TS   : r_state_monitor_0 = "SEND_S_TS";
+      P_S_WAIT_M_TS   : r_state_monitor_0 = "WAIT_M_TS";
+      P_S_CMPT_OFFEST : r_state_monitor_0 = "CMPT_OFFEST";
+      P_S_WAIT_STD    : r_state_monitor_0 = "WAIT_STD";
+      P_S_CMPT_STD    : r_state_monitor_0 = "CMPT_STD";
+      P_S_SYN_END     : r_state_monitor_0 = "SYN_END";
+      default         : r_state_monitor_0 = "IDLE";
+    endcase
+  end
+
+
+  //SRRLB
+
+  localparam  P_TX_IDLE           = 'd0;
+  localparam  P_TX_UNLOCAL_PKT    = 'd1;
+  localparam  P_TX_MY_TWO_PTK     = 'd2;
+  localparam  P_TX_RECV_TWO_PTK   = 'd3;
+  localparam  P_TX_LOCAL_PKT      = 'd4;
+  localparam  P_TX_RELAY_PKT      = 'd5;
+
+  always@(*)begin
+    case(SRRNet_Top_u0.DDR_rd_ctrl_u0.rd_ddr_port_ctrl_u0.r_cur_state)
+      P_TX_IDLE         : r_state_monitor_1 = "IDLE";
+      P_TX_UNLOCAL_PKT  : r_state_monitor_1 = "UNLOCAL_PKT";
+      P_TX_MY_TWO_PTK   : r_state_monitor_1 = "MY_TWO_PTK";
+      P_TX_RECV_TWO_PTK : r_state_monitor_1 = "RECV_TWO_PTK";
+      P_TX_LOCAL_PKT    : r_state_monitor_1 = "LOCAL_PKT";
+      P_TX_RELAY_PKT    : r_state_monitor_1 = "RELAY_PKT";
+      default           : r_state_monitor_1 = "IDLE";
+    endcase
+  end
+
+  reg [127:0] r_state_monitor_2;
+  reg [127:0] r_state_monitor_3;
+
+  //localparam  P_TX_IDLE           = 'd0;
+  localparam  P_COMPT_CAPACITY    = 'd1;
+  localparam  P_TX_CAPACITY       = 'd2;
+  localparam  P_COMPT_OFFER       = 'd3;
+  localparam  P_TX_OFFER          = 'd4;
+  localparam  P_COMPT_RELAY       = 'd5;
+  localparam  P_TX_RELAY          = 'd6;
+  localparam  P_RX_IDLE           = 'd0;
+  localparam  P_RX_CAPACITY       = 'd1;
+  localparam  P_RX_OFFER          = 'd2;
+  localparam  P_RX_RELAY          = 'd3;
+
+
+  always@(*)begin
+    case(SRRNet_Top_u0.VLB_module_u0.VLB_port_module_port0.r_tx_cur_state)
+      P_TX_IDLE         : r_state_monitor_2 = "TX_IDLE";
+      P_COMPT_CAPACITY  : r_state_monitor_2 = "COMPT_CAPACITY";
+      P_TX_CAPACITY     : r_state_monitor_2 = "TX_CAPACITY";
+      P_COMPT_OFFER     : r_state_monitor_2 = "COMPT_OFFER";
+      P_TX_OFFER        : r_state_monitor_2 = "TX_OFFER";
+      P_COMPT_RELAY     : r_state_monitor_2 = "COMPT_RELAY";
+      P_TX_RELAY        : r_state_monitor_2 = "TX_RELAY";
+      default           : r_state_monitor_2 = "TX_IDLE";
+    endcase
+  end
+
+  always@(*)begin
+    case(SRRNet_Top_u0.VLB_module_u0.VLB_port_module_port0.r_rx_cur_state)
+      P_RX_IDLE         : r_state_monitor_3 = "RX_IDLE";
+      P_RX_CAPACITY     : r_state_monitor_3 = "RX_CAPACITY";
+      P_RX_OFFER        : r_state_monitor_3 = "RX_OFFER";
+      P_RX_RELAY        : r_state_monitor_3 = "RX_RELAY";
+      default           : r_state_monitor_1 = "RX_IDLE";
+    endcase
+  end
+
+
   SRRNet_Top#(
     .P_CHANNEL_NUM          (P_CHANNEL_NUM      ),
     .P_MY_TOR_MAC           (P_MY_TOR_MAC       ),

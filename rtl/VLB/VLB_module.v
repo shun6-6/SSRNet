@@ -160,6 +160,12 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_port1_tx_relay[P_QUEUE_NUM - 1 : 0];
 reg                             ro_port1_tx_relay_valid;
 reg  [1:0]  r_recv_relay_valid;
 reg         r_alloc_finish;
+
+reg  [1:0]  r_updata_valid;
+reg  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   r_updata_local_queue_size         ;
+reg                                           r_updata_local_queue_valid        ;
+reg  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   r_port0_updata_local_queue_size         ;
+reg  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   r_port1_updata_local_queue_size         ;
 /******************************wire*********************************/
 wire  w_slot_start_en;
 wire [C_M_AXI_ADDR_WIDTH-1 : 0]               w_port0_my_capacity               ;
@@ -192,6 +198,12 @@ wire                                          w_port1_tx_relay_valid            
 wire [C_M_AXI_ADDR_WIDTH-1 : 0] w_capacity_remain [1 : 0][P_OCS_NUM - 1 : 0]  ;
 wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] w_local_queue_size  ;
 wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0] w_unlocal_queue_size;
+
+wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   w_port0_updata_local_queue_size   ;
+wire                                          w_port0_updata_local_queue_valid  ;
+wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   w_port1_updata_local_queue_size   ;
+wire                                          w_port1_updata_local_queue_valid  ;
+
 /******************************assign*******************************/
 assign w_slot_start_en = ri_check_queue_resp_ready[1] && !ri_check_queue_resp_ready[2];
 assign o_check_queue_req_valid = ro_check_queue_req_valid;
@@ -222,7 +234,7 @@ VLB_port_module#(
     .i_clk                          (i_clk                      ),
     .i_rst                          (i_rst                      ) ,
 
-    .i_slot_start                   (w_slot_start_en            ),
+    .i_slot_start                   (r_slot_start_en            ),
     .i_slot_id                      (r_cur_slot_id              ),
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
@@ -263,6 +275,11 @@ VLB_port_module#(
 
     .i_local_queue_size             (w_local_queue_size         ),
     .i_unlocal_queue_size           (w_unlocal_queue_size       ),
+    .o_updata_local_queue_size      (w_port0_updata_local_queue_size ),
+    .o_updata_local_queue_valid     (w_port0_updata_local_queue_valid),
+    .i_updata_local_queue_size      (r_updata_local_queue_size       ),
+    .i_updata_local_queue_valid     (r_updata_local_queue_valid      ),
+
     .o_rx_offer_capacity            (w_port0_rx_offer_capacity  ),
     .o_rx_offer                     (w_port0_rx_offer           ),
     .o_rx_offer_valid               (w_port0_rx_offer_valid     ),
@@ -292,7 +309,7 @@ VLB_port_module#(
     .i_clk                          (i_clk                      ),
     .i_rst                          (i_rst                      ) ,
 
-    .i_slot_start                   (w_slot_start_en            ),
+    .i_slot_start                   (r_slot_start_en            ),
     .i_slot_id                      (r_cur_slot_id              ),
 
     .i_syn_time_stamp               (i_syn_time_stamp           ),
@@ -333,6 +350,11 @@ VLB_port_module#(
 
     .i_local_queue_size             (w_local_queue_size         ),
     .i_unlocal_queue_size           (w_unlocal_queue_size       ),
+    .o_updata_local_queue_size      (w_port1_updata_local_queue_size ),
+    .o_updata_local_queue_valid     (w_port1_updata_local_queue_valid),
+    .i_updata_local_queue_size      (r_updata_local_queue_size       ),
+    .i_updata_local_queue_valid     (r_updata_local_queue_valid      ),
+
     .o_rx_offer_capacity            (w_port1_rx_offer_capacity  ),
     .o_rx_offer                     (w_port1_rx_offer           ),
     .o_rx_offer_valid               (w_port1_rx_offer_valid     ),
@@ -435,6 +457,67 @@ end
 always @(posedge i_clk)begin
     r_slot_start_en <= w_slot_start_en  ;
 end
+
+//updata queue size   
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_updata_valid <= 2'b00;
+    else if(r_updata_valid == 2'd2)
+        r_updata_valid <= 2'b00;
+    else if(w_port0_updata_local_queue_valid && w_port1_updata_local_queue_valid)
+        r_updata_valid <= r_updata_valid + 2'd2;
+    else if(w_port0_updata_local_queue_valid && !w_port1_updata_local_queue_valid)
+        r_updata_valid <= r_updata_valid + 2'b01;
+    else if(!w_port0_updata_local_queue_valid && w_port1_updata_local_queue_valid)
+        r_updata_valid <= r_updata_valid + 2'b01;
+    else
+        r_updata_valid <= r_updata_valid;
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_port0_updata_local_queue_size <= 'd0;
+    else if(r_updata_local_queue_valid)
+        r_port0_updata_local_queue_size <= 'd0;
+    else if(w_port0_updata_local_queue_valid)
+        r_port0_updata_local_queue_size <= w_port0_updata_local_queue_size;
+    else
+        r_port0_updata_local_queue_size <= r_port0_updata_local_queue_size;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_port1_updata_local_queue_size <= 'd0;
+    else if(r_updata_local_queue_valid)
+        r_port1_updata_local_queue_size <= 'd0;
+    else if(w_port1_updata_local_queue_valid)
+        r_port1_updata_local_queue_size <= w_port1_updata_local_queue_size;
+    else
+        r_port1_updata_local_queue_size <= r_port1_updata_local_queue_size;
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_updata_local_queue_size <= 'd0;
+    else if(r_updata_valid == 2'd2)
+        r_updata_local_queue_size <= (r_port0_updata_local_queue_size & r_port1_updata_local_queue_size);
+    else
+        r_updata_local_queue_size <= r_updata_local_queue_size;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_updata_local_queue_valid <= 'd0;
+    else if(r_updata_valid == 2'd2)
+        r_updata_local_queue_valid <= 'd1;
+    else
+        r_updata_local_queue_valid <= 'd0;
+end
+
 
 genvar tor_i;
 generate

@@ -336,6 +336,7 @@ ten_eth_rx#(
     .i_check_id             (w0_check_resp_id       ),
     .i_seek_flag            (w0_seek_flag           ),
     .i_cur_connect_tor      ('d0                    ),
+    .i_time_stamp       (i_time_stamp       ),
 
     .m_axis_tvalid          (m_rx0_axis_tvalid      ),
     .m_axis_tdata           (m_rx0_axis_tdata       ),
@@ -370,6 +371,7 @@ ten_eth_rx#(
     .i_check_id             (w1_check_resp_id       ),
     .i_seek_flag            (w1_seek_flag           ),
     .i_cur_connect_tor      ('d0      ),
+    .i_time_stamp       (i_time_stamp       ),
 
     .m_axis_tvalid          (m_rx1_axis_tvalid      ),
     .m_axis_tdata           (m_rx1_axis_tdata       ),
@@ -440,6 +442,7 @@ ten_eth_rx#(
     .i_check_id             (w2_check_resp_id       ),
     .i_seek_flag            (w2_seek_flag           ),
     .i_cur_connect_tor      (i_port0_connect_tor    ),
+    .i_time_stamp       (i_time_stamp       ),
 
     .m_axis_tvalid          (m_rx2_axis_tvalid      ),
     .m_axis_tdata           (m_rx2_axis_tdata       ),
@@ -511,6 +514,7 @@ ten_eth_rx#(
     .i_check_id             (w3_check_resp_id       ),
     .i_seek_flag            (w3_seek_flag           ),
     .i_cur_connect_tor      (i_port1_connect_tor    ),
+    .i_time_stamp       (i_time_stamp       ),
 
     .m_axis_tvalid          (m_rx3_axis_tvalid      ),
     .m_axis_tdata           (m_rx3_axis_tdata       ),

@@ -85,6 +85,11 @@ module VLB_port_module#(
 
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_local_queue_size          ,
     input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_unlocal_queue_size        ,
+    output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_updata_local_queue_size   ,
+    output                                          o_updata_local_queue_valid  ,
+    input  [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   i_updata_local_queue_size   ,
+    input                                           i_updata_local_queue_valid  ,
+
     output [C_M_AXI_ADDR_WIDTH-1 : 0]               o_rx_offer_capacity         ,
     output [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   o_rx_offer                  ,
     output                                          o_rx_offer_valid            ,
@@ -147,6 +152,7 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_offer     [P_QUEUE_NUM - 1 : 0]   ;
 
 reg  [1 :0]                        r_updata_capacity   ;
 reg                                 r_updata_finish   ;
+reg r_updata_finish_1d;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_tx_relay     [P_QUEUE_NUM - 1 : 0]   ;
 
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0] r_my_rx_capacity   ;
@@ -164,12 +170,14 @@ reg     r_rx_offer_valid       ;
 reg     r_rx_relay_valid       ;
 
 reg  [2 : 0]                    ro_send_my_local2_queue     ;
-// reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_size     ;
-// reg  [C_M_AXI_ADDR_WIDTH-1 : 0] ro_local_direct_pkt_valid    ;
+
+reg         ro_updata_local_queue_valid;
+reg         ri_updata_local_queue_valid;
 /******************************wire*********************************/
 wire            w_tx_en;
 wire            w_recv_capacity_flag    ;
 wire            w_recv_offer_flag    ;
+
 
 /******************************assign*******************************/
 assign w_tx_en = rm_tx_axis_tvalid & m_tx_axis_tready;
@@ -198,6 +206,7 @@ assign o_unlocal_direct_pkt_valid = r_tx_cur_state == P_COMPT_CAPACITY && r_tx_s
 assign o_unlocal_direct_pkt_queue = r_direct_tor;
 assign o_recv_local2_pkt_size = r_rx_offer_local2;
 assign o_recv_local2_pkt_valid = r_rx_cur_state == P_RX_OFFER && s_rx_axis_tvalid && r_rx_cnt == 3;
+assign o_updata_local_queue_valid = ro_updata_local_queue_valid;
 /******************************component****************************/
 
 /******************************always*******************************/
@@ -208,12 +217,12 @@ generate
         assign o_rx_offer[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_rx_offer[tor_i];
         assign o_rx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_rx_relay[tor_i];
 
+        assign o_updata_local_queue_size[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH] = r_local_queue_size[tor_i];
+
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)begin
                 r_route_table[tor_i][0] <= 'd0;
                 r_route_table[tor_i][1] <= 'd0;
-                // r_route_table[tor_i][2] <= 'd0;
-                // r_route_table[tor_i][3] <= 'd0;
             end
             else if(P_MY_OCS_ID == 0)begin
                 r_route_table[tor_i][0] <=  (tor_i + 1) > (P_TOR_NUM - 1) ? 
@@ -222,12 +231,6 @@ generate
                 r_route_table[tor_i][1] <=  (tor_i + 1 * 2 + 1) > (P_TOR_NUM - 1) ? 
                                             ((tor_i + 1 * 2 + 1) - (P_TOR_NUM - 1) - 1):
                                             (tor_i + 1 * 2 + 1);
-                // r_route_table[tor_i][2] <=  (tor_i + 2 * 2 + 1) > (P_TOR_NUM - 1) ? 
-                //                             ((tor_i + 2 * 2 + 1) - (P_TOR_NUM - 1) - 1): 
-                //                             (tor_i + 2 * 2 + 1);
-                // r_route_table[tor_i][3] <=  (tor_i + 3 * 2 + 1) > (P_TOR_NUM - 1) ? 
-                //                             ((tor_i + 3 * 2 + 1) - (P_TOR_NUM - 1) - 1): 
-                //                             (tor_i + 3 * 2 + 1);
             end
             else if(P_MY_OCS_ID == 1)begin
                 r_route_table[tor_i][0] <=  (tor_i - 1) < 0 ? 
@@ -236,26 +239,26 @@ generate
                 r_route_table[tor_i][1] <=  (tor_i - 1 * 2 - 1) < 0 ? 
                                             (P_TOR_NUM + tor_i - 1 * 2 - 1):
                                             (tor_i - 1 * 2 - 1);
-                // r_route_table[tor_i][2] <=  (tor_i - 2 * 2 - 1) < 0 ? 
-                //                             (P_TOR_NUM + tor_i - 2 * 2 - 1): 
-                //                             (tor_i - 2 * 2 - 1);
-                // r_route_table[tor_i][3] <=  (tor_i - 3 * 2 - 1) < 0 ? 
-                //                             (P_TOR_NUM + tor_i - 3 * 2 - 1): 
-                //                             (tor_i - 3 * 2 - 1);
             end
             else begin
                     r_route_table[tor_i][0] <= r_route_table[tor_i][0];
                     r_route_table[tor_i][1] <= r_route_table[tor_i][1];
-                    // r_route_table[tor_i][2] <= r_route_table[tor_i][2];
-                    // r_route_table[tor_i][3] <= r_route_table[tor_i][3];
                 end
         end
         
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)
                 r_local_queue_size[tor_i] <= 'd0;
-            else
+            //second updata
+            else if(i_updata_local_queue_valid)
+                r_local_queue_size[tor_i] <= i_updata_local_queue_size[tor_i*C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];    
+            //send local local2 updata
+            else if(r_updata_finish && (tor_i == r_route_table[r_direct_tor][r_cur_slot_id]))
+                r_local_queue_size[tor_i] <= r_local_queue_size[tor_i] - r_local_pkt_num2;
+            else if(i_slot_start)
                 r_local_queue_size[tor_i] <= i_local_queue_size[tor_i*C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
+            else
+                r_local_queue_size[tor_i] <= r_local_queue_size[tor_i];
         end
 
         always @(posedge i_clk or posedge i_rst)begin
@@ -270,7 +273,7 @@ generate
                 r_my_offer[tor_i] <= 'd0;
             else if(r_tx_cur_state == P_TX_IDLE)
                 r_my_offer[tor_i] <= 'd0;
-            else if(w_recv_capacity_flag && r_direct_tor != tor_i)
+            else if(ri_updata_local_queue_valid && r_direct_tor != tor_i)
                 r_my_offer[tor_i] <= r_local_queue_size[tor_i];
             else
                 r_my_offer[tor_i] <= r_my_offer[tor_i];
@@ -334,6 +337,26 @@ always @(posedge i_clk or posedge i_rst)begin
     end
 end
 
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        ro_updata_local_queue_valid <= 'd0;
+    end else if(r_updata_finish)begin
+        ro_updata_local_queue_valid <= 1;
+    end else begin
+        ro_updata_local_queue_valid <= 'd0;
+    end
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)begin
+        ri_updata_local_queue_valid <= 'd0;
+    end else begin
+        ri_updata_local_queue_valid <= i_updata_local_queue_valid;
+    end
+end
+
+
+
 //===================================发送状态机======================================//
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
@@ -363,7 +386,7 @@ always @(*)begin
                 r_tx_nxt_state = P_TX_CAPACITY;
         end
         P_COMPT_OFFER : begin
-            if(r_updata_finish)
+            if(ri_updata_local_queue_valid)
                 r_tx_nxt_state = P_TX_OFFER;
             else
                 r_tx_nxt_state = P_COMPT_OFFER;
@@ -503,6 +526,15 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_updata_finish <= 'd0;
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_updata_finish_1d <= 'd0;
+    else
+        r_updata_finish_1d <= r_updata_finish;
+end
+
+
 
 //接收到对端offer包后开始请求进行relay计算，因为俩个上行端口共用一个缓存区，所以需要申请对于缓存区的分配权
 

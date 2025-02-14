@@ -57,7 +57,8 @@ module rd_ddr_port_ctrl#(
     input                                           i_forward_req               ,
     output                                          o_forward_resp              ,
     input                                           i_forward_finish            ,
-    output                                          o_forward_valid             
+    output                                          o_forward_valid             ,
+    input                                           i_forward_ready             
 );
 /******************************function*****************************/
 
@@ -355,7 +356,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_forward_valid <= 'd0;
     else if(r_cur_state != P_TX_RECV_TWO_PTK)
         ro_forward_valid <= 'd0;
-    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req)
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req && i_forward_ready)
         ro_forward_valid <= 'd1;
     else
         ro_forward_valid <= ro_forward_valid;
@@ -483,7 +484,7 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_forward_resp <= 'd0;
     else if(w_forward_en)
         ro_forward_resp <= 'd0;
-    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req)
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && i_forward_req && i_forward_ready)
         ro_forward_resp <= 'd1;
     else
         ro_forward_resp <= ro_forward_resp;

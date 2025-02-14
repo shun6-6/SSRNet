@@ -40,6 +40,7 @@ module eth_uplink_port(
     output          s_data_axis_tready      ,
 
     input           i_forward_pkt_valid     ,
+    output          o_forward_pkt_ready     ,
     input           s_forward_axis_tvalid   ,
     input  [63 :0]  s_forward_axis_tdata    ,
     input           s_forward_axis_tlast    ,
@@ -76,6 +77,9 @@ reg  [15:0]     r_fifo_rd_cnt           ;
 reg  [7 :0]     r_data_keep             ;
 reg             r_fifo_lock             ;
 reg  [1 :0]     r_fifo_arbiter          ;//1:read ctrl fifo 2:read data fifo
+
+reg             ro_forward_pkt_ready    ;
+reg  [1:0]      r_tx_vlb_num;
 /******************************wire*********************************/
 wire [63:0]     w_fifo_data_dout        ;
 wire [15:0]     w_fifo_len_dout         ;
@@ -101,6 +105,7 @@ assign m_tx_axis_tkeep    = i_forward_pkt_valid ? s_forward_axis_tkeep  :
 
 assign m_tx_axis_tuser    = i_forward_pkt_valid ? s_forward_axis_tuser  :
                             r_fifo_arbiter == 2 ? s_data_axis_tuser  : 'd0   ;
+assign o_forward_pkt_ready = ro_forward_pkt_ready;
 
 /******************************component****************************/
 FIFO_IND_64X2048 FIFO_IND_64X2048_data (
@@ -276,6 +281,31 @@ always @(posedge i_data_clk or posedge i_data_rst) begin
         rm_tx_axis_tkeep <= r_data_keep;
     else
         rm_tx_axis_tkeep <= rm_tx_axis_tkeep;
+end
+
+
+always @(posedge i_data_clk or posedge i_data_rst) begin
+    if(i_data_rst)
+        r_tx_vlb_num <= 'd0;
+    else if(i_forward_pkt_valid)
+        r_tx_vlb_num <= 'd0;
+    else if(r_tx_vlb_num == 'd3)
+        r_tx_vlb_num <= r_tx_vlb_num;
+    else if(r_fifo_arbiter == 'd1 && m_tx_axis_tvalid && m_tx_axis_tlast)
+        r_tx_vlb_num <= r_tx_vlb_num + 'd1;
+    else
+        r_tx_vlb_num <= r_tx_vlb_num;
+end
+
+always @(posedge i_data_clk or posedge i_data_rst) begin
+    if(i_data_rst)
+        ro_forward_pkt_ready <= 'd0;
+    else if(i_forward_pkt_valid)
+        ro_forward_pkt_ready <= 'd0;
+    else if(r_tx_vlb_num == 'd3)
+        ro_forward_pkt_ready <= 'd1;
+    else
+        ro_forward_pkt_ready <= 'd0;
 end
 
 // always @(posedge i_data_clk or posedge i_data_rst) begin

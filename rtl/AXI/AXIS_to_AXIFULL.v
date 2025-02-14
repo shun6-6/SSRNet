@@ -197,7 +197,7 @@ assign  w_axi_wr_en = M_AXI_WVALID & M_AXI_WREADY;
 assign  w_fifo_data_rden = (r_fifo_data_rden && w_axi_wr_en) || w_axi_aw_en;
 assign  w_wr_ddr_en = i_wr_ddr_ready & ro_wr_ddr_valid;
 /******************************component****************************/
-FIFO_IND_64X256 FIFO_IND_64X256_data (
+FIFO_IND_64X256 FIFO_IND_64X256_data (//64x1024
     .rst            (i_axis_rst         ), // input wire rst
     .wr_clk         (i_axis_clk         ), // input wire wr_clk
     .rd_clk         (M_AXI_ACLK         ), // input wire rd_clk
@@ -321,7 +321,7 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
         r_fifo_len_rden <= 'd0;
     else if(r_fifo_len_rden)
         r_fifo_len_rden <= 'd0;       
-    else if(!w_fifo_len_empty && !r_fifo_lock)
+    else if(!w_fifo_len_empty && !r_fifo_lock && !ro_wr_ddr_cpl_valid)
         r_fifo_len_rden <= 'd1;
     else
         r_fifo_len_rden <= 'd0;

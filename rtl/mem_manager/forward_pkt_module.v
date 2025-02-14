@@ -98,8 +98,8 @@ assign w_tx_en = rm_axis_tvalid & m_axis_tready;
 assign w_fifo_data_rden = (r_fifo_data_rden && w_tx_en) || r_fifo_len_rden_2d;
 assign w_next_max_pkt_byte = ri_forward_byte - r_tx_finish_byte;
 assign w_forward_pkt_valid = s_axis_tvalid && s_axis_tuser == 'd2;
-// assign o_forward_finish = ro_forward_finish;
-assign o_forward_finish = ri_forward_byte == r_tx_finish_byte;
+assign o_forward_finish = ro_forward_finish;
+// assign o_forward_finish = ri_forward_byte == r_tx_finish_byte;
 /******************************component****************************/
 FIFO_FORWARD_BUF FIFO_FORWARD_BUF_data (//64x16384
     .clk            (i_clk              ), // input wire clk
@@ -177,9 +177,9 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ro_forward_finish <= 'd0;
-    else if(!w_fifo_len_empty)
+    else if(i_forward_byte_valid && i_forward_byte != 0)
         ro_forward_finish <= 'd0;
-    else if(w_next_max_pkt_byte < 1518 && ri_forward_byte_valid && r_tx_last_byte)
+    else if(ri_forward_byte == r_tx_finish_byte)
         ro_forward_finish <= 'd1;
     else
         ro_forward_finish <= ro_forward_finish;
@@ -189,10 +189,10 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ri_forward_byte <= 'd0;
-    else if(ro_forward_finish)
-        ri_forward_byte <= 'd0;
     else if(i_forward_byte_valid)
         ri_forward_byte <= i_forward_byte;
+    else if(ro_forward_finish)
+        ri_forward_byte <= 'd0;
     else
         ri_forward_byte <= ri_forward_byte;
 end
@@ -200,10 +200,10 @@ end
 always @(posedge i_clk or posedge i_rst) begin
     if(i_rst)
         ri_forward_byte_valid <= 'd0;
-    else if(ro_forward_finish)
-        ri_forward_byte_valid <= 'd0;
     else if(i_forward_byte_valid)
         ri_forward_byte_valid <= i_forward_byte_valid;
+    else if(ro_forward_finish)
+        ri_forward_byte_valid <= 'd0;
     else
         ri_forward_byte_valid <= ri_forward_byte_valid;
 end
