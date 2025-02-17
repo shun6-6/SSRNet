@@ -757,6 +757,8 @@ eth_uplink_port eth_uplink_port_u0(
 
     .i_forward_pkt_valid    (w_port0_forward_valid  ),
     .o_forward_pkt_ready    (w_port0_forward_ready  ),
+    .i_slot_start           (w_slot_start),
+
     .s_forward_axis_tvalid  (w_port0_forward_axis_tvalid),
     .s_forward_axis_tdata   (w_port0_forward_axis_tdata ),
     .s_forward_axis_tlast   (w_port0_forward_axis_tlast ),
@@ -793,6 +795,8 @@ eth_uplink_port eth_uplink_port_u1(
 
     .i_forward_pkt_valid    (w_port1_forward_valid  ),
     .o_forward_pkt_ready    (w_port1_forward_ready  ),
+    .i_slot_start           (w_slot_start),
+
     .s_forward_axis_tvalid  (w_port1_forward_axis_tvalid),
     .s_forward_axis_tdata   (w_port1_forward_axis_tdata ),
     .s_forward_axis_tlast   (w_port1_forward_axis_tlast ),

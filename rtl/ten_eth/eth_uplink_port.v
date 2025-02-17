@@ -41,6 +41,8 @@ module eth_uplink_port(
 
     input           i_forward_pkt_valid     ,
     output          o_forward_pkt_ready     ,
+    input           i_slot_start            ,
+
     input           s_forward_axis_tvalid   ,
     input  [63 :0]  s_forward_axis_tdata    ,
     input           s_forward_axis_tlast    ,
@@ -287,7 +289,7 @@ end
 always @(posedge i_data_clk or posedge i_data_rst) begin
     if(i_data_rst)
         r_tx_vlb_num <= 'd0;
-    else if(i_forward_pkt_valid)
+    else if(i_forward_pkt_valid || i_slot_start)
         r_tx_vlb_num <= 'd0;
     else if(r_tx_vlb_num == 'd3)
         r_tx_vlb_num <= r_tx_vlb_num;

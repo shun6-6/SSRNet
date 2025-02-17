@@ -40,6 +40,7 @@ module ddr_local_queue#(
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_wr_ddr_cpl_addr   ,
     input  [7 : 0]                          i_wr_ddr_cpl_strb   ,
     //read DDR 
+    input  [2:0]                            i_check_queue_req_valid,
     input  [C_M_AXI_ADDR_WIDTH-1 : 0]       i_rd_local_byte     ,
     input                                   i_rd_local_byte_valid,
     output                                  o_rd_local_byte_ready,
@@ -77,6 +78,9 @@ reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ro_queue_size       ;
 reg  [2:0]                          ri_rd_local_byte_valid;
 // reg  [2:0]                          ri_rd_last_byte     ;
 // reg                                 ri_rd_last_byte_valid ;
+reg             r_lock;
+reg  [15:0]     r_rd_desc_cnt;
+reg  [31:0]     r_rd_desc_num;
 /******************************wire*********************************/
 wire                                w_wr_en             ;
 wire                                w_rd_en             ;
@@ -146,12 +150,6 @@ FIFO_8X4096 FIFO_8X4096_strb (
   .rd_rst_busy  (                   )  // output wire rd_rst_busy
 );
 /******************************always*******************************/
-// always @(posedge i_clk or posedge i_rst)begin
-//     if(i_rst)
-//         ri_rd_last_byte <= 'd0;
-//     else
-//         ri_rd_last_byte <= {ri_rd_last_byte[1],ri_rd_last_byte[0],i_rd_last_byte};
-// end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)begin
@@ -231,10 +229,33 @@ always @(posedge i_clk or posedge i_rst)begin
         ro_rd_local_byte_ready <= 'd0;
     else if(w_rd_byte_en)
         ro_rd_local_byte_ready <= 'd0;
-    else if(i_rd_local_byte_valid)
+    else if(i_rd_local_byte_valid && !r_lock)
         ro_rd_local_byte_ready <= 'd1;
     else
         ro_rd_local_byte_ready <= 'd0;
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_rd_desc_cnt <= 'd0;
+    else if(r_rd_desc_cnt == r_rd_desc_num)
+        r_rd_desc_cnt <= 'd0;
+    else if(r_fifo_rden)
+        r_rd_desc_cnt <= r_rd_desc_cnt + 'd1;
+    else
+        r_rd_desc_cnt <= r_rd_desc_cnt;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_rd_desc_num <= 'd0;
+    else if(r_rd_desc_cnt == r_rd_desc_num)
+        r_rd_desc_num <= 'd0;
+    else if(w_rd_byte_en)
+        r_rd_desc_num <= i_rd_local_byte >> 10;
+    else
+        r_rd_desc_num <= r_rd_desc_num;
 end
 
 always @(posedge i_clk or posedge i_rst)begin
@@ -246,15 +267,29 @@ always @(posedge i_clk or posedge i_rst)begin
         ri_rd_local_byte <= ri_rd_local_byte;
 end
 
+//一次性读完描述符，不在等待AXI模块一个一个返回响应了
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_fifo_rden <= 'd0;
+    else if(r_rd_desc_cnt == r_rd_desc_num - 1 && r_rd_desc_num != 0)
+        r_fifo_rden <= 'd0;
     else if(w_rd_byte_en)
         r_fifo_rden <= 'd1;
-    else if(i_rd_ddr_cpl && i_rd_ddr_ready && !o_rd_queue_finish)
-        r_fifo_rden <= 'd1;
+    // else if(i_rd_ddr_cpl && i_rd_ddr_ready && !o_rd_queue_finish)
+    //     r_fifo_rden <= 'd1;
     else
-        r_fifo_rden <= 'd0;
+        r_fifo_rden <= r_fifo_rden;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_lock <= 'd0;
+    else if(!r_fifo_rden)
+        r_lock <= 'd0;
+    else if(w_rd_byte_en)
+        r_lock <= 'd1;
+    else
+        r_lock <= r_lock;
 end
 
 always @(posedge i_clk or posedge i_rst)begin

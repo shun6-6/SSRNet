@@ -173,6 +173,8 @@ reg  [2 : 0]                    ro_send_my_local2_queue     ;
 
 reg         ro_updata_local_queue_valid;
 reg         ri_updata_local_queue_valid;
+
+reg         ri_tx_relay_valid;
 /******************************wire*********************************/
 wire            w_tx_en;
 wire            w_recv_capacity_flag    ;
@@ -356,6 +358,17 @@ always @(posedge i_clk or posedge i_rst)begin
 end
 
 
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ri_tx_relay_valid <= 'd0;
+    else if(r_tx_cur_state == P_TX_RELAY)
+        ri_tx_relay_valid <= 'd0;
+    else if(i_tx_relay_valid)
+        ri_tx_relay_valid <= i_tx_relay_valid;
+    else
+        ri_tx_relay_valid <= ri_tx_relay_valid;
+end
+
 
 //===================================发送状态机======================================//
 always @(posedge i_clk or posedge i_rst)begin
@@ -398,7 +411,7 @@ always @(*)begin
                 r_tx_nxt_state = P_TX_OFFER;
         end 
         P_COMPT_RELAY   : begin
-            if(i_tx_relay_valid)
+            if(ri_tx_relay_valid)
                 r_tx_nxt_state = P_TX_RELAY;
             else
                 r_tx_nxt_state = P_COMPT_RELAY;

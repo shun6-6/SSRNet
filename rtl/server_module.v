@@ -60,12 +60,14 @@ module server_module#(
 /******************************function*****************************/
 
 /******************************parameter****************************/
+localparam      P_PKT_NUM = 64;
 localparam      P_PKT_LEN   = 128;
-localparam      P_GAP_CYCLE = 294;
+localparam      P_GAP_CYCLE = 50;
 localparam      P_TX_IDLE   = 'd0,
                 P_TX_RANDOM = 'd1,
                 P_TX_DATA   = 'd2,
-                P_TX_GAP    = 'd3;
+                P_TX_GAP    = 'd3,
+                P_TX_END    = 'd4;
 /******************************machine******************************/
 reg  [5 : 0]    r_cur_state ;
 reg  [5 : 0]    r_nxt_state ;
@@ -91,6 +93,8 @@ reg  [1 :0]     ro_seek_flag        ;
 reg  [47:0]     ri_check_mac        ;
 reg  [3 :0]     ri_check_id         ;
 reg             ri_check_valid      ;
+
+reg  [15:0]     r_cycle_cnt;
 /******************************wire*********************************/
 wire feedback;
 
@@ -178,9 +182,24 @@ always @(*)begin
         P_TX_IDLE   : r_nxt_state = !P_UPLINK_TRUE && ri_sim_start ? P_TX_RANDOM : P_TX_IDLE;
         P_TX_RANDOM : r_nxt_state = r_st_cnt == 3 ? P_TX_DATA : P_TX_RANDOM;
         P_TX_DATA   : r_nxt_state = r_tx_cnt == P_PKT_LEN - 2 ? P_TX_GAP : P_TX_DATA;
-        P_TX_GAP    : r_nxt_state = r_st_cnt == P_GAP_CYCLE ? P_TX_IDLE : P_TX_GAP;
+        //P_TX_GAP    : r_nxt_state = (r_st_cnt == P_GAP_CYCLE) ? P_TX_IDLE : P_TX_GAP;
+        P_TX_GAP    : r_nxt_state = (r_st_cnt == P_GAP_CYCLE && r_cycle_cnt != P_PKT_NUM) ? P_TX_IDLE : 
+                                    (r_st_cnt == P_GAP_CYCLE && r_cycle_cnt == P_PKT_NUM) ? P_TX_END : P_TX_GAP;
+        P_TX_END    : r_nxt_state = P_TX_END;
         default     : r_nxt_state = P_TX_IDLE;
     endcase
+end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_cycle_cnt <= 'd0;
+    else if(r_cycle_cnt == P_PKT_NUM)
+        r_cycle_cnt <= r_cycle_cnt;
+    else if(r_cur_state == P_TX_GAP && r_st_cnt == 0)
+        r_cycle_cnt <= r_cycle_cnt + 'd1;
+    else
+        r_cycle_cnt <= r_cycle_cnt;
 end
 
 always @(posedge i_clk or posedge i_rst)begin

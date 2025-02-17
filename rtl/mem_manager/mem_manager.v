@@ -555,6 +555,7 @@ generate
             .i_wr_ddr_cpl_addr      (r_wr_local_queue_cpl_addr [gen_local_i]),
             .i_wr_ddr_cpl_strb      (r_wr_local_queue_cpl_strb [gen_local_i]),
     
+            .i_check_queue_req_valid(r_check_queue_req_valid),
             .i_rd_local_byte        (r_rd_local_byte[gen_local_i]       ),
             .i_rd_local_byte_valid  (r_rd_local_byte_valid[gen_local_i] ),
             .o_rd_local_byte_ready  (w_rd_local_byte_ready[gen_local_i] ),
@@ -1088,7 +1089,7 @@ generate
                 r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port0_byte;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd0;
             end
-            else if(w_rd_unlocal_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_unlocal_i && !w_rd_unlocal_port0_byte_ready)begin
+            else if(w_rd_unlocal_queue_byte_valid[1] && ri_rd_unlocal_port1_queue == gen_unlocal_i && !w_rd_unlocal_port1_byte_ready)begin
                 r_rd_unlocal_byte_valid [gen_unlocal_i] <= 'd1;
                 r_rd_unlocal_byte       [gen_unlocal_i] <= ri_rd_unlocal_port1_byte;
                 r_rd_unlocal_port_id    [gen_unlocal_i] <= 'd1;  
@@ -1140,6 +1141,7 @@ generate
             .i_wr_ddr_cpl_addr      (r_wr_unlocal_queue_cpl_addr [gen_unlocal_i]),
             .i_wr_ddr_cpl_strb      (r_wr_unlocal_queue_cpl_strb [gen_unlocal_i]),
     
+            .i_check_queue_req_valid(r_check_queue_req_valid),
             .i_rd_local_byte        (r_rd_unlocal_byte[gen_unlocal_i]       ),
             .i_rd_local_byte_valid  (r_rd_unlocal_byte_valid[gen_unlocal_i] ),
             .o_rd_local_byte_ready  (w_rd_unlocal_byte_ready[gen_unlocal_i] ),

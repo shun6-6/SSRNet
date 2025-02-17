@@ -137,6 +137,11 @@ reg  [7 :0]                         r_data_strb         ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     ri_rd_ddr_byte      ;
 reg  [C_M_AXI_ADDR_WIDTH-1 : 0]     r_rd_complete_byte  ;
 reg                                 ro_rd_queue_finish  ;
+
+reg  [1:0]                           ri_rd_ddr_byte_valid;
+reg         r_desc_rden;
+reg         r_desc_rden_1d;
+reg         r_desc_rden_lock;
 /******************************wire*********************************/
 wire                                w_axi_ar_active     ;
 wire                                w_axi_rd_active     ;
@@ -150,6 +155,9 @@ wire                                w_fifo_len_empty    ;
 wire                                w_fifo_data_rden    ;
 wire                                w_rd_last_byte      ;
 wire [31:0]                         w_max_next_pkt      ;
+
+wire [47:0] w_desc_dout;
+wire        w_desc_empty;
 /******************************assign*******************************/
 assign w_axi_rst = !M_AXI_ARESETN  ;
 assign w_axi_ar_active = M_AXI_ARVALID & M_AXI_ARREADY;
@@ -221,6 +229,20 @@ FIFO_IND_8X32 FIFO_IND_8X32_keep (
     .wr_rst_busy    (                   ),  // output wire wr_rst_busy
     .rd_rst_busy    (                   )  // output wire rd_rst_busy
 );
+
+
+FIFO_DESC_48X256 FIFO_DESC_48X256 (
+  .clk          (M_AXI_ACLK ),                  // input wire clk
+  .srst         (w_axi_rst  ),               // input wire srst
+  .din          ({i_rd_ddr_len,i_rd_ddr_addr}),                // input wire [47 : 0] din
+  .wr_en        (i_rd_ddr_valid),              // input wire wr_en
+  .rd_en        (r_desc_rden),              // input wire rd_en
+  .dout         (w_desc_dout    ),               // output wire [47 : 0] dout
+  .full         (),               // output wire full
+  .empty        (w_desc_empty),              // output wire empty
+  .wr_rst_busy  (wr_rst_busy),  // output wire wr_rst_busy
+  .rd_rst_busy  (rd_rst_busy)  // output wire rd_rst_busy
+);
 /******************************always*******************************/
 //================ AXI CLOCK REGION ==================//
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
@@ -241,6 +263,55 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
         ro_rd_ddr_cpl <= 'd0;
 end
 
+// always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+//     if(w_axi_rst)begin
+//         ri_rd_ddr_addr  <= 'd0;
+//         ri_rd_ddr_len   <= 'd0;
+//         ri_rd_ddr_strb  <= 'd0;
+//         ri_rd_ddr_valid <= 'd0;
+//     end
+//     else if(i_rd_ddr_valid)begin
+//         ri_rd_ddr_addr  <= i_rd_ddr_addr ;
+//         ri_rd_ddr_len   <= i_rd_ddr_len  ;
+//         ri_rd_ddr_strb  <= i_rd_ddr_strb ;
+//         ri_rd_ddr_valid <= i_rd_ddr_valid;
+//     end
+//     else begin
+//         ri_rd_ddr_addr  <= ri_rd_ddr_addr ;
+//         ri_rd_ddr_len   <= ri_rd_ddr_len  ;
+//         ri_rd_ddr_strb  <= ri_rd_ddr_strb ;
+//         ri_rd_ddr_valid <= 'd0;
+//     end
+// end
+
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        r_desc_rden <= 'd0;
+    else if(!w_desc_empty && !r_desc_rden_lock)
+        r_desc_rden <= 'd1;
+    else
+        r_desc_rden <= 'd0;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        r_desc_rden_1d <= 'd0;
+    else
+        r_desc_rden_1d <= r_desc_rden;
+end
+
+always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
+    if(w_axi_rst)
+        r_desc_rden_lock <= 'd0;
+    else if(ro_rd_ddr_cpl)
+        r_desc_rden_lock <= 'd0;
+    else if(!w_desc_empty && !r_desc_rden_lock)
+        r_desc_rden_lock <= 'd1;
+    else
+        r_desc_rden_lock <= r_desc_rden_lock;
+end
+
 always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
     if(w_axi_rst)begin
         ri_rd_ddr_addr  <= 'd0;
@@ -248,11 +319,11 @@ always @(posedge M_AXI_ACLK or posedge w_axi_rst)begin
         ri_rd_ddr_strb  <= 'd0;
         ri_rd_ddr_valid <= 'd0;
     end
-    else if(i_rd_ddr_valid)begin
-        ri_rd_ddr_addr  <= i_rd_ddr_addr ;
-        ri_rd_ddr_len   <= i_rd_ddr_len  ;
-        ri_rd_ddr_strb  <= i_rd_ddr_strb ;
-        ri_rd_ddr_valid <= i_rd_ddr_valid;
+    else if(r_desc_rden_1d)begin
+        ri_rd_ddr_addr  <=  w_desc_dout[31:0];
+        ri_rd_ddr_len   <=  w_desc_dout[47:32];
+        ri_rd_ddr_strb  <= 8'hff ;
+        ri_rd_ddr_valid <= 'd1;
     end
     else begin
         ri_rd_ddr_addr  <= ri_rd_ddr_addr ;
@@ -427,10 +498,19 @@ always @(posedge i_axis_clk or posedge i_axis_rst)begin
 end
 
 //读DDR结束指示信号
+
+always @(posedge i_axis_clk or posedge i_axis_rst)begin
+    if(i_axis_rst)
+        ri_rd_ddr_byte_valid <= 'd0;
+    else
+        ri_rd_ddr_byte_valid <= {ri_rd_ddr_byte_valid[0],i_rd_ddr_byte_valid};
+end
+
+
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         ri_rd_ddr_byte <= 'd0;
-    else if(i_rd_ddr_byte_valid)
+    else if(ri_rd_ddr_byte_valid[1])
         ri_rd_ddr_byte <= i_rd_ddr_byte;
     else
         ri_rd_ddr_byte <= ri_rd_ddr_byte;
@@ -439,7 +519,7 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         r_rd_complete_byte <= 'd0;
-    else if(i_rd_ddr_byte_valid)
+    else if(ri_rd_ddr_byte_valid[1])
         r_rd_complete_byte <= 'd0;
     else if(w_axis_tx_active && rm_axis_tlast)
         r_rd_complete_byte <= r_rd_complete_byte + (r_data_len << 3);
@@ -450,7 +530,7 @@ end
 always @(posedge i_axis_clk or posedge i_axis_rst)begin
     if(i_axis_rst)
         ro_rd_queue_finish <= 'd0;
-    else if(i_rd_ddr_byte_valid)
+    else if(ri_rd_ddr_byte_valid[1])
         ro_rd_queue_finish <= 'd0;
     else if(w_max_next_pkt < 1518)
         ro_rd_queue_finish <= 'd1;

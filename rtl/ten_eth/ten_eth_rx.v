@@ -101,7 +101,7 @@ reg             r_fifo_lock             ;
 
 reg  [63:0]     r_dealy;
 reg  [15:0]     r_dealy_cnt;
-reg             r_dealy_valid;
+//reg             r_dealy_valid;
 wire [63:0]     w_dealy;
 reg  [15:0]     r_pkt_cnt;
 /******************************wire*********************************/
@@ -458,8 +458,6 @@ assign w_dealy = i_time_stamp - rs_axis_rx_tdata;
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_dealy <= 'd0;
-    else if(r_dealy_cnt == 32)
-        r_dealy <= r_dealy >> 5;
     else if(ro_check_valid && ro_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ro_check_mac[7:0] != 0)
         r_dealy <= r_dealy + w_dealy;
     else
@@ -470,8 +468,6 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_dealy_cnt <= 'd0;
-    else if(r_dealy_cnt == 32)
-        r_dealy_cnt <= 'd0;
     else if(ro_check_valid && ro_check_mac[47:8] == P_MY_TOR_MAC[47:8] && ro_check_mac[7:0] != 0)
         r_dealy_cnt <= r_dealy_cnt + 1;
     else
@@ -479,14 +475,14 @@ always @(posedge i_clk or posedge i_rst)begin
 end
 
 
-always @(posedge i_clk or posedge i_rst)begin
-    if(i_rst)
-        r_dealy_valid <= 'd0;
-    else if(r_dealy_cnt == 32)
-        r_dealy_valid <= 'd1;
-    else
-        r_dealy_valid <= 'd0;
-end
+// always @(posedge i_clk or posedge i_rst)begin
+//     if(i_rst)
+//         r_dealy_valid <= 'd0;
+//     else if(r_dealy_cnt == 32)
+//         r_dealy_valid <= 'd1;
+//     else
+//         r_dealy_valid <= 'd0;
+// end
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)

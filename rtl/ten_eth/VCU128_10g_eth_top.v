@@ -420,8 +420,8 @@ server_module#(
 ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC),
+    .P_MY_PORT_MAC          (P_MY_PORT0_MAC),
     .P_UPLINK_TRUE          (1)
 )ten_eth_rx_uplink_port0(
     .i_clk                  (o_2_tx_clk_out         ),
@@ -458,7 +458,7 @@ server_module#(
     .P_SEED             (P_RANDOM_SEED      ) ,
     .P_MAC_HEAD         (32'h8D_BC_5C_4A    ) ,
     .P_MY_TOR_MAC       (P_MY_TOR_MAC       ) ,
-    .P_MY_PORT_MAC      (P_MY_PORT0_MAC     ) 
+    .P_MY_PORT_MAC      (P_MY_PORT1_MAC     ) 
 )server_module_server3(
     .i_clk              (o_3_tx_clk_out     ),
     .i_rst              (o_3_user_rx_reset  ),
@@ -492,8 +492,8 @@ server_module#(
 ten_eth_rx#(
     .P_RX_PORT_ID           (0                     ),
     .P_MAC_HEAD             (32'h8D_BC_5C_4A       ),
-    .P_MY_TOR_MAC           (48'h8D_BC_5C_4A_00_00 ),
-    .P_MY_PORT_MAC          (48'h8D_BC_5C_4A_00_01 ),
+    .P_MY_TOR_MAC           (P_MY_TOR_MAC),
+    .P_MY_PORT_MAC          (P_MY_PORT1_MAC),
     .P_UPLINK_TRUE          (1)
 )ten_eth_rx_uplink_port1(
     .i_clk                  (o_3_tx_clk_out         ),

@@ -70,7 +70,7 @@ P_SLOT_MAX_BYTE_NUM参数
 // localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes //time + 4.5us(700 clk)
 
 localparam  P_CONFIG_DELAY      = 32'h0000_00AA;//1us
-localparam  P_SLOT_LEN          = 32'h0000_0680;//10us
+localparam  P_SLOT_LEN          = 32'h0000_0753;//11us
 localparam  P_SLOT_MAX_BYTE_NUM = 32'h0000_2000;//8KBytes //time + 4.5us(700 clk)
 
 

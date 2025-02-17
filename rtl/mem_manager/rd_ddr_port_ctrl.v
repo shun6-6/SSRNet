@@ -102,6 +102,9 @@ reg  [2 : 0]    ri_rd_byte_ready    ;
 reg  [1 : 0]    ri_rd_queue_finish  ;
 reg             ro_forward_resp     ;
 reg             ro_forward_valid    ;
+reg             r_forward_en;
+reg             r_return_two;
+reg             ri_forward_req;
 /******************************wire*********************************/
 wire  w_rd_byte_en      ;
 wire  w_rd_byte_ready   ;
@@ -326,8 +329,18 @@ always @(*)begin
         P_TX_RECV_TWO_PTK  : begin
             if(ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size == 0)
                 r_nxt_state = P_TX_RELAY_PKT;
-            else if(ri_recv_local2_pkt_valid && i_forward_finish)
-                r_nxt_state = P_TX_RELAY_PKT;
+            else if(ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size != 0)begin
+                if(ri_forward_req)
+                    r_nxt_state = P_TX_RECV_TWO_PTK;
+                else if(ro_forward_valid && i_forward_finish && r_return_two)
+                    r_nxt_state = P_TX_IDLE;
+                else if(ro_forward_valid && i_forward_finish && !r_return_two)
+                    r_nxt_state = P_TX_RELAY_PKT;
+                else if(!ro_forward_valid && ri_tx_relay_valid && ri_tx_relay_vector != 0 && !r_return_two)
+                    r_nxt_state = P_TX_RELAY_PKT;
+                else
+                    r_nxt_state = P_TX_RECV_TWO_PTK;
+            end
             else
                 r_nxt_state = P_TX_RECV_TWO_PTK;
         end
@@ -342,14 +355,43 @@ always @(*)begin
         P_TX_RELAY_PKT   : begin
             if(ri_tx_relay_valid && ri_tx_relay_vector == 0)
                 r_nxt_state = P_TX_IDLE;
-            else if(ri_tx_relay_valid_1d && (&r_relay_finish))
-                r_nxt_state = P_TX_IDLE;
+            else if(ri_tx_relay_valid_1d && (&r_relay_finish))begin
+                if(r_return_two)
+                    r_nxt_state = P_TX_RECV_TWO_PTK;
+                else
+                    r_nxt_state = P_TX_IDLE;
+            end   
             else
                 r_nxt_state = P_TX_RELAY_PKT;
         end
         default : r_nxt_state = P_TX_IDLE;
     endcase
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        ri_forward_req <= 'd0;
+    else
+        ri_forward_req <= i_forward_req;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_return_two <= 'd0;
+    else if(r_cur_state == P_TX_IDLE)
+        r_return_two <= 'd0;
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size != 0)begin
+        if(ri_forward_req)
+            r_return_two <= 'd0;
+        else if(!ro_forward_valid && ri_tx_relay_valid && ri_tx_relay_vector != 0 && !r_return_two)
+            r_return_two <= 'd1;
+        else
+            r_return_two <= r_return_two;
+    end
+    else
+        r_return_two <= r_return_two;
+end
+
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)

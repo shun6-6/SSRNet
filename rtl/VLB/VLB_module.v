@@ -574,8 +574,12 @@ generate
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)
                 r_my_avail[tor_i] <= 'd0;
-            else if(r_slot_start_en)
-                r_my_avail[tor_i] <= P_SLOT_MAX_BYTE_NUM - r_local_queue_size[tor_i] - r_unlocal_queue_size[tor_i];
+            else if(r_slot_start_en)begin
+                if(P_SLOT_MAX_BYTE_NUM > (r_local_queue_size[tor_i] + r_unlocal_queue_size[tor_i]))
+                    r_my_avail[tor_i] <= P_SLOT_MAX_BYTE_NUM - r_local_queue_size[tor_i] - r_unlocal_queue_size[tor_i];
+                else
+                    r_my_avail[tor_i] <= 0;
+            end
             else if(r_tx_relay_valid[0])//updata avail after every compute relay pkt
                 r_my_avail[tor_i] <= r_my_avail[tor_i] - r_tx_relay_reg[0][tor_i];
             else if(r_tx_relay_valid[1])
@@ -611,7 +615,7 @@ generate
                 r_rx_offer[1][tor_i] <= w_port1_rx_offer[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
         end
 
-        //俩个上行端口全部收到relay数据包，但会存在俩个包都分配了同一个地址的中继数据，此时需要进行平均分配一下
+        //俩个上行端口全部收到relay数据包，但会存在俩个包都分配了同一个地址的中继数据，谁大谁发，提高带宽利用率
         always @(posedge i_clk or posedge i_rst)begin
             if(i_rst)
                 ro_port0_tx_relay[tor_i] <= 'd0;
@@ -621,8 +625,6 @@ generate
                 if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 0)
                     ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
                 else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
-                    ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i] - ro_port1_tx_relay[tor_i];
-                else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
                     ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
                 else
                     ro_port0_tx_relay[tor_i] <= 'd0;
@@ -638,15 +640,48 @@ generate
             else if(r_recv_relay_valid == 2'b11 && ro_port0_tx_relay[tor_i] != 0 && ro_port1_tx_relay[tor_i] != 0)
                 if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 1)
                     ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
-                else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
-                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
                 else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
-                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i] - ro_port0_tx_relay[tor_i];
+                    ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
                 else
                     ro_port1_tx_relay[tor_i] <= 'd0;
             else
                 ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
         end
+        // always @(posedge i_clk or posedge i_rst)begin
+        //     if(i_rst)
+        //         ro_port0_tx_relay[tor_i] <= 'd0;
+        //     else if(w_port0_rx_relay_valid)
+        //         ro_port0_tx_relay[tor_i] <= w_port0_rx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
+        //     else if(r_recv_relay_valid == 2'b11 && ro_port0_tx_relay[tor_i] != 0 && ro_port1_tx_relay[tor_i] != 0)
+        //         if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 0)
+        //             ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+        //         else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
+        //             ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i] - ro_port1_tx_relay[tor_i];
+        //         else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
+        //             ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+        //         else
+        //             ro_port0_tx_relay[tor_i] <= 'd0;
+        //     else
+        //         ro_port0_tx_relay[tor_i] <= ro_port0_tx_relay[tor_i];
+        // end
+
+        // always @(posedge i_clk or posedge i_rst)begin
+        //     if(i_rst)
+        //         ro_port1_tx_relay[tor_i] <= 'd0;
+        //     else if(w_port1_rx_relay_valid)
+        //         ro_port1_tx_relay[tor_i] <= w_port1_rx_relay[tor_i * C_M_AXI_ADDR_WIDTH +: C_M_AXI_ADDR_WIDTH];
+        //     else if(r_recv_relay_valid == 2'b11 && ro_port0_tx_relay[tor_i] != 0 && ro_port1_tx_relay[tor_i] != 0)
+        //         if(ro_port0_tx_relay[tor_i] == ro_port1_tx_relay[tor_i] && r_cur_slot_id == 1)
+        //             ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+        //         else if(ro_port0_tx_relay[tor_i] > ro_port1_tx_relay[tor_i])
+        //             ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+        //         else if(ro_port0_tx_relay[tor_i] < ro_port1_tx_relay[tor_i])
+        //             ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i] - ro_port0_tx_relay[tor_i];
+        //         else
+        //             ro_port1_tx_relay[tor_i] <= 'd0;
+        //     else
+        //         ro_port1_tx_relay[tor_i] <= ro_port1_tx_relay[tor_i];
+        // end
          
     end
 
