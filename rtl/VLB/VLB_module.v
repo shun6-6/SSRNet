@@ -192,6 +192,9 @@ wire                                          w_port1_rx_relay_valid            
 wire [P_QUEUE_NUM*C_M_AXI_ADDR_WIDTH-1 : 0]   w_port1_tx_relay                  ;
 wire                                          w_port1_tx_relay_valid            ;
 
+reg r_port0_rx_offer_valid;
+reg r_port1_rx_offer_valid;
+
 // wire [C_M_AXI_ADDR_WIDTH-1 : 0] w_capacity_remain [1 : 0][P_OCS_NUM - 1 : 0][P_SLOT_NUM - 2 : 0]  ;
 //从空间角度上分析，tor上行链路链接俩个tor，讨论这两tor的后续时隙直连节点，这里由于只有俩个tor并且每个OCS只有俩个时隙，
 //所以省略了后面的[P_SLOT_NUM - 2 : 0]，相当于只需要讨论后面一个时隙的情况
@@ -887,19 +890,44 @@ generate
 
 endgenerate
 
+
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_port0_rx_offer_valid <= 'd0;
+    else if(r_compt_relay_en[0])
+        r_port0_rx_offer_valid <= 'd0;
+    else if(w_port0_rx_offer_valid)
+        r_port0_rx_offer_valid <= 'd1;
+    else
+        r_port0_rx_offer_valid <= r_port0_rx_offer_valid;
+end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_port1_rx_offer_valid <= 'd0;
+    else if(r_compt_relay_en[1])
+        r_port1_rx_offer_valid <= 'd0;
+    else if(w_port1_rx_offer_valid)
+        r_port1_rx_offer_valid <= 'd1;
+    else
+        r_port1_rx_offer_valid <= r_port1_rx_offer_valid;
+end
+
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rx_offer_valid <= 2'b00;
     else if(r_compt_relay_en[0])
-        r_rx_offer_valid <= {r_rx_offer_valid[1],~r_rx_offer_valid[0]};
+        r_rx_offer_valid <= {r_rx_offer_valid[1],1'b0};
     else if(r_compt_relay_en[1])
-        r_rx_offer_valid <= {~r_rx_offer_valid[1],r_rx_offer_valid[0]};
-    else if(w_port0_rx_offer_valid && w_port1_rx_offer_valid)
+        r_rx_offer_valid <= {1'b0,r_rx_offer_valid[0]};
+    else if(r_port0_rx_offer_valid && r_port1_rx_offer_valid)
         r_rx_offer_valid <= 2'b11;
-    else if(w_port0_rx_offer_valid && !w_port1_rx_offer_valid)
-        r_rx_offer_valid <= 2'b01;
-    else if(!w_port0_rx_offer_valid && w_port1_rx_offer_valid)
-        r_rx_offer_valid <= 2'b10;
+    else if(r_port0_rx_offer_valid && !r_port1_rx_offer_valid)
+        r_rx_offer_valid <= {r_rx_offer_valid[1],1'b1};
+    else if(!r_port0_rx_offer_valid && r_port1_rx_offer_valid)
+        r_rx_offer_valid <= {1'b1,r_rx_offer_valid[0]};
     else
         r_rx_offer_valid <= r_rx_offer_valid;
 end

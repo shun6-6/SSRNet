@@ -380,10 +380,10 @@ always @(posedge i_clk or posedge i_rst)begin
         r_return_two <= 'd0;
     else if(r_cur_state == P_TX_IDLE)
         r_return_two <= 'd0;
-    else if(r_cur_state == P_TX_RECV_TWO_PTK && ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size != 0)begin
+    else if(r_cur_state == P_TX_RECV_TWO_PTK && ri_recv_local2_pkt_valid && ri_recv_local2_pkt_size != 0 && !r_return_two)begin
         if(ri_forward_req)
             r_return_two <= 'd0;
-        else if(!ro_forward_valid && ri_tx_relay_valid && ri_tx_relay_vector != 0 && !r_return_two)
+        else if(!ro_forward_valid && ri_tx_relay_valid && ri_tx_relay_vector != 0 )
             r_return_two <= 'd1;
         else
             r_return_two <= r_return_two;

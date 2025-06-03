@@ -250,10 +250,10 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_rd_desc_num <= 'd0;
-    else if(r_rd_desc_cnt == r_rd_desc_num)
-        r_rd_desc_num <= 'd0;
     else if(w_rd_byte_en)
         r_rd_desc_num <= i_rd_local_byte >> 10;
+    else if(r_rd_desc_cnt == r_rd_desc_num)
+        r_rd_desc_num <= 'd0;
     else
         r_rd_desc_num <= r_rd_desc_num;
 end

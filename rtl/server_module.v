@@ -60,9 +60,17 @@ module server_module#(
 /******************************function*****************************/
 
 /******************************parameter****************************/
-localparam      P_PKT_NUM = 64;
+//hot rank 0 and 2
+
 localparam      P_PKT_LEN   = 128;
+//均匀
+localparam      P_PKT_NUM = 64;
 localparam      P_GAP_CYCLE = 50;
+//倾斜
+localparam      P_SKEWS = 0;
+localparam      P_HOT_PKT_NUM = 120;
+localparam      P_HOT_GAP_CYCLE = 932;
+
 localparam      P_TX_IDLE   = 'd0,
                 P_TX_RANDOM = 'd1,
                 P_TX_DATA   = 'd2,
@@ -95,9 +103,11 @@ reg  [3 :0]     ri_check_id         ;
 reg             ri_check_valid      ;
 
 reg  [15:0]     r_cycle_cnt;
+reg  [15:0]     r_send_gap;
+reg             r_send_end;
 /******************************wire*********************************/
 wire feedback;
-
+wire w_skews_tor;
 /******************************assign*******************************/
 assign rx_axis_tready = 1'b1;
 assign o_outport      = ro_outport     ;
@@ -110,6 +120,7 @@ assign tx_axis_tlast  = r_tx_axis_tlast ;
 assign tx_axis_tkeep  = 8'hff ;
 assign tx_axis_tuser  = 'd0 ;
 assign feedback = r_random_dest[7] ^ r_random_dest[5] ^ r_random_dest[4] ^ r_random_dest[3];
+assign w_skews_tor = (P_SKEWS != 0) && ((P_MY_PORT_MAC[47:8] == 48'h8D_BC_5C_4A_00) || (P_MY_PORT_MAC[47:8] == 48'h8D_BC_5C_4A_02));
 /******************************component****************************/
 
 /******************************always*******************************/
@@ -140,6 +151,34 @@ always @(posedge i_clk or posedge i_rst)begin
     else
         r_dest_tor <= r_dest_tor;
 end
+// always @(posedge i_clk or posedge i_rst)begin
+//     if(i_rst)
+//         r_dest_tor <= 'd0;
+//     else if(r_cur_state == P_TX_RANDOM && r_st_cnt == 'd1)begin
+//         if(P_SKEWS && (P_MY_PORT_MAC[47:8] == 40'h8D_BC_5C_4A_00))
+//             r_dest_tor <= 'd2;
+//         else if(P_SKEWS && (P_MY_PORT_MAC[47:8] == 40'h8D_BC_5C_4A_02))
+//             r_dest_tor <= 'd0;
+//         else
+//             r_dest_tor <= ((r_dest_tor + 1'b1) == 3'd0 || (r_dest_tor + 1'b1) == 3'd2) ?
+//                             r_dest_tor + 'd2 : r_dest_tor + 'd1;
+//     end
+//     else
+//         r_dest_tor <= r_dest_tor;
+// end
+
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_send_gap <= 'd0;
+    else if(P_SKEWS && P_MY_PORT_MAC[47:8] == 48'h8D_BC_5C_4A_00)
+        r_send_gap <= P_HOT_GAP_CYCLE;
+    else if(P_SKEWS && P_MY_PORT_MAC[47:8] == 48'h8D_BC_5C_4A_02)
+        r_send_gap <= P_HOT_GAP_CYCLE;
+    else
+        r_send_gap <= P_GAP_CYCLE;
+end
+
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
@@ -183,8 +222,8 @@ always @(*)begin
         P_TX_RANDOM : r_nxt_state = r_st_cnt == 3 ? P_TX_DATA : P_TX_RANDOM;
         P_TX_DATA   : r_nxt_state = r_tx_cnt == P_PKT_LEN - 2 ? P_TX_GAP : P_TX_DATA;
         //P_TX_GAP    : r_nxt_state = (r_st_cnt == P_GAP_CYCLE) ? P_TX_IDLE : P_TX_GAP;
-        P_TX_GAP    : r_nxt_state = (r_st_cnt == P_GAP_CYCLE && r_cycle_cnt != P_PKT_NUM) ? P_TX_IDLE : 
-                                    (r_st_cnt == P_GAP_CYCLE && r_cycle_cnt == P_PKT_NUM) ? P_TX_END : P_TX_GAP;
+        P_TX_GAP    : r_nxt_state = (r_st_cnt == r_send_gap && !r_send_end) ? P_TX_IDLE : 
+                                    (r_st_cnt == r_send_gap && r_send_end) ? P_TX_END : P_TX_GAP;
         P_TX_END    : r_nxt_state = P_TX_END;
         default     : r_nxt_state = P_TX_IDLE;
     endcase
@@ -194,13 +233,27 @@ end
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)
         r_cycle_cnt <= 'd0;
-    else if(r_cycle_cnt == P_PKT_NUM)
+    else if(!w_skews_tor && r_cycle_cnt == P_PKT_NUM)
+        r_cycle_cnt <= r_cycle_cnt;
+    else if(w_skews_tor && r_cycle_cnt == P_HOT_PKT_NUM)
         r_cycle_cnt <= r_cycle_cnt;
     else if(r_cur_state == P_TX_GAP && r_st_cnt == 0)
         r_cycle_cnt <= r_cycle_cnt + 'd1;
     else
         r_cycle_cnt <= r_cycle_cnt;
 end
+
+always @(posedge i_clk or posedge i_rst)begin
+    if(i_rst)
+        r_send_end <= 'd0;
+    else if(w_skews_tor && r_cur_state == P_TX_GAP && r_st_cnt == 1)
+        r_send_end <= (r_cycle_cnt == P_HOT_PKT_NUM) ? 1'b1 : 1'b0;
+    else if(!w_skews_tor && r_cur_state == P_TX_GAP && r_st_cnt == 1)
+        r_send_end <= (r_cycle_cnt == P_PKT_NUM) ? 1'b1 : 1'b0;        
+    else
+        r_send_end <= r_send_end;
+end
+
 
 always @(posedge i_clk or posedge i_rst)begin
     if(i_rst)

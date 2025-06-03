@@ -74,7 +74,7 @@ module VCU128_10g_eth_top#(
     output [7  :0]              m_rx1_axis_tkeep    ,
     output [1 : 0]              m_rx1_axis_tuser    ,
     output [2 : 0]              m_rx1_axis_tdest    , 
-  
+ 
 
     output                      o_2_tx_clk_out      ,
     output                      o_2_rx_clk_out      ,
